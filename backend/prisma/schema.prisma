@@ -1,0 +1,561 @@
+// Prisma Schema pour KmerServices
+// Database: PostgreSQL avec PostGIS (Supabase)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ============ USERS ============
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String    @unique // Format: +237XXXXXXXXX (obligatoire au Cameroun)
+  password      String
+  firstName     String
+  lastName      String
+  avatar        String?
+  role          UserRole  @default(CLIENT)
+
+  // Adresses multiples
+  addresses     Address[]
+
+  // Relations
+  bookings      Booking[]
+  reviews       Review[]
+  favorites     Favorite[]
+
+  // Prestataire info (si role = PROVIDER)
+  therapist     Therapist?
+  salon         Salon?
+
+  // Social Auth
+  googleId      String?   @unique
+  facebookId    String?   @unique
+  appleId       String?   @unique
+
+  // Langue préférée (Cameroun: FR/EN)
+  language      Language  @default(FRENCH)
+
+  // Ville et région
+  city          String?   // Douala, Yaoundé, etc.
+  region        String?   // Littoral, Centre, etc.
+
+  // Metadata
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  CLIENT
+  PROVIDER
+  ADMIN
+}
+
+enum Language {
+  FRENCH
+  ENGLISH
+}
+
+model Address {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label         String    // "Domicile", "Bureau", etc.
+
+  // Adresse Cameroun (format avec quartier et point de repère)
+  quarter       String    // Quartier (ex: "Akwa", "Bonanjo", "Bastos")
+  street        String?   // Rue (optionnel)
+  landmark      String    // Point de repère (très important!)
+  city          String    // Douala, Yaoundé, etc.
+  region        String    // Région du Cameroun
+  country       String    @default("Cameroun")
+
+  // Géolocalisation (PostGIS)
+  location      Unsupported("geometry(Point, 4326)")
+  latitude      Float
+  longitude     Float
+
+  // Instructions d'accès
+  instructions  String?   // Code porte, étage, parking, etc.
+
+  isPrimary     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([location], type: Gist)
+  @@map("addresses")
+}
+
+// ============ THERAPISTS (Indépendants) ============
+
+model Therapist {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Info professionnelle
+  bio               String?
+  experience        Int       // Années d'expérience
+  isLicensed        Boolean   @default(false)
+  licenseNumber     String?
+
+  // Mobilité
+  isMobile          Boolean   @default(true)
+  travelRadius      Int       // En km
+  travelFee         Float     @default(0) // Frais de déplacement en XAF
+
+  // Location de base (domicile du thérapeute)
+  location          Unsupported("geometry(Point, 4326)")
+  latitude          Float
+  longitude         Float
+  city              String
+  region            String
+
+  // Portfolio
+  portfolioImages   String[]
+
+  // Salon affilié (optionnel)
+  salonId           String?
+  salon             Salon?    @relation(fields: [salonId], references: [id])
+
+  // Services proposés
+  services          TherapistService[]
+
+  // Disponibilité
+  availability      Availability[]
+
+  // Relations
+  bookings          Booking[]
+  reviews           Review[]
+  education         Education[]
+
+  // Stats
+  rating            Float     @default(0)
+  reviewCount       Int       @default(0)
+  bookingCount      Int       @default(0)
+
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([location], type: Gist)
+  @@index([isMobile])
+  @@index([isActive])
+  @@index([city])
+  @@map("therapists")
+}
+
+model Education {
+  id            String    @id @default(uuid())
+  therapistId   String
+  therapist     Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  title         String    // "Diploma in Esthetics from Paris..."
+  institution   String?
+  year          Int?
+
+  createdAt     DateTime  @default(now())
+
+  @@map("education")
+}
+
+// ============ SALONS ============
+
+model Salon {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name              String
+  description       String?
+
+  // Location (adresse Cameroun)
+  quarter           String    // Quartier
+  street            String?
+  landmark          String    // Point de repère
+  city              String
+  region            String
+  country           String    @default("Cameroun")
+
+  location          Unsupported("geometry(Point, 4326)")
+  latitude          Float
+  longitude         Float
+
+  // Images
+  logo              String?
+  coverImage        String?
+  ambianceImages    String[]  // Photos de l'intérieur
+
+  // Informations
+  establishedYear   Int?
+  features          String[]  // ["Priority to Individual", "Organic-based services", ...]
+
+  // Horaires (format JSON)
+  openingHours      Json      // { "monday": { "open": "09h00", "close": "19h00" }, ... }
+
+  // Équipe
+  therapists        Therapist[]
+
+  // Services
+  services          SalonService[]
+
+  // Relations
+  bookings          Booking[]
+  reviews           Review[]
+
+  // Stats
+  rating            Float     @default(0)
+  reviewCount       Int       @default(0)
+  serviceCount      Int       @default(0)
+
+  // Metadata
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([location], type: Gist)
+  @@index([isActive])
+  @@index([city])
+  @@map("salons")
+}
+
+// ============ SERVICES ============
+
+model Service {
+  id            String    @id @default(uuid())
+
+  name          String
+  description   String?
+  category      Category
+
+  // Images
+  images        String[]
+
+  // Détails
+  components    Json?     // Description détaillée des étapes
+  purpose       String?
+  idealFor      String?   // Candidats idéaux
+
+  duration      Int       // En minutes
+  basePrice     Float     // Prix de base en XAF
+
+  // Relations
+  therapistServices TherapistService[]
+  salonServices     SalonService[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("services")
+}
+
+enum Category {
+  HAIRDRESSING      // Coiffure
+  EYE_CARE          // Soins des yeux
+  WELLNESS_MASSAGE  // Massage
+  FACIAL            // Soins du visage
+  NAIL_CARE         // Manucure/Pédicure
+  MAKEUP            // Maquillage
+  WAXING            // Épilation
+  BARBER            // Barbier (hommes)
+  OTHER
+}
+
+// Table de liaison : Thérapeute <-> Service
+model TherapistService {
+  id            String    @id @default(uuid())
+
+  therapistId   String
+  therapist     Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  serviceId     String
+  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  // Prix personnalisé (override basePrice si défini)
+  price         Float?    // En XAF
+  duration      Int?      // Override duration si différent
+
+  isActive      Boolean   @default(true)
+
+  @@unique([therapistId, serviceId])
+  @@map("therapist_services")
+}
+
+// Table de liaison : Salon <-> Service
+model SalonService {
+  id            String    @id @default(uuid())
+
+  salonId       String
+  salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  serviceId     String
+  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  price         Float?    // En XAF
+  duration      Int?
+
+  isActive      Boolean   @default(true)
+
+  @@unique([salonId, serviceId])
+  @@map("salon_services")
+}
+
+// ============ BOOKINGS ============
+
+model Booking {
+  id            String        @id @default(uuid())
+
+  // Client
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+
+  // Prestataire (soit therapist, soit salon)
+  therapistId   String?
+  therapist     Therapist?    @relation(fields: [therapistId], references: [id])
+
+  salonId       String?
+  salon         Salon?        @relation(fields: [salonId], references: [id])
+
+  // Service(s)
+  items         BookingItem[]
+
+  // Date & heure
+  scheduledAt   DateTime
+  duration      Int           // Total en minutes
+
+  // Location (Cameroun)
+  locationType  LocationType
+  quarter       String?       // Si à domicile ou salon
+  street        String?
+  landmark      String?
+  city          String
+  region        String
+
+  location      Unsupported("geometry(Point, 4326)")?
+  latitude      Float?
+  longitude     Float?
+
+  instructions  String?       // Instructions d'accès
+
+  // Prix (en XAF)
+  subtotal      Float
+  travelFee     Float         @default(0)
+  tip           Float         @default(0)
+  total         Float
+
+  // Statut
+  status        BookingStatus @default(PENDING)
+
+  // Paiement
+  paymentId     String?
+  payment       Payment?
+
+  // Chat
+  messages      Message[]
+
+  // Annulation
+  cancelledAt   DateTime?
+  cancelReason  String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([therapistId])
+  @@index([salonId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([city])
+  @@map("bookings")
+}
+
+enum LocationType {
+  HOME      // À domicile
+  SALON     // En salon
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model BookingItem {
+  id            String    @id @default(uuid())
+
+  bookingId     String
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  serviceName   String    // Snapshot du nom
+  price         Float     // En XAF
+  duration      Int
+
+  createdAt     DateTime  @default(now())
+
+  @@map("booking_items")
+}
+
+// ============ PAYMENTS (Flutterwave) ============
+
+model Payment {
+  id                String        @id @default(uuid())
+
+  bookingId         String        @unique
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+
+  amount            Float         // En XAF
+  currency          String        @default("XAF")
+
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+
+  // Flutterwave
+  flutterwaveId     String?       @unique
+  flutterwaveTxRef  String?       @unique
+
+  // Mobile Money details (Cameroun)
+  mobileOperator    MobileOperator?
+  mobileNumber      String?       // Format: +237XXXXXXXXX
+
+  // Metadata
+  metadata          Json?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  ORANGE_MONEY
+  MTN_MOBILE_MONEY
+  CARD
+}
+
+enum MobileOperator {
+  ORANGE
+  MTN
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+// ============ REVIEWS ============
+
+model Review {
+  id            String    @id @default(uuid())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  // Review pour thérapeute OU salon
+  therapistId   String?
+  therapist     Therapist? @relation(fields: [therapistId], references: [id])
+
+  salonId       String?
+  salon         Salon?     @relation(fields: [salonId], references: [id])
+
+  rating        Int       // 1-5
+  comment       String?
+
+  // Criteria (optionnel)
+  cleanliness   Int?
+  professionalism Int?
+  value         Int?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([therapistId])
+  @@index([salonId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+// ============ FAVORITES ============
+
+model Favorite {
+  id            String    @id @default(uuid())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  therapistId   String?
+  salonId       String?
+
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, therapistId])
+  @@unique([userId, salonId])
+  @@map("favorites")
+}
+
+// ============ AVAILABILITY ============
+
+model Availability {
+  id            String    @id @default(uuid())
+
+  therapistId   String
+  therapist     Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  dayOfWeek     Int       // 0 = Dimanche, 6 = Samedi
+  startTime     String    // "09h00"
+  endTime       String    // "18h00"
+
+  isActive      Boolean   @default(true)
+
+  @@map("availability")
+}
+
+// ============ CHAT ============
+
+model Message {
+  id            String      @id @default(uuid())
+
+  bookingId     String
+  booking       Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  senderId      String
+  content       String
+  type          MessageType @default(TEXT)
+
+  // Attachments
+  attachments   String[]
+
+  isRead        Boolean     @default(false)
+
+  createdAt     DateTime    @default(now())
+
+  @@index([bookingId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SERVICE_SUGGESTION
+  SYSTEM
+}
