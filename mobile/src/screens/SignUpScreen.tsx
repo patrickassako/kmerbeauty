@@ -108,7 +108,17 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     setLoading(true);
     // Combine country code with phone number
     const fullPhone = `${selectedCountry.dialCode}${formData.phone}`;
-    onSignUp({ ...formData, phone: fullPhone });
+
+    // Prepare data for backend
+    const signupData = {
+      ...formData,
+      phone: fullPhone,
+      role: formData.role.toUpperCase() as any, // Convert to CLIENT or PROVIDER
+      city: 'Douala', // Default city
+      region: 'Littoral', // Default region
+    };
+
+    onSignUp(signupData);
   };
 
   return (

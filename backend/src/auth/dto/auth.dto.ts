@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsPhoneNumber } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsEnum, IsPhoneNumber, IsOptional } from 'class-validator';
 
 export enum UserRole {
   CLIENT = 'CLIENT',
@@ -33,12 +33,15 @@ export class SignUpDto {
   @IsEnum(UserRole)
   role: UserRole;
 
+  @IsOptional()
   @IsEnum(Language)
   language?: Language = Language.FRENCH;
 
+  @IsOptional()
   @IsString()
   city?: string;
 
+  @IsOptional()
   @IsString()
   region?: string;
 }
