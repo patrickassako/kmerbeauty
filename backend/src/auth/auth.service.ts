@@ -12,7 +12,7 @@ export class AuthService {
   ) {}
 
   async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
-    // Vérifier si l'email existe déjà
+    // Vérifier si l'email existe déjà dans notre table
     const { data: existingEmail } = await this.supabase
       .from('users')
       .select('id')
@@ -34,13 +34,33 @@ export class AuthService {
       throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
     }
 
-    // Hasher le mot de passe
+    // 1. Créer l'utilisateur dans Supabase Auth (ceci crée aussi l'entrée dans auth.users)
+    const { data: authData, error: authError } = await this.supabase
+      .getClient()
+      .auth.signUp({
+        email: dto.email,
+        password: dto.password,
+        options: {
+          data: {
+            first_name: dto.firstName,
+            last_name: dto.lastName,
+            phone: dto.phone,
+          },
+        },
+      });
+
+    if (authError || !authData.user) {
+      throw new ConflictException('Erreur lors de la création du compte: ' + authError?.message);
+    }
+
+    // 2. Hasher le mot de passe pour notre table
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Créer l'utilisateur dans Supabase
-    const { data: user, error } = await this.supabase
+    // 3. Créer l'entrée dans notre table users avec l'ID de Supabase Auth
+    const { data: user, error: insertError } = await this.supabase
       .from('users')
       .insert({
+        id: authData.user.id, // Utiliser l'ID de Supabase Auth
         email: dto.email,
         phone: dto.phone,
         password: hashedPassword,
@@ -54,22 +74,13 @@ export class AuthService {
       .select()
       .single();
 
-    if (error) {
-      throw new ConflictException('Erreur lors de la création du compte');
+    if (insertError) {
+      // Si l'insertion échoue, supprimer l'utilisateur de Supabase Auth
+      await this.supabase.getClient().auth.admin.deleteUser(authData.user.id);
+      throw new ConflictException('Erreur lors de la création du profil');
     }
 
-    // Créer les tokens avec Supabase Auth
-    const { data: authData, error: authError } = await this.supabase
-      .getClient()
-      .auth.signInWithPassword({
-        email: dto.email,
-        password: dto.password,
-      });
-
-    if (authError) {
-      throw new UnauthorizedException('Erreur d\'authentification');
-    }
-
+    // 4. Retourner les tokens et les données utilisateur
     return {
       accessToken: authData.session.access_token,
       refreshToken: authData.session.refresh_token,
