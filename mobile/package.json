@@ -1,7 +1,7 @@
 {
   "name": "kmerservices-mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -21,7 +21,7 @@
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/stack": "^6.3.20",
-    "styled-components": "^6.1.8",
+    "styled-components": "^5.3.11",
     "react-native-reanimated": "~3.6.1",
     "react-native-gesture-handler": "~2.14.1",
     "react-native-svg": "14.1.0",
