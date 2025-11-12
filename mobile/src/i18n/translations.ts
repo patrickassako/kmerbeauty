@@ -83,6 +83,27 @@ export const translations = {
       networkError: 'Erreur de connexion',
       unknownError: 'Une erreur est survenue',
     },
+
+    // Home
+    home: {
+      tagline: 'Beautify you, Beautifully',
+      home: 'Domicile',
+      institute: 'Institut',
+      searchServices: 'Rechercher des services',
+      upcomingBookings: 'Réservations à venir',
+      recommended: 'Recommandés',
+      nearbyProviders: 'Proche de moi',
+      categories: 'Catégories',
+      servicePackages: 'Forfaits de services',
+      availableDeals: 'Offres disponibles',
+      giftCards: 'Cartes cadeaux',
+      seeAll: 'Voir tout',
+      includesServices: 'Inclut {count} services',
+      minOrder: 'Min. commande {amount} Valide',
+      forAllServices: 'pour tous les services',
+      validTill: 'Valide jusqu\'au {date}',
+      away: 'à {distance}',
+    },
   },
 
   en: {
@@ -168,6 +189,27 @@ export const translations = {
       invalidCredentials: 'Invalid credentials',
       networkError: 'Connection error',
       unknownError: 'An error occurred',
+    },
+
+    // Home
+    home: {
+      tagline: 'Beautify you, Beautifully',
+      home: 'Home',
+      institute: 'Institute',
+      searchServices: 'Search services',
+      upcomingBookings: 'Upcoming Bookings',
+      recommended: 'Recommended',
+      nearbyProviders: 'Near me',
+      categories: 'Categories',
+      servicePackages: 'Service Packages',
+      availableDeals: 'Available deals',
+      giftCards: 'Gift Cards',
+      seeAll: 'See all',
+      includesServices: 'Includes {count} services',
+      minOrder: 'Min. order {amount} Valid',
+      forAllServices: 'for all services',
+      validTill: 'Valid till {date}',
+      away: '{distance} away',
     },
   },
 };

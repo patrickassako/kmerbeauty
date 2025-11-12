@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,18 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
 export const HomeScreen: React.FC = () => {
   const { user } = useAuth();
+  const { language, setLanguage, t } = useI18n();
   const { normalizeFontSize, spacing } = useResponsive();
+  const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'fr' ? 'en' : 'fr');
+  };
 
   return (
     <View style={styles.container}>
@@ -20,34 +27,72 @@ export const HomeScreen: React.FC = () => {
       <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
         <View>
           <Text style={[styles.logo, { fontSize: normalizeFontSize(20) }]}>SIMONE</Text>
-          <Text style={[styles.tagline, { fontSize: normalizeFontSize(10) }]}>Beautiful you, Beautifully</Text>
+          <Text style={[styles.tagline, { fontSize: normalizeFontSize(10) }]}>{t.home.tagline}</Text>
         </View>
-        <TouchableOpacity style={[styles.profileButton, { width: spacing(6), height: spacing(6) }]}>
-          <View style={styles.profilePlaceholder}>
-            <Text style={[styles.profileInitial, { fontSize: normalizeFontSize(16) }]}>
-              {user?.firstName?.charAt(0).toUpperCase()}
+
+        <View style={styles.headerRight}>
+          {/* Language Toggle */}
+          <TouchableOpacity
+            style={[styles.languageToggle, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1.5) }]}
+            onPress={toggleLanguage}
+          >
+            <Text style={[styles.languageText, { fontSize: normalizeFontSize(12) }]}>
+              {language.toUpperCase()}
             </Text>
-          </View>
-          <Text style={[styles.profileName, { fontSize: normalizeFontSize(10) }]} numberOfLines={1}>
-            {user?.firstName}
-          </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Profile Button */}
+          <TouchableOpacity style={[styles.profileButton, { width: spacing(6), height: spacing(6) }]}>
+            <View style={styles.profilePlaceholder}>
+              <Text style={[styles.profileInitial, { fontSize: normalizeFontSize(16) }]}>
+                {user?.firstName?.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={[styles.profileName, { fontSize: normalizeFontSize(10) }]} numberOfLines={1}>
+              {user?.firstName}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Toggle Home/Institute */}
       <View style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
-        <TouchableOpacity style={[styles.toggleButton, styles.toggleButtonActive, { paddingVertical: spacing(1), paddingHorizontal: spacing(3), borderRadius: spacing(3) }]}>
-          <Text style={[styles.toggleTextActive, { fontSize: normalizeFontSize(14) }]}>Home</Text>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            viewMode === 'home' && styles.toggleButtonActive,
+            { paddingVertical: spacing(1), paddingHorizontal: spacing(3), borderRadius: spacing(3) }
+          ]}
+          onPress={() => setViewMode('home')}
+        >
+          <Text style={[
+            viewMode === 'home' ? styles.toggleTextActive : styles.toggleText,
+            { fontSize: normalizeFontSize(14) }
+          ]}>
+            {t.home.home}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.toggleButton, { paddingVertical: spacing(1), paddingHorizontal: spacing(3) }]}>
-          <Text style={[styles.toggleText, { fontSize: normalizeFontSize(14) }]}>Institute</Text>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            viewMode === 'institute' && styles.toggleButtonActive,
+            { paddingVertical: spacing(1), paddingHorizontal: spacing(3), borderRadius: spacing(3) }
+          ]}
+          onPress={() => setViewMode('institute')}
+        >
+          <Text style={[
+            viewMode === 'institute' ? styles.toggleTextActive : styles.toggleText,
+            { fontSize: normalizeFontSize(14) }
+          ]}>
+            {t.home.institute}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
         <View style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}>
-          <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>Search services</Text>
+          <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
         </View>
         <TouchableOpacity style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
           <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
@@ -62,9 +107,9 @@ export const HomeScreen: React.FC = () => {
         {/* Upcoming Bookings */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Upcoming Bookings</Text>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.upcomingBookings}</Text>
             <TouchableOpacity>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>See all</Text>
+              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
             </TouchableOpacity>
           </View>
 
@@ -84,9 +129,48 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Nearby Providers (Proche de moi) */}
+        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders}</Text>
+            <TouchableOpacity>
+              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
+            {[
+              { name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120' },
+              { name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230' },
+              { name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89' },
+            ].map((provider, index) => (
+              <TouchableOpacity key={index} style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}>
+                <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                  <View style={styles.nearbyImagePlaceholder}>
+                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Provider</Text>
+                  </View>
+                  <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                    <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {provider.distance}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                  {provider.name}
+                </Text>
+                <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
+                  {provider.category}
+                </Text>
+                <View style={styles.nearbyFooter}>
+                  <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {provider.rating}</Text>
+                  <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({provider.reviews})</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Recommended */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>Recommended</Text>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
 
           <View style={[styles.recommendedCard, { borderRadius: spacing(2) }]}>
             <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
@@ -117,9 +201,9 @@ export const HomeScreen: React.FC = () => {
         {/* Categories */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Categories</Text>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.categories}</Text>
             <TouchableOpacity>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>See all</Text>
+              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
             </TouchableOpacity>
           </View>
 
@@ -139,9 +223,9 @@ export const HomeScreen: React.FC = () => {
         {/* Service Packages */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Service Packages</Text>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.servicePackages}</Text>
             <TouchableOpacity>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>See all</Text>
+              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
             </TouchableOpacity>
           </View>
 
@@ -171,7 +255,7 @@ export const HomeScreen: React.FC = () => {
 
         {/* Available deals */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>Available deals</Text>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.availableDeals}</Text>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
             {[1, 2, 3].map((item) => (
@@ -189,7 +273,7 @@ export const HomeScreen: React.FC = () => {
 
         {/* Gift Cards */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5) }]}>
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>Gift Cards</Text>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.giftCards}</Text>
 
           <View style={[styles.giftCard, { borderRadius: spacing(2), padding: spacing(2.5) }]}>
             <View style={[styles.giftCardIcon, { width: spacing(6), height: spacing(6), borderRadius: spacing(3), marginBottom: spacing(2) }]}>
@@ -250,6 +334,21 @@ const styles = StyleSheet.create({
   profileName: {
     color: '#666',
     fontWeight: '400',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageToggle: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  languageText: {
+    fontWeight: '600',
+    color: '#2D2D2D',
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -339,6 +438,48 @@ const styles = StyleSheet.create({
   },
   bookingDate: {
     color: '#FFFFFF',
+  },
+  nearbyCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  nearbyImage: {
+    position: 'relative',
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+  },
+  nearbyImagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  nearbyDistance: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  nearbyDistanceText: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  nearbyName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  nearbyCategory: {
+    color: '#666',
+  },
+  nearbyFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  nearbyRating: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  nearbyReviews: {
+    color: '#999',
   },
   recommendedCard: {
     backgroundColor: '#FFFFFF',
