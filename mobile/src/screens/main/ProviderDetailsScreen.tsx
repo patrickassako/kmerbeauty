@@ -69,6 +69,31 @@ export const ProviderDetailsScreen: React.FC = () => {
     },
   ];
 
+  // Services/Packages offered by this provider
+  const services = provider.services || [
+    {
+      id: 1,
+      name: 'Deep Tissue Massage',
+      price: 25000,
+      duration: 60,
+      description: 'Relaxing deep tissue massage',
+    },
+    {
+      id: 2,
+      name: 'Swedish Massage',
+      price: 20000,
+      duration: 45,
+      description: 'Classic Swedish massage technique',
+    },
+    {
+      id: 3,
+      name: 'Hot Stone Therapy',
+      price: 30000,
+      duration: 90,
+      description: 'Therapeutic hot stone massage',
+    },
+  ];
+
   return (
     <View style={styles.container}>
       {/* Header Image */}
@@ -108,30 +133,36 @@ export const ProviderDetailsScreen: React.FC = () => {
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
           {/* Name */}
           <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
-            {provider.name}
+            {provider?.name || 'Provider Name'}
           </Text>
 
           {/* Salon & Rating */}
           <View style={[styles.infoRow, { marginBottom: spacing(0.5) }]}>
             <Text style={[styles.salon, { fontSize: normalizeFontSize(14) }]}>
-              ✦ {provider.salon || "Salon"}
+              ✦ {provider?.salon || provider?.salonName || 'Independent'}
             </Text>
-            <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>⭐ {`(${provider.reviews})`}</Text>
+            <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>
+              ⭐ ({provider?.reviews || provider?.reviewCount || '0'})
+            </Text>
           </View>
 
           {/* Licensed & Experience */}
           <View style={[styles.badgesRow, { marginBottom: spacing(2) }]}>
-            <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1) }]}>
-              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
-            </View>
+            {(provider?.isLicensed || provider?.licensed) && (
+              <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1) }]}>
+                <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
+              </View>
+            )}
             <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>📅 {provider.experience || "Experience"}</Text>
+              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>
+                📅 {provider?.experience || provider?.yearsExperience || '5'} {provider?.experience ? 'years' : 'Years Experience'}
+              </Text>
             </View>
           </View>
 
           {/* Bio */}
           <Text style={[styles.bio, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
-            {provider.bio || "Professional beautician"}
+            {provider?.bio || provider?.description || 'Professional beauty service provider with extensive experience in various treatments and techniques.'}
           </Text>
 
           {/* Education Section */}
@@ -155,6 +186,59 @@ export const ProviderDetailsScreen: React.FC = () => {
                       {item}
                     </Text>
                   </View>
+                ))}
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Services/Packages Section */}
+          <TouchableOpacity
+            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
+            onPress={() => toggleSection('services')}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
+                Services ({services.length})
+              </Text>
+              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                {expandedSection === 'services' ? '▲' : '▼'}
+              </Text>
+            </View>
+
+            {expandedSection === 'services' && (
+              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                {services.map((serviceItem) => (
+                  <TouchableOpacity
+                    key={serviceItem.id}
+                    style={[styles.serviceCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}
+                    onPress={() => {
+                      // Navigate to booking with this service
+                    }}
+                  >
+                    <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
+                      <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
+                        {serviceItem.name}
+                      </Text>
+                      <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
+                        {formatCurrency(serviceItem.price, countryCode)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
+                      {serviceItem.description}
+                    </Text>
+                    <View style={styles.serviceCardFooter}>
+                      <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
+                        ⏰ {serviceItem.duration} min
+                      </Text>
+                      <TouchableOpacity
+                        style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
+                      >
+                        <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
+                          Réserver
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             )}
@@ -432,5 +516,45 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#999',
+  },
+  serviceCard: {
+    backgroundColor: '#F9F9F9',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  serviceCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  serviceCardName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+    flex: 1,
+    marginRight: 8,
+  },
+  serviceCardPrice: {
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  serviceCardDescription: {
+    color: '#666',
+    lineHeight: 18,
+  },
+  serviceCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  serviceCardDuration: {
+    color: '#999',
+  },
+  bookButton: {
+    backgroundColor: '#2D2D2D',
+  },
+  bookButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

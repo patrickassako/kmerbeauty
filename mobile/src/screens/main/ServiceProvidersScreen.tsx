@@ -43,8 +43,7 @@ export const ServiceProvidersScreen: React.FC = () => {
 
   const handleProviderPress = (provider: typeof service.providers[0]) => {
     navigation.navigate('ProviderDetails', {
-      providerId: provider.id,
-      providerType: provider.type,
+      provider: provider,
     });
   };
 
