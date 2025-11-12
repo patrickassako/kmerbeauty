@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { HomeScreen } from '../screens/main/HomeScreen';
+import { HomeStackNavigator } from './HomeStackNavigator';
 import { ServiceScreen } from '../screens/main/ServiceScreen';
 import { SalonScreen } from '../screens/main/SalonScreen';
 import { BookingsScreen } from '../screens/main/BookingsScreen';
@@ -39,7 +39,7 @@ export const MainTabNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarLabel: 'HOME',
           tabBarIcon: ({ color, size }) => (

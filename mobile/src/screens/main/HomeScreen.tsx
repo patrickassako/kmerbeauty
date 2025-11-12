@@ -7,12 +7,18 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
+import { HomeStackParamList, Provider } from '../../navigation/HomeStackNavigator';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
 export const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
   const { language, setLanguage, t } = useI18n();
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
@@ -24,6 +30,10 @@ export const HomeScreen: React.FC = () => {
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
+  };
+
+  const handleProviderPress = (provider: Provider) => {
+    navigation.navigate('ProviderDetails', { provider });
   };
 
   return (
@@ -148,11 +158,15 @@ export const HomeScreen: React.FC = () => {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
             {[
-              { name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120' },
-              { name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230' },
-              { name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89' },
-            ].map((provider, index) => (
-              <TouchableOpacity key={index} style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}>
+              { id: '1', name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120', salon: 'Marie Coiffure Salon', licensed: true, experience: '8 Years', bio: 'Expert hairdresser specializing in African hairstyles' },
+              { id: '2', name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230', salon: 'Bella Beauty Studio', licensed: true, experience: '12 Years', bio: 'Professional makeup artist for all occasions' },
+              { id: '3', name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89', salon: 'Zen Wellness Center', licensed: true, experience: '5 Years', bio: 'Certified massage therapist specializing in relaxation' },
+            ].map((provider) => (
+              <TouchableOpacity
+                key={provider.id}
+                style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                onPress={() => handleProviderPress(provider)}
+              >
                 <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
                   <View style={styles.nearbyImagePlaceholder}>
                     <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Provider</Text>
@@ -180,7 +194,21 @@ export const HomeScreen: React.FC = () => {
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
 
-          <View style={[styles.recommendedCard, { borderRadius: spacing(2) }]}>
+          <TouchableOpacity
+            style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
+            onPress={() => handleProviderPress({
+              id: '4',
+              name: 'Clarie Smith',
+              category: 'Hair & Beauty',
+              rating: '4.9',
+              reviews: '2.3k',
+              salon: 'Beau Monde Esthétique',
+              distance: '1km',
+              licensed: true,
+              experience: '10 Years',
+              bio: 'Clarie Smith is a highly skilled and compassionate beautician therapist with over 10 years of experience in the beauty and wellness industry.'
+            })}
+          >
             <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
               <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
                 <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
@@ -205,8 +233,7 @@ export const HomeScreen: React.FC = () => {
                 <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ (2.3k)</Text>
               </View>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
 
         {/* Categories */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>

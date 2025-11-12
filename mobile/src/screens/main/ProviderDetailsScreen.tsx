@@ -8,24 +8,22 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
+import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-interface ProviderDetailsScreenProps {
-  onBack: () => void;
-  onClose: () => void;
-  onViewShop: () => void;
-  onViewServices: () => void;
-}
+type ProviderDetailsRouteProp = RouteProp<HomeStackParamList, 'ProviderDetails'>;
+type ProviderDetailsNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ProviderDetails'>;
 
-export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
-  onBack,
-  onClose,
-  onViewShop,
-  onViewServices,
-}) => {
+export const ProviderDetailsScreen: React.FC = () => {
+  const route = useRoute<ProviderDetailsRouteProp>();
+  const navigation = useNavigation<ProviderDetailsNavigationProp>();
+  const { provider } = route.params;
+
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [countryCode] = useState<CountryCode>('CM');
@@ -84,7 +82,7 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
         {/* Back Button */}
         <TouchableOpacity
           style={[styles.backButton, { top: spacing(6), left: spacing(2), width: spacing(5), height: spacing(5) }]}
-          onPress={onBack}
+          onPress={() => navigation.goBack()}
         >
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
@@ -92,7 +90,7 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
         {/* Close Button */}
         <TouchableOpacity
           style={[styles.closeButton, { top: spacing(6), right: spacing(2), width: spacing(5), height: spacing(5) }]}
-          onPress={onClose}
+          onPress={() => navigation.goBack()}
         >
           <Text style={[styles.closeIcon, { fontSize: normalizeFontSize(20) }]}>✕</Text>
         </TouchableOpacity>
@@ -110,15 +108,15 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
           {/* Name */}
           <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
-            Clarie Smith
+            {provider.name}
           </Text>
 
           {/* Salon & Rating */}
           <View style={[styles.infoRow, { marginBottom: spacing(0.5) }]}>
             <Text style={[styles.salon, { fontSize: normalizeFontSize(14) }]}>
-              ✦ Luxembourg Gardens Salon
+              ✦ {provider.salon || "Salon"}
             </Text>
-            <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>⭐ (36)</Text>
+            <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>⭐ {`(${provider.reviews})`}</Text>
           </View>
 
           {/* Licensed & Experience */}
@@ -127,13 +125,13 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
               <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
             </View>
             <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>📅 10 Years Experience</Text>
+              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>📅 {provider.experience || "Experience"}</Text>
             </View>
           </View>
 
           {/* Bio */}
           <Text style={[styles.bio, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
-            Clarie Smith is a highly skilled and compassionate beautician therapist with over 10 years of experience in the beauty and wellness industry.
+            {provider.bio || "Professional beautician"}
           </Text>
 
           {/* Education Section */}
@@ -243,7 +241,7 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
       <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
         <TouchableOpacity
           style={[styles.shopButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(3), marginRight: spacing(1.5) }]}
-          onPress={onViewShop}
+          onPress={() => { /* TODO: Navigate to shop */ }}
         >
           <Text style={[styles.shopButtonIcon, { fontSize: normalizeFontSize(18) }]}>🏪</Text>
           <Text style={[styles.shopButtonText, { fontSize: normalizeFontSize(16) }]}>View Shop</Text>
@@ -251,7 +249,7 @@ export const ProviderDetailsScreen: React.FC<ProviderDetailsScreenProps> = ({
 
         <TouchableOpacity
           style={[styles.servicesButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
-          onPress={onViewServices}
+          onPress={() => { /* TODO: Navigate to services */ }}
         >
           <Text style={[styles.servicesButtonIcon, { fontSize: normalizeFontSize(18) }]}>✂️</Text>
           <Text style={[styles.servicesButtonText, { fontSize: normalizeFontSize(16) }]}>Services</Text>
