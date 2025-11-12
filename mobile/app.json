@@ -11,56 +11,20 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kmerservices.app",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "KmerServices utilise votre localisation pour trouver les prestataires de beauté près de chez vous.",
-        "NSLocationAlwaysUsageDescription": "KmerServices utilise votre localisation pour améliorer votre expérience.",
-        "NSCameraUsageDescription": "KmerServices a besoin d'accéder à votre caméra pour prendre des photos.",
-        "NSPhotoLibraryUsageDescription": "KmerServices a besoin d'accéder à vos photos.",
-        "NSMicrophoneUsageDescription": "KmerServices a besoin d'accéder à votre microphone."
-      }
+      "bundleIdentifier": "com.kmerservices.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kmerservices.app",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      "config": {
-        "googleMaps": {
-          "apiKey": ""
-        }
-      }
+      "package": "com.kmerservices.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-location",
-      "expo-notifications",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "L'application accède à vos photos pour vous permettre de partager des images."
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
     }
   }
 }
