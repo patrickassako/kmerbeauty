@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
-import { HomeStackParamList, Provider } from '../../navigation/HomeStackNavigator';
+import { HomeStackParamList, Provider, Salon, Service } from '../../navigation/HomeStackNavigator';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -35,6 +35,104 @@ export const HomeScreen: React.FC = () => {
   const handleProviderPress = (provider: Provider) => {
     navigation.navigate('ProviderDetails', { provider });
   };
+
+  const handleSalonPress = (salon: Salon) => {
+    navigation.navigate('SalonDetails', { salon });
+  };
+
+  const handleServicePress = (service: Service) => {
+    navigation.navigate('ServiceDetails', { service });
+  };
+
+  // Mock data for providers (when viewMode === 'home')
+  const nearbyProviders: Provider[] = [
+    { id: '1', name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120', salon: 'Marie Coiffure Salon', licensed: true, experience: '8 Years', bio: 'Expert hairdresser specializing in African hairstyles' },
+    { id: '2', name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230', salon: 'Bella Beauty Studio', licensed: true, experience: '12 Years', bio: 'Professional makeup artist for all occasions' },
+    { id: '3', name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89', salon: 'Zen Wellness Center', licensed: true, experience: '5 Years', bio: 'Certified massage therapist specializing in relaxation' },
+  ];
+
+  // Mock data for salons (when viewMode === 'institute')
+  const nearbySalons: Salon[] = [
+    {
+      id: 's1',
+      name: 'Beau Monde Esthétique',
+      description: 'Un salon de beauté moderne offrant une gamme complète de services de coiffure, maquillage et soins du corps.',
+      address: '123 Avenue de la Liberté',
+      city: 'Douala',
+      region: 'Littoral',
+      latitude: 4.0511,
+      longitude: 9.7679,
+      rating: '4.8',
+      reviews: '340',
+      openingHours: 'Lun-Sam: 9h00 - 19h00, Dim: Fermé',
+      features: ['Wifi gratuit', 'Climatisation', 'Parking', 'Accessible'],
+    },
+    {
+      id: 's2',
+      name: 'Luxembourg Gardens Salon',
+      description: 'Salon haut de gamme spécialisé dans les soins capillaires et les traitements de beauté.',
+      address: '45 Rue du Commerce',
+      city: 'Yaoundé',
+      region: 'Centre',
+      latitude: 3.8480,
+      longitude: 11.5021,
+      rating: '4.9',
+      reviews: '520',
+      openingHours: 'Lun-Sam: 8h00 - 20h00, Dim: 10h00 - 17h00',
+      features: ['Service VIP', 'Produits bio', 'Massage', 'Spa'],
+    },
+    {
+      id: 's3',
+      name: 'Élégance Beauty Center',
+      description: 'Centre de beauté offrant des services professionnels dans une ambiance relaxante.',
+      address: '78 Boulevard du Renouveau',
+      city: 'Douala',
+      region: 'Littoral',
+      latitude: 4.0614,
+      longitude: 9.7085,
+      rating: '4.7',
+      reviews: '210',
+      openingHours: 'Mar-Dim: 9h00 - 18h00, Lun: Fermé',
+      features: ['Réservation en ligne', 'Parking gratuit', 'Wifi'],
+    },
+  ];
+
+  // Mock data for services (when viewMode === 'institute')
+  const featuredServices: Service[] = [
+    {
+      id: 'sv1',
+      name: 'Coiffure Complète Femme',
+      description: 'Service complet de coiffure incluant shampooing, coupe, brushing et coiffage professionnel.',
+      category: 'Coiffure',
+      duration: 90,
+      price: 15000,
+      idealFor: 'Parfait pour toutes occasions : quotidien, événements professionnels ou cérémonies.',
+      components: ['Consultation personnalisée', 'Shampooing premium', 'Coupe sur mesure', 'Brushing professionnel', 'Coiffage et finition'],
+      salon: { id: 's1', name: 'Beau Monde Esthétique', rating: '4.8' },
+    },
+    {
+      id: 'sv2',
+      name: 'Maquillage Professionnel',
+      description: 'Maquillage complet réalisé par des experts pour un look impeccable.',
+      category: 'Maquillage',
+      duration: 120,
+      price: 25000,
+      idealFor: 'Idéal pour mariages, séances photo, soirées de gala et événements spéciaux.',
+      components: ['Analyse du teint', 'Préparation de la peau', 'Application maquillage', 'Faux cils (optionnel)', 'Retouches et conseils'],
+      salon: { id: 's2', name: 'Luxembourg Gardens Salon', rating: '4.9' },
+    },
+    {
+      id: 'sv3',
+      name: 'Manucure & Pédicure Spa',
+      description: 'Soin complet des mains et des pieds avec massage relaxant inclus.',
+      category: 'Soins des ongles',
+      duration: 75,
+      price: 12000,
+      idealFor: 'Pour celles qui souhaitent des mains et pieds impeccables avec un moment de détente.',
+      components: ['Bain relaxant', 'Exfoliation', 'Coupe et limage', 'Massage hydratant', 'Vernis au choix'],
+      salon: { id: 's3', name: 'Élégance Beauty Center', rating: '4.7' },
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -147,7 +245,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Nearby Providers (Proche de moi) */}
+        {/* Nearby Providers or Salons (Proche de moi) */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders}</Text>
@@ -157,36 +255,63 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-            {[
-              { id: '1', name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120', salon: 'Marie Coiffure Salon', licensed: true, experience: '8 Years', bio: 'Expert hairdresser specializing in African hairstyles' },
-              { id: '2', name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230', salon: 'Bella Beauty Studio', licensed: true, experience: '12 Years', bio: 'Professional makeup artist for all occasions' },
-              { id: '3', name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89', salon: 'Zen Wellness Center', licensed: true, experience: '5 Years', bio: 'Certified massage therapist specializing in relaxation' },
-            ].map((provider) => (
-              <TouchableOpacity
-                key={provider.id}
-                style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
-                onPress={() => handleProviderPress(provider)}
-              >
-                <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                  <View style={styles.nearbyImagePlaceholder}>
-                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Provider</Text>
+            {viewMode === 'home' ? (
+              // Show providers when in home mode
+              nearbyProviders.map((provider) => (
+                <TouchableOpacity
+                  key={provider.id}
+                  style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                  onPress={() => handleProviderPress(provider)}
+                >
+                  <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                    <View style={styles.nearbyImagePlaceholder}>
+                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Provider</Text>
+                    </View>
+                    <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                      <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {provider.distance}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                    <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {provider.distance}</Text>
+                  <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                    {provider.name}
+                  </Text>
+                  <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
+                    {provider.category}
+                  </Text>
+                  <View style={styles.nearbyFooter}>
+                    <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {provider.rating}</Text>
+                    <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({provider.reviews})</Text>
                   </View>
-                </View>
-                <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                  {provider.name}
-                </Text>
-                <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
-                  {provider.category}
-                </Text>
-                <View style={styles.nearbyFooter}>
-                  <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {provider.rating}</Text>
-                  <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({provider.reviews})</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))
+            ) : (
+              // Show salons when in institute mode
+              nearbySalons.map((salon) => (
+                <TouchableOpacity
+                  key={salon.id}
+                  style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                  onPress={() => handleSalonPress(salon)}
+                >
+                  <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                    <View style={styles.nearbyImagePlaceholder}>
+                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Salon</Text>
+                    </View>
+                    <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                      <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {salon.city}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                    {salon.name}
+                  </Text>
+                  <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]} numberOfLines={1}>
+                    {salon.address}
+                  </Text>
+                  <View style={styles.nearbyFooter}>
+                    <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {salon.rating}</Text>
+                    <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({salon.reviews})</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
         </View>
 
@@ -194,46 +319,80 @@ export const HomeScreen: React.FC = () => {
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
 
-          <TouchableOpacity
-            style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
-            onPress={() => handleProviderPress({
-              id: '4',
-              name: 'Clarie Smith',
-              category: 'Hair & Beauty',
-              rating: '4.9',
-              reviews: '2.3k',
-              salon: 'Beau Monde Esthétique',
-              distance: '1km',
-              licensed: true,
-              experience: '10 Years',
-              bio: 'Clarie Smith is a highly skilled and compassionate beautician therapist with over 10 years of experience in the beauty and wellness industry.'
-            })}
-          >
-            <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
-              <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
-                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
-              </View>
-              <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-                <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>👤 Montmartre & Sacré-Cœur Basilica (1km away)</Text>
-              </View>
-            </View>
-
-            <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
-              <View style={styles.recommendedHeader}>
-                <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>Ombre Color Treatm...</Text>
-                <View style={styles.recommendedPrice}>
-                  <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
-                    {formatCurrency(45000, countryCode)}
-                  </Text>
-                  <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
+          {viewMode === 'home' ? (
+            // Show provider when in home mode
+            <TouchableOpacity
+              style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
+              onPress={() => handleProviderPress({
+                id: '4',
+                name: 'Clarie Smith',
+                category: 'Hair & Beauty',
+                rating: '4.9',
+                reviews: '2.3k',
+                salon: 'Beau Monde Esthétique',
+                distance: '1km',
+                licensed: true,
+                experience: '10 Years',
+                bio: 'Clarie Smith is a highly skilled and compassionate beautician therapist with over 10 years of experience in the beauty and wellness industry.'
+              })}
+            >
+              <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
+                <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
+                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
+                </View>
+                <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>👤 Montmartre & Sacré-Cœur Basilica (1km away)</Text>
                 </View>
               </View>
-              <View style={styles.recommendedFooter}>
-                <Text style={[styles.recommendedSalon, { fontSize: normalizeFontSize(12) }]}>Beau Monde Esthétique</Text>
-                <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ (2.3k)</Text>
+
+              <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
+                <View style={styles.recommendedHeader}>
+                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>Ombre Color Treatm...</Text>
+                  <View style={styles.recommendedPrice}>
+                    <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
+                      {formatCurrency(45000, countryCode)}
+                    </Text>
+                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
+                  </View>
+                </View>
+                <View style={styles.recommendedFooter}>
+                  <Text style={[styles.recommendedSalon, { fontSize: normalizeFontSize(12) }]}>Beau Monde Esthétique</Text>
+                  <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ (2.3k)</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          ) : (
+            // Show service when in institute mode
+            <TouchableOpacity
+              style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
+              onPress={() => handleServicePress(featuredServices[0])}
+            >
+              <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
+                <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
+                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
+                </View>
+                <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>🏪 {featuredServices[0].salon?.name}</Text>
+                </View>
+              </View>
+
+              <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
+                <View style={styles.recommendedHeader}>
+                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>{featuredServices[0].name}</Text>
+                  <View style={styles.recommendedPrice}>
+                    <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
+                      {formatCurrency(featuredServices[0].price, countryCode)}
+                    </Text>
+                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {featuredServices[0].duration}min</Text>
+                  </View>
+                </View>
+                <View style={styles.recommendedFooter}>
+                  <Text style={[styles.recommendedSalon, { fontSize: normalizeFontSize(12) }]}>{featuredServices[0].category}</Text>
+                  <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ {featuredServices[0].salon?.rating}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Categories */}
