@@ -4,6 +4,7 @@ import { HomeScreen } from '../screens/main/HomeScreen';
 import { ProviderDetailsScreen } from '../screens/main/ProviderDetailsScreen';
 import { SalonDetailsScreen } from '../screens/main/SalonDetailsScreen';
 import { ServiceDetailsScreen } from '../screens/main/ServiceDetailsScreen';
+import { ServiceProvidersScreen } from '../screens/main/ServiceProvidersScreen';
 import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
 
 // Type simplifié pour la navigation (avec les données essentielles)
@@ -76,7 +77,6 @@ export type HomeStackParamList = {
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 // Placeholder screens (à créer)
-const ServiceProvidersScreen = () => null;
 const PackageProvidersScreen = () => null;
 const PackageDetailsScreenPlaceholder = () => null;
 const ChatScreen = () => null;
