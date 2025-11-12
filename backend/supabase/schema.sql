@@ -14,16 +14,40 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 CREATE TYPE user_role AS ENUM ('CLIENT', 'PROVIDER', 'ADMIN');
 CREATE TYPE language AS ENUM ('FRENCH', 'ENGLISH');
 CREATE TYPE category AS ENUM (
-  'HAIRDRESSING',      -- Coiffure
-  'EYE_CARE',          -- Soins des yeux
-  'WELLNESS_MASSAGE',  -- Massage
-  'FACIAL',            -- Soins du visage
-  'NAIL_CARE',         -- Manucure/Pédicure
-  'MAKEUP',            -- Maquillage
-  'WAXING',            -- Épilation
-  'BARBER',            -- Barbier
-  'OTHER'
+  'HAIRDRESSING',      -- FR: Coiffure | EN: Hairdressing
+  'EYE_CARE',          -- FR: Soins des yeux | EN: Eye Care
+  'WELLNESS_MASSAGE',  -- FR: Massage et Bien-être | EN: Wellness & Massage
+  'FACIAL',            -- FR: Soins du visage | EN: Facial Care
+  'NAIL_CARE',         -- FR: Manucure/Pédicure | EN: Nail Care
+  'MAKEUP',            -- FR: Maquillage | EN: Makeup
+  'WAXING',            -- FR: Épilation | EN: Waxing
+  'BARBER',            -- FR: Barbier | EN: Barber
+  'OTHER'              -- FR: Autre | EN: Other
 );
+
+-- ============================================
+-- TABLE: category_translations
+-- ============================================
+
+CREATE TABLE category_translations (
+  category category PRIMARY KEY,
+  name_fr VARCHAR(100) NOT NULL,
+  name_en VARCHAR(100) NOT NULL,
+  description_fr TEXT,
+  description_en TEXT
+);
+
+-- Insérer les traductions des catégories
+INSERT INTO category_translations (category, name_fr, name_en, description_fr, description_en) VALUES
+  ('HAIRDRESSING', 'Coiffure', 'Hairdressing', 'Services de coiffure professionnels', 'Professional hair styling services'),
+  ('EYE_CARE', 'Soins des yeux', 'Eye Care', 'Soins des cils et sourcils', 'Eyelash and eyebrow care'),
+  ('WELLNESS_MASSAGE', 'Massage et Bien-être', 'Wellness & Massage', 'Massages relaxants et thérapeutiques', 'Relaxing and therapeutic massages'),
+  ('FACIAL', 'Soins du visage', 'Facial Care', 'Traitements pour le visage', 'Facial treatments'),
+  ('NAIL_CARE', 'Manucure/Pédicure', 'Nail Care', 'Soins des ongles', 'Nail care services'),
+  ('MAKEUP', 'Maquillage', 'Makeup', 'Maquillage professionnel', 'Professional makeup services'),
+  ('WAXING', 'Épilation', 'Waxing', 'Services d''épilation', 'Hair removal services'),
+  ('BARBER', 'Barbier', 'Barber', 'Services de barbier pour hommes', 'Men''s barbering services'),
+  ('OTHER', 'Autre', 'Other', 'Autres services de beauté', 'Other beauty services');
 CREATE TYPE location_type AS ENUM ('HOME', 'SALON');
 CREATE TYPE booking_status AS ENUM (
   'PENDING',
@@ -127,8 +151,9 @@ CREATE TABLE therapists (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
-  -- Info professionnelle
-  bio TEXT,
+  -- Info professionnelle (multi-langue)
+  bio_fr TEXT,
+  bio_en TEXT,
   experience INTEGER NOT NULL, -- Années d'expérience
   is_licensed BOOLEAN DEFAULT FALSE,
   license_number VARCHAR(100),
@@ -148,8 +173,8 @@ CREATE TABLE therapists (
   -- Portfolio
   portfolio_images TEXT[],
 
-  -- Salon affilié (optionnel)
-  salon_id UUID REFERENCES salons(id),
+  -- Salon affilié (optionnel) - sera ajouté après la création de la table salons
+  salon_id UUID,
 
   -- Stats
   rating DECIMAL(3, 2) DEFAULT 0,
@@ -189,8 +214,11 @@ CREATE TABLE salons (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
+  -- Multi-langue
+  name_fr VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255) NOT NULL,
+  description_fr TEXT,
+  description_en TEXT,
 
   -- Location Cameroun
   quarter VARCHAR(100) NOT NULL,
@@ -209,9 +237,9 @@ CREATE TABLE salons (
   cover_image TEXT,
   ambiance_images TEXT[],
 
-  -- Informations
+  -- Informations (multi-langue via JSON)
   established_year INTEGER,
-  features TEXT[], -- ["Priority to Individual", "Organic-based services"]
+  features JSONB, -- [{"fr": "Priorité à l'individu", "en": "Priority to Individual"}]
 
   -- Horaires (JSON)
   opening_hours JSONB,
@@ -231,22 +259,34 @@ CREATE INDEX idx_salons_user ON salons(user_id);
 CREATE INDEX idx_salons_location ON salons USING GIST(location);
 CREATE INDEX idx_salons_city ON salons(city);
 
+-- Ajouter maintenant la contrainte de clé étrangère pour therapists.salon_id
+ALTER TABLE therapists
+  ADD CONSTRAINT fk_therapists_salon
+  FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE SET NULL;
+
 -- ============================================
 -- TABLE: services
 -- ============================================
 
 CREATE TABLE services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
+
+  -- Multi-langue
+  name_fr VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255) NOT NULL,
+  description_fr TEXT,
+  description_en TEXT,
+
   category category NOT NULL,
 
   images TEXT[],
 
-  -- Détails
-  components JSONB, -- Étapes du service
-  purpose TEXT,
-  ideal_for TEXT,
+  -- Détails (multi-langue)
+  components JSONB, -- [{"step": 1, "fr": "Shampooing", "en": "Shampoo"}]
+  purpose_fr TEXT,
+  purpose_en TEXT,
+  ideal_for_fr TEXT,
+  ideal_for_en TEXT,
 
   duration INTEGER NOT NULL, -- Minutes
   base_price DECIMAL(10, 2) NOT NULL, -- XAF
