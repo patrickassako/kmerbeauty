@@ -65,12 +65,13 @@ export const AppNavigator: React.FC = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={showOnboarding ? 'Splash' : 'SignUp'}
         screenOptions={{
           headerShown: false,
           animation: 'fade',
         }}
       >
-        {showOnboarding ? (
+        {showOnboarding && (
           <>
             <Stack.Screen name="Splash">
               {(props) => (
@@ -92,7 +93,7 @@ export const AppNavigator: React.FC = () => {
               )}
             </Stack.Screen>
           </>
-        ) : null}
+        )}
 
         <Stack.Screen name="SignUp">
           {(props) => (
