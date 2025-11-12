@@ -666,8 +666,9 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Policies de base (à affiner selon vos besoins)
 
--- Users: Chacun peut lire et modifier son propre profil
+-- Users: Chacun peut lire, créer et modifier son propre profil
 CREATE POLICY users_select_own ON users FOR SELECT USING (auth.uid()::text = id::text);
+CREATE POLICY users_insert_own ON users FOR INSERT WITH CHECK (auth.uid()::text = id::text);
 CREATE POLICY users_update_own ON users FOR UPDATE USING (auth.uid()::text = id::text);
 
 -- Bookings: Les utilisateurs voient leurs propres réservations
