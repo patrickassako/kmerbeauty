@@ -6,8 +6,9 @@ import { SplashScreen } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { SignInScreen } from '../screens/SignInScreen';
+import { MainTabNavigator } from './MainTabNavigator';
 import { useAuth } from '../contexts/AuthContext';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -52,13 +53,12 @@ export const AppNavigator: React.FC = () => {
     );
   }
 
-  // If user is authenticated, show main app (to be implemented)
+  // If user is authenticated, show main app
   if (isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Welcome to KmerServices!</Text>
-        <Text style={styles.subText}>(Main app screens to be implemented)</Text>
-      </View>
+      <NavigationContainer>
+        <MainTabNavigator />
+      </NavigationContainer>
     );
   }
 
@@ -143,22 +143,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2D2D2D',
-    marginBottom: 12,
-  },
-  subText: {
-    fontSize: 16,
-    color: '#666',
   },
 });
