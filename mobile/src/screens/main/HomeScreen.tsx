@@ -234,6 +234,7 @@ export const HomeScreen: React.FC = () => {
               </View>
             </View>
           </TouchableOpacity>
+        </View>
 
         {/* Categories */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
