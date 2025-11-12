@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,7 +12,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
-import { HomeStackParamList, Provider, Salon, Service } from '../../navigation/HomeStackNavigator';
+import { HomeStackParamList, ServiceWithProviders, PackageWithProviders } from '../../navigation/HomeStackNavigator';
+import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -22,117 +22,142 @@ export const HomeScreen: React.FC = () => {
   const { user } = useAuth();
   const { language, setLanguage, t } = useI18n();
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
-  const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
 
-  // Country code based on selected country (from CountryPicker context or user profile)
-  // For now, defaulting to CM (Cameroun)
   const [countryCode] = useState<CountryCode>('CM');
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
   };
 
-  const handleProviderPress = (provider: Provider) => {
-    navigation.navigate('ProviderDetails', { provider });
-  };
-
-  const handleSalonPress = (salon: Salon) => {
-    navigation.navigate('SalonDetails', { salon });
-  };
-
-  const handleServicePress = (service: Service) => {
-    navigation.navigate('ServiceDetails', { service });
-  };
-
-  // Mock data for providers (when viewMode === 'home')
-  const nearbyProviders: Provider[] = [
-    { id: '1', name: 'Marie Coiffure', category: 'Hairdressing', distance: '0.5 km', rating: '4.8', reviews: '120', salon: 'Marie Coiffure Salon', licensed: true, experience: '8 Years', bio: 'Expert hairdresser specializing in African hairstyles' },
-    { id: '2', name: 'Bella Beauty', category: 'Makeup', distance: '0.8 km', rating: '4.9', reviews: '230', salon: 'Bella Beauty Studio', licensed: true, experience: '12 Years', bio: 'Professional makeup artist for all occasions' },
-    { id: '3', name: 'Zen Spa', category: 'Massage', distance: '1.2 km', rating: '4.7', reviews: '89', salon: 'Zen Wellness Center', licensed: true, experience: '5 Years', bio: 'Certified massage therapist specializing in relaxation' },
+  // Mock data - À remplacer par des appels API
+  const upcomingBookings: Booking[] = [
+    // Mock booking
   ];
 
-  // Mock data for salons (when viewMode === 'institute')
-  const nearbySalons: Salon[] = [
+  const nearbyServices: ServiceWithProviders[] = [
     {
-      id: 's1',
-      name: 'Beau Monde Esthétique',
-      description: 'Un salon de beauté moderne offrant une gamme complète de services de coiffure, maquillage et soins du corps.',
-      address: '123 Avenue de la Liberté',
-      city: 'Douala',
-      region: 'Littoral',
-      latitude: 4.0511,
-      longitude: 9.7679,
-      rating: '4.8',
-      reviews: '340',
-      openingHours: 'Lun-Sam: 9h00 - 19h00, Dim: Fermé',
-      features: ['Wifi gratuit', 'Climatisation', 'Parking', 'Accessible'],
-    },
-    {
-      id: 's2',
-      name: 'Luxembourg Gardens Salon',
-      description: 'Salon haut de gamme spécialisé dans les soins capillaires et les traitements de beauté.',
-      address: '45 Rue du Commerce',
-      city: 'Yaoundé',
-      region: 'Centre',
-      latitude: 3.8480,
-      longitude: 11.5021,
-      rating: '4.9',
-      reviews: '520',
-      openingHours: 'Lun-Sam: 8h00 - 20h00, Dim: 10h00 - 17h00',
-      features: ['Service VIP', 'Produits bio', 'Massage', 'Spa'],
-    },
-    {
-      id: 's3',
-      name: 'Élégance Beauty Center',
-      description: 'Centre de beauté offrant des services professionnels dans une ambiance relaxante.',
-      address: '78 Boulevard du Renouveau',
-      city: 'Douala',
-      region: 'Littoral',
-      latitude: 4.0614,
-      longitude: 9.7085,
-      rating: '4.7',
-      reviews: '210',
-      openingHours: 'Mar-Dim: 9h00 - 18h00, Lun: Fermé',
-      features: ['Réservation en ligne', 'Parking gratuit', 'Wifi'],
-    },
-  ];
-
-  // Mock data for services (when viewMode === 'institute')
-  const featuredServices: Service[] = [
-    {
-      id: 'sv1',
-      name: 'Coiffure Complète Femme',
-      description: 'Service complet de coiffure incluant shampooing, coupe, brushing et coiffage professionnel.',
-      category: 'Coiffure',
+      id: 'svc1',
+      name_fr: 'Coiffure Complète',
+      name_en: 'Full Hair Styling',
+      description_fr: 'Service complet de coiffure professionnelle',
+      description_en: 'Complete professional hairstyling service',
+      category: 'HAIRDRESSING',
       duration: 90,
-      price: 15000,
-      idealFor: 'Parfait pour toutes occasions : quotidien, événements professionnels ou cérémonies.',
-      components: ['Consultation personnalisée', 'Shampooing premium', 'Coupe sur mesure', 'Brushing professionnel', 'Coiffage et finition'],
-      salon: { id: 's1', name: 'Beau Monde Esthétique', rating: '4.8' },
+      base_price: 15000,
+      priority: 10,
+      created_at: '',
+      updated_at: '',
+      providers: [
+        {
+          type: 'therapist',
+          id: 'th1',
+          name: 'Marie Coiffure',
+          rating: 4.8,
+          review_count: 120,
+          price: 15000,
+          duration: 90,
+          distance: 0.5,
+          city: 'Douala',
+          region: 'Littoral',
+        },
+        {
+          type: 'salon',
+          id: 's1',
+          name: 'Beau Monde Salon',
+          rating: 4.9,
+          review_count: 340,
+          price: 18000,
+          duration: 90,
+          distance: 0.8,
+          city: 'Douala',
+          region: 'Littoral',
+        },
+      ],
     },
     {
-      id: 'sv2',
-      name: 'Maquillage Professionnel',
-      description: 'Maquillage complet réalisé par des experts pour un look impeccable.',
-      category: 'Maquillage',
+      id: 'svc2',
+      name_fr: 'Maquillage Professionnel',
+      name_en: 'Professional Makeup',
+      description_fr: 'Maquillage complet par des experts',
+      description_en: 'Complete makeup by experts',
+      category: 'MAKEUP',
       duration: 120,
-      price: 25000,
-      idealFor: 'Idéal pour mariages, séances photo, soirées de gala et événements spéciaux.',
-      components: ['Analyse du teint', 'Préparation de la peau', 'Application maquillage', 'Faux cils (optionnel)', 'Retouches et conseils'],
-      salon: { id: 's2', name: 'Luxembourg Gardens Salon', rating: '4.9' },
-    },
-    {
-      id: 'sv3',
-      name: 'Manucure & Pédicure Spa',
-      description: 'Soin complet des mains et des pieds avec massage relaxant inclus.',
-      category: 'Soins des ongles',
-      duration: 75,
-      price: 12000,
-      idealFor: 'Pour celles qui souhaitent des mains et pieds impeccables avec un moment de détente.',
-      components: ['Bain relaxant', 'Exfoliation', 'Coupe et limage', 'Massage hydratant', 'Vernis au choix'],
-      salon: { id: 's3', name: 'Élégance Beauty Center', rating: '4.7' },
+      base_price: 25000,
+      priority: 9,
+      created_at: '',
+      updated_at: '',
+      providers: [
+        {
+          type: 'therapist',
+          id: 'th2',
+          name: 'Bella Beauty',
+          rating: 4.9,
+          review_count: 230,
+          price: 25000,
+          duration: 120,
+          distance: 1.2,
+          city: 'Douala',
+          region: 'Littoral',
+        },
+      ],
     },
   ];
+
+  const servicePackages: PackageWithProviders[] = [
+    {
+      id: 'pkg1',
+      name_fr: 'Package Mariée Complète',
+      name_en: 'Complete Bridal Package',
+      description_fr: 'Coiffure, maquillage et manucure pour votre jour spécial',
+      description_en: 'Hair, makeup and manicure for your special day',
+      category: 'MAKEUP',
+      base_price: 65000,
+      base_duration: 240,
+      priority: 10,
+      is_active: true,
+      created_at: '',
+      updated_at: '',
+      services: [],
+      providers: [
+        {
+          type: 'salon',
+          id: 's1',
+          name: 'Beau Monde Salon',
+          rating: 4.9,
+          review_count: 340,
+          price: 65000,
+          duration: 240,
+          city: 'Douala',
+          region: 'Littoral',
+        },
+      ],
+    },
+  ];
+
+  const giftCards: GiftCard[] = [
+    {
+      id: 'gc1',
+      code: 'GIFT2025',
+      value: 35000,
+      title_fr: 'CARTE CADEAU 1',
+      title_en: 'GIFT CARD 1',
+      description_fr: 'Valable pour tous les services',
+      description_en: 'Valid for all services',
+      valid_from: '',
+      valid_until: '2025-12-31',
+      status: 'ACTIVE',
+      created_at: '',
+      updated_at: '',
+    },
+  ];
+
+  const handleServicePress = (service: ServiceWithProviders) => {
+    navigation.navigate('ServiceProviders', { service });
+  };
+
+  const handlePackagePress = (pkg: PackageWithProviders) => {
+    navigation.navigate('PackageProviders', { package: pkg });
+  };
 
   return (
     <View style={styles.container}>
@@ -168,40 +193,6 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Toggle Home/Institute */}
-      <View style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === 'home' && styles.toggleButtonActive,
-            { paddingVertical: spacing(1), paddingHorizontal: spacing(3), borderRadius: spacing(3) }
-          ]}
-          onPress={() => setViewMode('home')}
-        >
-          <Text style={[
-            viewMode === 'home' ? styles.toggleTextActive : styles.toggleText,
-            { fontSize: normalizeFontSize(14) }
-          ]}>
-            {t.home.home}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === 'institute' && styles.toggleButtonActive,
-            { paddingVertical: spacing(1), paddingHorizontal: spacing(3), borderRadius: spacing(3) }
-          ]}
-          onPress={() => setViewMode('institute')}
-        >
-          <Text style={[
-            viewMode === 'institute' ? styles.toggleTextActive : styles.toggleText,
-            { fontSize: normalizeFontSize(14) }
-          ]}>
-            {t.home.institute}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Search Bar */}
       <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
         <View style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}>
@@ -224,7 +215,7 @@ export const HomeScreen: React.FC = () => {
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.upcomingBookings}</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('BookingManagement')}>
               <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
             </TouchableOpacity>
           </View>
@@ -245,7 +236,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Nearby Providers or Salons (Proche de moi) */}
+        {/* Near Me (Services) */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders}</Text>
@@ -255,140 +246,72 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-            {viewMode === 'home' ? (
-              // Show providers when in home mode
-              nearbyProviders.map((provider) => (
-                <TouchableOpacity
-                  key={provider.id}
-                  style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
-                  onPress={() => handleProviderPress(provider)}
-                >
-                  <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                    <View style={styles.nearbyImagePlaceholder}>
-                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Provider</Text>
-                    </View>
-                    <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                      <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {provider.distance}</Text>
-                    </View>
+            {nearbyServices.map((service) => (
+              <TouchableOpacity
+                key={service.id}
+                style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                onPress={() => handleServicePress(service)}
+              >
+                <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                  <View style={styles.serviceImagePlaceholder}>
+                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
                   </View>
-                  <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                    {provider.name}
-                  </Text>
-                  <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
-                    {provider.category}
-                  </Text>
-                  <View style={styles.nearbyFooter}>
-                    <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {provider.rating}</Text>
-                    <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({provider.reviews})</Text>
+                  <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                    <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
+                      {service.providers.length} prestataires
+                    </Text>
                   </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              // Show salons when in institute mode
-              nearbySalons.map((salon) => (
-                <TouchableOpacity
-                  key={salon.id}
-                  style={[styles.nearbyCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
-                  onPress={() => handleSalonPress(salon)}
-                >
-                  <View style={[styles.nearbyImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                    <View style={styles.nearbyImagePlaceholder}>
-                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Salon</Text>
-                    </View>
-                    <View style={[styles.nearbyDistance, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                      <Text style={[styles.nearbyDistanceText, { fontSize: normalizeFontSize(10) }]}>📍 {salon.city}</Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.nearbyName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                    {salon.name}
-                  </Text>
-                  <Text style={[styles.nearbyCategory, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]} numberOfLines={1}>
-                    {salon.address}
-                  </Text>
-                  <View style={styles.nearbyFooter}>
-                    <Text style={[styles.nearbyRating, { fontSize: normalizeFontSize(12) }]}>⭐ {salon.rating}</Text>
-                    <Text style={[styles.nearbyReviews, { fontSize: normalizeFontSize(12) }]}>({salon.reviews})</Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
+                </View>
+                <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                  {language === 'fr' ? service.name_fr : service.name_en}
+                </Text>
+                <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                  À partir de {formatCurrency(service.base_price, countryCode)}
+                </Text>
+                <View style={styles.serviceFooter}>
+                  <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
 
-        {/* Recommended */}
+        {/* Recommended Service */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
 
-          {viewMode === 'home' ? (
-            // Show provider when in home mode
+          {nearbyServices.length > 0 && (
             <TouchableOpacity
               style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
-              onPress={() => handleProviderPress({
-                id: '4',
-                name: 'Clarie Smith',
-                category: 'Hair & Beauty',
-                rating: '4.9',
-                reviews: '2.3k',
-                salon: 'Beau Monde Esthétique',
-                distance: '1km',
-                licensed: true,
-                experience: '10 Years',
-                bio: 'Clarie Smith is a highly skilled and compassionate beautician therapist with over 10 years of experience in the beauty and wellness industry.'
-              })}
+              onPress={() => handleServicePress(nearbyServices[0])}
             >
               <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
                 <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
                   <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
                 </View>
                 <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>👤 Montmartre & Sacré-Cœur Basilica (1km away)</Text>
+                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>
+                    📍 {nearbyServices[0].providers.length} prestataires disponibles
+                  </Text>
                 </View>
               </View>
 
               <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
                 <View style={styles.recommendedHeader}>
-                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>Ombre Color Treatm...</Text>
+                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                    {language === 'fr' ? nearbyServices[0].name_fr : nearbyServices[0].name_en}
+                  </Text>
                   <View style={styles.recommendedPrice}>
                     <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
-                      {formatCurrency(45000, countryCode)}
+                      {formatCurrency(nearbyServices[0].base_price, countryCode)}
                     </Text>
-                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
+                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {nearbyServices[0].duration}min</Text>
                   </View>
                 </View>
                 <View style={styles.recommendedFooter}>
-                  <Text style={[styles.recommendedSalon, { fontSize: normalizeFontSize(12) }]}>Beau Monde Esthétique</Text>
-                  <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ (2.3k)</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            // Show service when in institute mode
-            <TouchableOpacity
-              style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
-              onPress={() => handleServicePress(featuredServices[0])}
-            >
-              <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
-                <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
-                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
-                </View>
-                <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>🏪 {featuredServices[0].salon?.name}</Text>
-                </View>
-              </View>
-
-              <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
-                <View style={styles.recommendedHeader}>
-                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>{featuredServices[0].name}</Text>
-                  <View style={styles.recommendedPrice}>
-                    <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
-                      {formatCurrency(featuredServices[0].price, countryCode)}
-                    </Text>
-                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {featuredServices[0].duration}min</Text>
-                  </View>
-                </View>
-                <View style={styles.recommendedFooter}>
-                  <Text style={[styles.recommendedSalon, { fontSize: normalizeFontSize(12) }]}>{featuredServices[0].category}</Text>
-                  <Text style={[styles.recommendedRating, { fontSize: normalizeFontSize(12) }]}>⭐ {featuredServices[0].salon?.rating}</Text>
+                  <Text style={[styles.recommendedDescription, { fontSize: normalizeFontSize(12) }]}>
+                    {language === 'fr' ? nearbyServices[0].description_fr : nearbyServices[0].description_en}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -405,7 +328,7 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           <View style={styles.categoriesGrid}>
-            {['Hairdressing', 'Eye care', 'Wellness M'].map((category, index) => (
+            {['Coiffure', 'Soins yeux', 'Massage'].map((category, index) => (
               <TouchableOpacity
                 key={index}
                 style={[styles.categoryCard, { paddingVertical: spacing(2), paddingHorizontal: spacing(2), borderRadius: spacing(1.5) }]}
@@ -427,47 +350,29 @@ export const HomeScreen: React.FC = () => {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-            {[1, 2].map((item) => (
-              <View key={item} style={[styles.packageCard, { width: spacing(22), borderRadius: spacing(2) }]}>
+            {servicePackages.map((pkg) => (
+              <TouchableOpacity
+                key={pkg.id}
+                style={[styles.packageCard, { width: spacing(22), borderRadius: spacing(2) }]}
+                onPress={() => handlePackagePress(pkg)}
+              >
                 <View style={[styles.packageImage, { height: spacing(15), borderRadius: spacing(2) }]}>
                   <View style={[styles.packageImagePlaceholder, { height: spacing(15) }]}>
                     <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Package Image</Text>
                   </View>
                 </View>
                 <View style={[styles.packageInfo, { padding: spacing(1.5) }]}>
-                  <Text style={[styles.packageServices, { fontSize: normalizeFontSize(11), marginBottom: spacing(0.5) }]}>Includes 3 services</Text>
                   <Text style={[styles.packageTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]} numberOfLines={2}>
-                    Bridal makeover - with nail care
+                    {language === 'fr' ? pkg.name_fr : pkg.name_en}
                   </Text>
                   <View style={styles.packageFooter}>
                     <Text style={[styles.packagePrice, { fontSize: normalizeFontSize(16) }]}>
-                      {formatCurrency(65000, countryCode)}
+                      {formatCurrency(pkg.base_price, countryCode)}
                     </Text>
-                    <Text style={[styles.packageDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
-                    <Text style={[styles.packageRating, { fontSize: normalizeFontSize(12) }]}>⭐ (360)</Text>
+                    <Text style={[styles.packageDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {pkg.base_duration}min</Text>
                   </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Available deals */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.availableDeals}</Text>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-            {[1, 2, 3].map((item) => (
-              <View key={item} style={[styles.dealCard, { width: spacing(18), padding: spacing(2), borderRadius: spacing(2) }]}>
-                <View style={[styles.dealIcon, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5), marginBottom: spacing(1) }]}>
-                  <Text style={[styles.dealIconText, { fontSize: normalizeFontSize(20) }]}>%</Text>
-                </View>
-                <Text style={[styles.dealTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]}>12% off</Text>
-                <Text style={[styles.dealSubtitle, { fontSize: normalizeFontSize(10) }]}>
-                  Min. order {formatCurrency(30000, countryCode, false)} Valid
-                </Text>
-                <Text style={[styles.dealSubtitle, { fontSize: normalizeFontSize(10) }]}>for all services</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -476,21 +381,29 @@ export const HomeScreen: React.FC = () => {
         <View style={[styles.section, { paddingHorizontal: spacing(2.5) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.giftCards}</Text>
 
-          <View style={[styles.giftCard, { borderRadius: spacing(2), padding: spacing(2.5) }]}>
-            <View style={[styles.giftCardIcon, { width: spacing(6), height: spacing(6), borderRadius: spacing(3), marginBottom: spacing(2) }]}>
-              <Text style={[styles.giftCardIconText, { fontSize: normalizeFontSize(24) }]}>🎁</Text>
-            </View>
-            <View style={[styles.giftCardPrice, { marginBottom: spacing(3) }]}>
-              <Text style={[styles.giftCardPriceText, { fontSize: normalizeFontSize(40) }]}>
-                {formatCurrency(35000, countryCode)}
-              </Text>
-            </View>
-            <View>
-              <Text style={[styles.giftCardTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(0.5) }]}>CARD 1</Text>
-              <Text style={[styles.giftCardSubtitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]}>On all Bridal Make Over</Text>
-              <Text style={[styles.giftCardExpiry, { fontSize: normalizeFontSize(12) }]}>Valid till Oct 24</Text>
-            </View>
-          </View>
+          {giftCards.map((card) => (
+            <TouchableOpacity key={card.id} style={[styles.giftCard, { borderRadius: spacing(2), padding: spacing(2.5), marginBottom: spacing(2) }]}>
+              <View style={[styles.giftCardIcon, { width: spacing(6), height: spacing(6), borderRadius: spacing(3), marginBottom: spacing(2) }]}>
+                <Text style={[styles.giftCardIconText, { fontSize: normalizeFontSize(24) }]}>🎁</Text>
+              </View>
+              <View style={[styles.giftCardPrice, { marginBottom: spacing(3) }]}>
+                <Text style={[styles.giftCardPriceText, { fontSize: normalizeFontSize(40) }]}>
+                  {formatCurrency(card.value, countryCode)}
+                </Text>
+              </View>
+              <View>
+                <Text style={[styles.giftCardTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(0.5) }]}>
+                  {language === 'fr' ? card.title_fr : card.title_en}
+                </Text>
+                <Text style={[styles.giftCardSubtitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]}>
+                  {language === 'fr' ? card.description_fr : card.description_en}
+                </Text>
+                <Text style={[styles.giftCardExpiry, { fontSize: normalizeFontSize(12) }]}>
+                  Valide jusqu'au {new Date(card.valid_until).toLocaleDateString('fr-FR')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -518,6 +431,21 @@ const styles = StyleSheet.create({
     color: '#999',
     fontWeight: '400',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageToggle: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  languageText: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
   profileButton: {
     alignItems: 'center',
   },
@@ -537,39 +465,6 @@ const styles = StyleSheet.create({
   profileName: {
     color: '#666',
     fontWeight: '400',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  languageToggle: {
-    backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  languageText: {
-    fontWeight: '600',
-    color: '#2D2D2D',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  toggleButton: {
-    backgroundColor: 'transparent',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#2D2D2D',
-  },
-  toggleText: {
-    color: '#666',
-    fontWeight: '500',
-  },
-  toggleTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -642,47 +537,43 @@ const styles = StyleSheet.create({
   bookingDate: {
     color: '#FFFFFF',
   },
-  nearbyCard: {
+  serviceCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  nearbyImage: {
+  serviceImage: {
     position: 'relative',
     backgroundColor: '#F5F5F5',
     overflow: 'hidden',
   },
-  nearbyImagePlaceholder: {
+  serviceImagePlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F5F5F5',
   },
-  nearbyDistance: {
+  serviceProvidersCount: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
-  nearbyDistanceText: {
+  serviceProvidersCountText: {
     fontWeight: '600',
     color: '#2D2D2D',
   },
-  nearbyName: {
+  serviceName: {
     fontWeight: '600',
     color: '#2D2D2D',
   },
-  nearbyCategory: {
-    color: '#666',
+  servicePrice: {
+    color: '#FF6B6B',
+    fontWeight: '700',
   },
-  nearbyFooter: {
+  serviceFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
-  nearbyRating: {
+  serviceDuration: {
     color: '#666',
-    fontWeight: '600',
-  },
-  nearbyReviews: {
-    color: '#999',
   },
   recommendedCard: {
     backgroundColor: '#FFFFFF',
@@ -731,15 +622,8 @@ const styles = StyleSheet.create({
   recommendedDuration: {
     color: '#666',
   },
-  recommendedFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recommendedSalon: {
-    color: '#666',
-  },
-  recommendedRating: {
+  recommendedFooter: {},
+  recommendedDescription: {
     color: '#666',
   },
   categoriesGrid: {
@@ -770,9 +654,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   packageInfo: {},
-  packageServices: {
-    color: '#999',
-  },
   packageTitle: {
     fontWeight: '600',
     color: '#2D2D2D',
@@ -780,36 +661,13 @@ const styles = StyleSheet.create({
   packageFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   packagePrice: {
     fontWeight: '700',
     color: '#2D2D2D',
   },
   packageDuration: {
-    color: '#666',
-  },
-  packageRating: {
-    color: '#666',
-  },
-  dealCard: {
-    backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  dealIcon: {
-    backgroundColor: '#2D2D2D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dealIconText: {
-    color: '#FFFFFF',
-  },
-  dealTitle: {
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  dealSubtitle: {
     color: '#666',
   },
   giftCard: {

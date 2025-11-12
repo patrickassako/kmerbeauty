@@ -4,73 +4,83 @@ import { HomeScreen } from '../screens/main/HomeScreen';
 import { ProviderDetailsScreen } from '../screens/main/ProviderDetailsScreen';
 import { SalonDetailsScreen } from '../screens/main/SalonDetailsScreen';
 import { ServiceDetailsScreen } from '../screens/main/ServiceDetailsScreen';
+import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
 
-export type Provider = {
-  id: string;
-  name: string;
-  category: string;
-  distance?: string;
-  rating: string;
-  reviews: string;
-  salon?: string;
-  licensed?: boolean;
-  experience?: string;
-  bio?: string;
-  image?: string;
-};
-
-export type Salon = {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  city: string;
-  region: string;
-  latitude: number;
-  longitude: number;
-  rating: string;
-  reviews: string;
-  images?: string[];
-  openingHours?: string;
-  features?: string[];
-};
-
-export type Service = {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  duration: number; // en minutes
-  price: number; // en XAF/XOF
-  images?: string[];
-  components?: string[]; // étapes du service
-  idealFor?: string;
-  provider?: {
+// Type simplifié pour la navigation (avec les données essentielles)
+export type ServiceWithProviders = Service & {
+  providers: Array<{
+    type: 'therapist' | 'salon';
     id: string;
     name: string;
-    rating: string;
-  };
-  salon?: {
+    rating: number;
+    review_count: number;
+    price: number;
+    duration: number;
+    distance?: number;
+    city: string;
+    region: string;
+  }>;
+};
+
+export type PackageWithProviders = ServicePackage & {
+  services: Service[];
+  providers: Array<{
+    type: 'therapist' | 'salon';
     id: string;
     name: string;
-    rating: string;
-  };
+    rating: number;
+    review_count: number;
+    price: number;
+    duration: number;
+    distance?: number;
+    city: string;
+    region: string;
+  }>;
 };
 
 export type HomeStackParamList = {
   HomeMain: undefined;
+  ServiceProviders: {
+    service: ServiceWithProviders;
+    sortBy?: 'distance' | 'price';
+  };
+  PackageProviders: {
+    package: PackageWithProviders;
+    sortBy?: 'distance' | 'price';
+  };
   ProviderDetails: {
-    provider: Provider;
+    providerId: string;
+    providerType: 'therapist' | 'salon';
   };
   SalonDetails: {
     salon: Salon;
   };
   ServiceDetails: {
     service: Service;
+    providerId?: string;
+    providerType?: 'therapist' | 'salon';
   };
+  PackageDetails: {
+    package: ServicePackage;
+    providerId?: string;
+    providerType?: 'therapist' | 'salon';
+  };
+  Chat: {
+    providerId: string;
+    providerType: 'therapist' | 'salon';
+    bookingId?: string;
+  };
+  BookingManagement: undefined;
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
+
+// Placeholder screens (à créer)
+const ServiceProvidersScreen = () => null;
+const PackageProvidersScreen = () => null;
+const PackageDetailsScreenPlaceholder = () => null;
+const ChatScreen = () => null;
+const BookingManagementScreen = () => null;
 
 export const HomeStackNavigator: React.FC = () => {
   return (
@@ -81,9 +91,14 @@ export const HomeStackNavigator: React.FC = () => {
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="ServiceProviders" component={ServiceProvidersScreen} />
+      <Stack.Screen name="PackageProviders" component={PackageProvidersScreen} />
       <Stack.Screen name="ProviderDetails" component={ProviderDetailsScreen} />
       <Stack.Screen name="SalonDetails" component={SalonDetailsScreen} />
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
+      <Stack.Screen name="PackageDetails" component={PackageDetailsScreenPlaceholder} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="BookingManagement" component={BookingManagementScreen} />
     </Stack.Navigator>
   );
 };
