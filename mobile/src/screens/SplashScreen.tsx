@@ -1,15 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
-
-const { width, height } = Dimensions.get('window');
+import { useResponsive } from '../hooks/useResponsive';
 
 interface SplashScreenProps {
   onContinue: () => void;
@@ -17,38 +15,45 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
   const { t } = useI18n();
+  const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
 
   return (
     <ImageBackground
       source={require('../../assets/splash-bg.jpg')}
-      style={styles.container}
+      style={[styles.container, { width, height }]}
       resizeMode="cover"
     >
       <View style={styles.overlay} />
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: spacing(10), paddingBottom: spacing(6), paddingHorizontal: spacing(4) }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>KMERSERVICES</Text>
-          <Text style={styles.subtitle}>{t.onboarding.subtitle}</Text>
+          <Text style={[styles.title, { fontSize: normalizeFontSize(isSmallDevice ? 36 : 42), letterSpacing: isSmallDevice ? 6 : 8 }]}>
+            KMERSERVICES
+          </Text>
+          <Text style={[styles.subtitle, { fontSize: normalizeFontSize(isSmallDevice ? 12 : 14), letterSpacing: isSmallDevice ? 2 : 3 }]}>
+            {t.onboarding.subtitle}
+          </Text>
         </View>
 
         <View style={styles.bottom}>
-          <Text style={styles.tagline}>Your Beauty, Your Way.{'\n'}On Demand</Text>
+          <Text style={[styles.tagline, { fontSize: normalizeFontSize(isSmallDevice ? 22 : 28), lineHeight: normalizeFontSize(isSmallDevice ? 28 : 36), marginBottom: spacing(4) }]}>
+            Your Beauty, Your Way.{'\n'}On Demand
+          </Text>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { paddingVertical: spacing(2), paddingHorizontal: spacing(3), borderRadius: spacing(5), maxWidth: isSmallDevice ? width * 0.85 : 340 }]}
             onPress={onContinue}
             activeOpacity={0.8}
           >
-            <View style={styles.buttonIconContainer}>
-              <Text style={styles.buttonIcon}>→</Text>
+            <View style={[styles.buttonIconContainer, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5) }]}>
+              <Text style={[styles.buttonIcon, { fontSize: normalizeFontSize(20) }]}>→</Text>
             </View>
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { fontSize: normalizeFontSize(isSmallDevice ? 14 : 16) }]}>
               {t.onboarding.getStarted.replace('Commencer', 'Découvrir KmerServices').replace('Get Started', 'Discover KmerServices')}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.indicator} />
+          <View style={[styles.indicator, { width: spacing(15), height: spacing(0.5), marginTop: spacing(4) }]} />
         </View>
       </View>
     </ImageBackground>
@@ -58,8 +63,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: width,
-    height: height,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -68,75 +71,53 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 80,
-    paddingBottom: 50,
-    paddingHorizontal: 30,
   },
   header: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 42,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 8,
     marginBottom: 12,
   },
   subtitle: {
-    fontSize: 14,
     fontWeight: '400',
     color: '#FFFFFF',
-    letterSpacing: 3,
     textTransform: 'uppercase',
   },
   bottom: {
     alignItems: 'center',
   },
   tagline: {
-    fontSize: 28,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 36,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 40,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
     paddingLeft: 6,
     width: '100%',
-    maxWidth: 340,
   },
   buttonIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     backgroundColor: '#2D2D2D',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   buttonIcon: {
-    fontSize: 20,
     color: '#FFFFFF',
     fontWeight: '600',
   },
   buttonText: {
-    fontSize: 16,
     fontWeight: '600',
     color: '#2D2D2D',
     flex: 1,
     textAlign: 'center',
   },
   indicator: {
-    width: 120,
-    height: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
-    marginTop: 30,
   },
 });

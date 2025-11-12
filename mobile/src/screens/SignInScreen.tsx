@@ -6,15 +6,13 @@ import {
   ImageBackground,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
+import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-
-const { width, height } = Dimensions.get('window');
 
 interface SignInScreenProps {
   onSignIn: (data: SignInData) => void;
@@ -34,6 +32,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   onForgotPassword,
 }) => {
   const { t } = useI18n();
+  const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
   const [formData, setFormData] = useState<SignInData>({
     emailOrPhone: '',
     password: '',
@@ -74,7 +73,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   return (
     <ImageBackground
       source={require('../../assets/auth-bg.jpg')}
-      style={styles.background}
+      style={[styles.background, { width, height }]}
       resizeMode="cover"
     >
       <View style={styles.overlay} />
@@ -83,21 +82,37 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>KMERSERVICES</Text>
-          <Text style={styles.subtitle}>
+        <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+          <Text style={[styles.title, {
+            fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
+            letterSpacing: isSmallDevice ? 3 : 4
+          }]}>
+            KMERSERVICES
+          </Text>
+          <Text style={[styles.subtitle, {
+            fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
+            letterSpacing: 2
+          }]}>
             {t.onboarding.subtitle.toUpperCase()}
           </Text>
         </View>
 
         <ScrollView
           style={styles.formContainer}
-          contentContainerStyle={styles.formContent}
+          contentContainerStyle={[styles.formContent, { paddingHorizontal: spacing(2.5), paddingBottom: spacing(10) }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t.auth.signIn}</Text>
-            <Text style={styles.cardSubtitle}>{t.auth.signInSubtitle}</Text>
+          <View style={[styles.card, {
+            borderRadius: spacing(4),
+            padding: isSmallDevice ? spacing(3) : spacing(4),
+            paddingTop: isSmallDevice ? spacing(4) : spacing(5)
+          }]}>
+            <Text style={[styles.cardTitle, { fontSize: normalizeFontSize(isSmallDevice ? 20 : 24), marginBottom: spacing(1) }]}>
+              {t.auth.signIn}
+            </Text>
+            <Text style={[styles.cardSubtitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(4) }]}>
+              {t.auth.signInSubtitle}
+            </Text>
 
             <View style={styles.form}>
               <Input
@@ -119,7 +134,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                 isPassword
               />
 
-              <View style={styles.optionsRow}>
+              <View style={[styles.optionsRow, { marginBottom: spacing(3) }]}>
                 <TouchableOpacity
                   style={styles.rememberMeContainer}
                   onPress={() => updateField('rememberMe', !formData.rememberMe)}
@@ -127,16 +142,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                   <View
                     style={[
                       styles.checkbox,
+                      { width: spacing(2.5), height: spacing(2.5) },
                       formData.rememberMe && styles.checkboxChecked,
                     ]}
                   >
-                    {formData.rememberMe && <Text style={styles.checkmark}>✓</Text>}
+                    {formData.rememberMe && <Text style={[styles.checkmark, { fontSize: normalizeFontSize(12) }]}>✓</Text>}
                   </View>
-                  <Text style={styles.rememberMeText}>Remember Me</Text>
+                  <Text style={[styles.rememberMeText, { fontSize: normalizeFontSize(13) }]}>Remember Me</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={onForgotPassword}>
-                  <Text style={styles.forgotPasswordText}>
+                  <Text style={[styles.forgotPasswordText, { fontSize: normalizeFontSize(13) }]}>
                     {t.auth.forgotPassword}
                   </Text>
                 </TouchableOpacity>
@@ -149,30 +165,34 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                 icon="arrow"
               />
 
-              <View style={styles.divider}>
+              <View style={[styles.divider, { marginVertical: spacing(3) }]}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>{t.auth.or}</Text>
+                <Text style={[styles.dividerText, { fontSize: normalizeFontSize(14), paddingHorizontal: spacing(2) }]}>
+                  {t.auth.or}
+                </Text>
                 <View style={styles.dividerLine} />
               </View>
 
-              <Text style={styles.socialTitle}>{t.auth.continueWith}</Text>
+              <Text style={[styles.socialTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
+                {t.auth.continueWith}
+              </Text>
 
-              <View style={styles.socialButtons}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}>G</Text>
+              <View style={[styles.socialButtons, { marginBottom: spacing(3) }]}>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>G</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}>f</Text>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>f</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}></Text>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}></Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>{t.auth.noAccount} </Text>
+                <Text style={[styles.footerText, { fontSize: normalizeFontSize(14) }]}>{t.auth.noAccount} </Text>
                 <TouchableOpacity onPress={onSignUp}>
-                  <Text style={styles.footerLink}>{t.auth.signUpLink}</Text>
+                  <Text style={[styles.footerLink, { fontSize: normalizeFontSize(14) }]}>{t.auth.signUpLink}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -180,7 +200,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.indicator} />
+      <View style={[styles.indicator, { bottom: spacing(5), width: spacing(15), height: spacing(0.5) }]} />
     </ImageBackground>
   );
 };
@@ -188,8 +208,6 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: width,
-    height: height,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -200,48 +218,33 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 20,
   },
   title: {
-    fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 4,
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 11,
     fontWeight: '400',
     color: '#FFFFFF',
-    letterSpacing: 2,
   },
   formContainer: {
     flex: 1,
   },
   formContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 30,
-    paddingTop: 40,
   },
   cardTitle: {
-    fontSize: 24,
     fontWeight: '700',
     color: '#2D2D2D',
     textAlign: 'center',
-    marginBottom: 8,
   },
   cardSubtitle: {
-    fontSize: 14,
     fontWeight: '400',
     color: '#666',
     textAlign: 'center',
-    marginBottom: 30,
   },
   form: {
     width: '100%',
@@ -250,15 +253,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
   },
   rememberMeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 20,
-    height: 20,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: '#CCC',
@@ -272,22 +272,18 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '700',
   },
   rememberMeText: {
-    fontSize: 13,
     color: '#666',
   },
   forgotPasswordText: {
-    fontSize: 13,
     fontWeight: '500',
     color: '#2D2D2D',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
@@ -295,32 +291,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   dividerText: {
-    paddingHorizontal: 16,
-    fontSize: 14,
     color: '#999',
   },
   socialTitle: {
-    fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
   },
   socialButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
-    marginBottom: 24,
   },
   socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   socialButtonText: {
-    fontSize: 20,
   },
   footer: {
     flexDirection: 'row',
@@ -328,21 +315,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 14,
     color: '#666',
   },
   footerLink: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#2D2D2D',
   },
   indicator: {
     position: 'absolute',
-    bottom: 40,
     left: '50%',
     marginLeft: -60,
-    width: 120,
-    height: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
   },

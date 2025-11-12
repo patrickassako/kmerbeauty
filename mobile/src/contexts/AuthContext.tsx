@@ -76,13 +76,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Sign up error:', error);
 
+      // Handle network errors
+      if (error.message === 'Network Error' || !error.response) {
+        throw new Error(
+          'Impossible de se connecter au serveur.\n\n' +
+          'Vérifiez que:\n' +
+          '1. Le backend est démarré (npm run start:dev dans /backend)\n' +
+          '2. L\'URL de l\'API dans mobile/.env est correcte\n' +
+          '   - Sur appareil physique: utilisez votre IP locale (ex: http://192.168.1.10:3000)\n' +
+          '   - Sur Android Emulator: utilisez http://10.0.2.2:3000\n' +
+          '   - Sur iOS Simulator: utilisez http://localhost:3000'
+        );
+      }
+
       // Extract error message
       const errorMessage = error.response?.data?.message || 'Sign up failed';
 
       if (errorMessage.includes('email')) {
-        throw new Error('Email already in use');
+        throw new Error('Email déjà utilisé');
       } else if (errorMessage.includes('phone')) {
-        throw new Error('Phone number already in use');
+        throw new Error('Numéro de téléphone déjà utilisé');
       } else {
         throw new Error(errorMessage);
       }
@@ -107,12 +120,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Sign in error:', error);
 
+      // Handle network errors
+      if (error.message === 'Network Error' || !error.response) {
+        throw new Error(
+          'Impossible de se connecter au serveur.\n\n' +
+          'Vérifiez que:\n' +
+          '1. Le backend est démarré (npm run start:dev dans /backend)\n' +
+          '2. L\'URL de l\'API dans mobile/.env est correcte\n' +
+          '   - Sur appareil physique: utilisez votre IP locale (ex: http://192.168.1.10:3000)\n' +
+          '   - Sur Android Emulator: utilisez http://10.0.2.2:3000\n' +
+          '   - Sur iOS Simulator: utilisez http://localhost:3000'
+        );
+      }
+
       const errorMessage = error.response?.data?.message || 'Sign in failed';
 
       if (errorMessage.includes('credentials') || errorMessage.includes('password')) {
-        throw new Error('Invalid email/phone or password');
+        throw new Error('Email/téléphone ou mot de passe incorrect');
       } else if (errorMessage.includes('not found')) {
-        throw new Error('Account not found');
+        throw new Error('Compte introuvable');
       } else {
         throw new Error(errorMessage);
       }

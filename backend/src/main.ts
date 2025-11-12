@@ -14,9 +14,11 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
+  // CORS - Allow all origins in development for mobile testing
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:8081',
+    origin: process.env.NODE_ENV === 'production'
+      ? process.env.FRONTEND_URL
+      : true, // Allow all origins in development
     credentials: true,
   });
 

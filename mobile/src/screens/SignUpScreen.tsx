@@ -6,19 +6,25 @@ import {
   ImageBackground,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
+import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-
-const { width, height } = Dimensions.get('window');
+import { DEFAULT_COUNTRY } from '../components/CountryPicker';
 
 interface SignUpScreenProps {
   onSignUp: (data: SignUpData) => void;
   onSignIn: () => void;
+}
+
+interface Country {
+  code: string;
+  name: string;
+  flag: string;
+  dialCode: string;
 }
 
 export interface SignUpData {
@@ -33,6 +39,7 @@ export interface SignUpData {
 
 export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }) => {
   const { t } = useI18n();
+  const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
   const [formData, setFormData] = useState<SignUpData>({
     email: '',
     phone: '',
@@ -42,6 +49,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     lastName: '',
     role: 'client',
   });
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpData, string>>>({});
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,8 +80,8 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
 
     if (!formData.phone.trim()) {
       newErrors.phone = t.errors.required;
-    } else if (!/^\+237[0-9]{9}$/.test(formData.phone)) {
-      newErrors.phone = t.errors.invalidPhone;
+    } else if (!/^[0-9]{9}$/.test(formData.phone)) {
+      newErrors.phone = 'Numéro invalide (9 chiffres requis)';
     }
 
     if (!formData.password) {
@@ -98,13 +106,15 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     }
 
     setLoading(true);
-    onSignUp(formData);
+    // Combine country code with phone number
+    const fullPhone = `${selectedCountry.dialCode}${formData.phone}`;
+    onSignUp({ ...formData, phone: fullPhone });
   };
 
   return (
     <ImageBackground
       source={require('../../assets/auth-bg.jpg')}
-      style={styles.background}
+      style={[styles.background, { width, height }]}
       resizeMode="cover"
     >
       <View style={styles.overlay} />
@@ -113,21 +123,37 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>KMERSERVICES</Text>
-          <Text style={styles.subtitle}>
+        <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+          <Text style={[styles.title, {
+            fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
+            letterSpacing: isSmallDevice ? 3 : 4
+          }]}>
+            KMERSERVICES
+          </Text>
+          <Text style={[styles.subtitle, {
+            fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
+            letterSpacing: 2
+          }]}>
             {t.onboarding.subtitle.toUpperCase()}
           </Text>
         </View>
 
         <ScrollView
           style={styles.formContainer}
-          contentContainerStyle={styles.formContent}
+          contentContainerStyle={[styles.formContent, { paddingHorizontal: spacing(2.5), paddingBottom: spacing(10) }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t.auth.createAccount}</Text>
-            <Text style={styles.cardSubtitle}>{t.auth.createAccountSubtitle}</Text>
+          <View style={[styles.card, {
+            borderRadius: spacing(4),
+            padding: isSmallDevice ? spacing(3) : spacing(4),
+            paddingTop: isSmallDevice ? spacing(4) : spacing(5)
+          }]}>
+            <Text style={[styles.cardTitle, { fontSize: normalizeFontSize(isSmallDevice ? 20 : 24), marginBottom: spacing(1) }]}>
+              {t.auth.createAccount}
+            </Text>
+            <Text style={[styles.cardSubtitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(4) }]}>
+              {t.auth.createAccountSubtitle}
+            </Text>
 
             <View style={styles.form}>
               <Input
@@ -160,11 +186,14 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
 
               <Input
                 label={t.auth.phone}
-                placeholder={t.auth.phonePlaceholder}
+                placeholder="6XXXXXXXX"
                 value={formData.phone}
                 onChangeText={(value) => updateField('phone', value)}
                 error={errors.phone}
                 keyboardType="phone-pad"
+                isPhone
+                country={selectedCountry}
+                onCountryChange={setSelectedCountry}
               />
 
               <Input
@@ -185,12 +214,15 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                 isPassword
               />
 
-              <View style={styles.accountTypeContainer}>
-                <Text style={styles.accountTypeLabel}>{t.auth.accountType}</Text>
+              <View style={[styles.accountTypeContainer, { marginBottom: spacing(2.5) }]}>
+                <Text style={[styles.accountTypeLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                  {t.auth.accountType}
+                </Text>
                 <View style={styles.accountTypeButtons}>
                   <TouchableOpacity
                     style={[
                       styles.accountTypeButton,
+                      { paddingVertical: spacing(1.5), borderRadius: spacing(1.5) },
                       formData.role === 'client' && styles.accountTypeButtonActive,
                     ]}
                     onPress={() => updateField('role', 'client')}
@@ -198,6 +230,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                     <Text
                       style={[
                         styles.accountTypeButtonText,
+                        { fontSize: normalizeFontSize(14) },
                         formData.role === 'client' &&
                           styles.accountTypeButtonTextActive,
                       ]}
@@ -209,6 +242,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                   <TouchableOpacity
                     style={[
                       styles.accountTypeButton,
+                      { paddingVertical: spacing(1.5), borderRadius: spacing(1.5) },
                       formData.role === 'provider' && styles.accountTypeButtonActive,
                     ]}
                     onPress={() => updateField('role', 'provider')}
@@ -216,6 +250,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                     <Text
                       style={[
                         styles.accountTypeButtonText,
+                        { fontSize: normalizeFontSize(14) },
                         formData.role === 'provider' &&
                           styles.accountTypeButtonTextActive,
                       ]}
@@ -227,13 +262,13 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
               </View>
 
               <TouchableOpacity
-                style={styles.termsContainer}
+                style={[styles.termsContainer, { marginBottom: spacing(3) }]}
                 onPress={() => setAcceptTerms(!acceptTerms)}
               >
-                <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-                  {acceptTerms && <Text style={styles.checkmark}>✓</Text>}
+                <View style={[styles.checkbox, { width: spacing(2.5), height: spacing(2.5) }, acceptTerms && styles.checkboxChecked]}>
+                  {acceptTerms && <Text style={[styles.checkmark, { fontSize: normalizeFontSize(12) }]}>✓</Text>}
                 </View>
-                <Text style={styles.termsText}>{t.auth.acceptTerms}</Text>
+                <Text style={[styles.termsText, { fontSize: normalizeFontSize(13) }]}>{t.auth.acceptTerms}</Text>
               </TouchableOpacity>
 
               <Button
@@ -243,30 +278,34 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                 icon="arrow"
               />
 
-              <View style={styles.divider}>
+              <View style={[styles.divider, { marginVertical: spacing(3) }]}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>{t.auth.or}</Text>
+                <Text style={[styles.dividerText, { fontSize: normalizeFontSize(14), paddingHorizontal: spacing(2) }]}>
+                  {t.auth.or}
+                </Text>
                 <View style={styles.dividerLine} />
               </View>
 
-              <Text style={styles.socialTitle}>{t.auth.continueWith}</Text>
+              <Text style={[styles.socialTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
+                {t.auth.continueWith}
+              </Text>
 
-              <View style={styles.socialButtons}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}>G</Text>
+              <View style={[styles.socialButtons, { marginBottom: spacing(3) }]}>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>G</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}>f</Text>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>f</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text style={styles.socialButtonText}></Text>
+                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}></Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>{t.auth.haveAccount} </Text>
+                <Text style={[styles.footerText, { fontSize: normalizeFontSize(14) }]}>{t.auth.haveAccount} </Text>
                 <TouchableOpacity onPress={onSignIn}>
-                  <Text style={styles.footerLink}>{t.auth.signInLink}</Text>
+                  <Text style={[styles.footerLink, { fontSize: normalizeFontSize(14) }]}>{t.auth.signInLink}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -274,7 +313,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.indicator} />
+      <View style={[styles.indicator, { bottom: spacing(5), width: spacing(15), height: spacing(0.5) }]} />
     </ImageBackground>
   );
 };
@@ -282,8 +321,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    width: width,
-    height: height,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -294,60 +331,42 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 20,
   },
   title: {
-    fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 4,
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 11,
     fontWeight: '400',
     color: '#FFFFFF',
-    letterSpacing: 2,
   },
   formContainer: {
     flex: 1,
   },
   formContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 30,
-    paddingTop: 40,
   },
   cardTitle: {
-    fontSize: 24,
     fontWeight: '700',
     color: '#2D2D2D',
     textAlign: 'center',
-    marginBottom: 8,
   },
   cardSubtitle: {
-    fontSize: 14,
     fontWeight: '400',
     color: '#666',
     textAlign: 'center',
-    marginBottom: 30,
   },
   form: {
     width: '100%',
   },
   accountTypeContainer: {
-    marginBottom: 20,
   },
   accountTypeLabel: {
-    fontSize: 14,
     fontWeight: '500',
     color: '#2D2D2D',
-    marginBottom: 8,
   },
   accountTypeButtons: {
     flexDirection: 'row',
@@ -355,9 +374,7 @@ const styles = StyleSheet.create({
   },
   accountTypeButton: {
     flex: 1,
-    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
   },
@@ -365,7 +382,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2D2D2D',
   },
   accountTypeButtonText: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#666',
   },
@@ -375,11 +391,8 @@ const styles = StyleSheet.create({
   termsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
   },
   checkbox: {
-    width: 20,
-    height: 20,
     borderRadius: 4,
     borderWidth: 2,
     borderColor: '#CCC',
@@ -393,18 +406,15 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '700',
   },
   termsText: {
-    fontSize: 13,
     color: '#666',
     flex: 1,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
@@ -412,32 +422,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
   },
   dividerText: {
-    paddingHorizontal: 16,
-    fontSize: 14,
     color: '#999',
   },
   socialTitle: {
-    fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
   },
   socialButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
-    marginBottom: 24,
   },
   socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   socialButtonText: {
-    fontSize: 20,
   },
   footer: {
     flexDirection: 'row',
@@ -445,21 +446,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 14,
     color: '#666',
   },
   footerLink: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#2D2D2D',
   },
   indicator: {
     position: 'absolute',
-    bottom: 40,
     left: '50%',
     marginLeft: -60,
-    width: 120,
-    height: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
   },

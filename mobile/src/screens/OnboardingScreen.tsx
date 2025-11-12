@@ -5,14 +5,12 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Dimensions,
   ScrollView,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
-
-const { width, height } = Dimensions.get('window');
+import { useResponsive } from '../hooks/useResponsive';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -20,6 +18,7 @@ interface OnboardingScreenProps {
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { t } = useI18n();
+  const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -32,7 +31,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
     {
       title: t.onboarding.slide2Title,
       subtitle: t.onboarding.slide2Subtitle,
-      image: require('../../assets/onboarding-2.jpg'),
+      image: require('../../assets/onboarding-2.avif'),
     },
     {
       title: t.onboarding.slide3Title,
@@ -76,31 +75,57 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
           <ImageBackground
             key={index}
             source={slide.image}
-            style={styles.slide}
+            style={[styles.slide, { width, height }]}
             resizeMode="cover"
           >
             <View style={styles.overlay} />
 
-            <View style={styles.content}>
+            <View style={[styles.content, {
+              paddingTop: spacing(10),
+              paddingBottom: spacing(25),
+              paddingHorizontal: spacing(4)
+            }]}>
               <View style={styles.header}>
-                <Text style={styles.title}>KMERSERVICES</Text>
-                <Text style={styles.subtitle}>
+                <Text style={[styles.title, {
+                  fontSize: normalizeFontSize(isSmallDevice ? 28 : 32),
+                  letterSpacing: isSmallDevice ? 4 : 6
+                }]}>
+                  KMERSERVICES
+                </Text>
+                <Text style={[styles.subtitle, {
+                  fontSize: normalizeFontSize(isSmallDevice ? 10 : 12),
+                  letterSpacing: 2
+                }]}>
                   {t.onboarding.subtitle.toUpperCase()}
                 </Text>
               </View>
 
               <View style={styles.textContainer}>
-                <Text style={styles.slideTitle}>{slide.title}</Text>
-                <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
+                <Text style={[styles.slideTitle, {
+                  fontSize: normalizeFontSize(isSmallDevice ? 22 : 28),
+                  marginBottom: spacing(1)
+                }]}>
+                  {slide.title}
+                </Text>
+                <Text style={[styles.slideSubtitle, {
+                  fontSize: normalizeFontSize(isSmallDevice ? 22 : 28)
+                }]}>
+                  {slide.subtitle}
+                </Text>
               </View>
             </View>
           </ImageBackground>
         ))}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, {
+        bottom: spacing(10),
+        paddingHorizontal: spacing(4)
+      }]}>
         <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-          <Text style={styles.skipText}>{t.onboarding.skip}</Text>
+          <Text style={[styles.skipText, { fontSize: normalizeFontSize(16) }]}>
+            {t.onboarding.skip}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.pagination}>
@@ -109,14 +134,17 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               key={index}
               style={[
                 styles.dot,
-                index === currentIndex ? styles.dotActive : styles.dotInactive,
+                { height: spacing(1) },
+                index === currentIndex
+                  ? [styles.dotActive, { width: spacing(3) }]
+                  : [styles.dotInactive, { width: spacing(1) }],
               ]}
             />
           ))}
         </View>
 
         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextText}>
+          <Text style={[styles.nextText, { fontSize: normalizeFontSize(16) }]}>
             {currentIndex === slides.length - 1
               ? t.onboarding.getStarted
               : t.onboarding.next}
@@ -124,7 +152,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
         </TouchableOpacity>
       </View>
 
-      <View style={styles.indicator} />
+      <View style={[styles.indicator, {
+        bottom: spacing(5),
+        width: spacing(15),
+        height: spacing(0.5)
+      }]} />
     </View>
   );
 };
@@ -135,8 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   slide: {
-    width: width,
-    height: height,
+    flex: 1,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -145,57 +176,44 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 80,
-    paddingBottom: 200,
-    paddingHorizontal: 30,
   },
   header: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 6,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 12,
     fontWeight: '400',
     color: '#FFFFFF',
-    letterSpacing: 2,
   },
   textContainer: {
     alignItems: 'center',
   },
   slideTitle: {
-    fontSize: 28,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 8,
   },
   slideSubtitle: {
-    fontSize: 28,
     fontWeight: '300',
     color: '#FFFFFF',
     textAlign: 'center',
   },
   footer: {
     position: 'absolute',
-    bottom: 80,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 30,
   },
   skipButton: {
     padding: 10,
   },
   skipText: {
-    fontSize: 16,
     fontWeight: '500',
     color: '#FFFFFF',
   },
@@ -204,33 +222,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dot: {
-    height: 8,
     borderRadius: 4,
     marginHorizontal: 4,
   },
   dotActive: {
-    width: 24,
     backgroundColor: '#FFFFFF',
   },
   dotInactive: {
-    width: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   nextButton: {
     padding: 10,
   },
   nextText: {
-    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   indicator: {
     position: 'absolute',
-    bottom: 40,
     left: '50%',
     marginLeft: -60,
-    width: 120,
-    height: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
   },
