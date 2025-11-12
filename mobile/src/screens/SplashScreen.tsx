@@ -27,11 +27,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
 
       <View style={[styles.content, { paddingTop: spacing(10), paddingBottom: spacing(6), paddingHorizontal: spacing(4) }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { fontSize: normalizeFontSize(isSmallDevice ? 36 : 42), letterSpacing: isSmallDevice ? 6 : 8 }]}>
+          <Text style={[styles.title, { fontSize: normalizeFontSize(isSmallDevice ? 24 : 28), letterSpacing: isSmallDevice ? 3 : 4, marginBottom: spacing(0.75) }]}>
             KMERSERVICES
           </Text>
-          <Text style={[styles.subtitle, { fontSize: normalizeFontSize(isSmallDevice ? 12 : 14), letterSpacing: isSmallDevice ? 2 : 3 }]}>
-            {t.onboarding.subtitle}
+          <Text style={[styles.subtitle, { fontSize: normalizeFontSize(isSmallDevice ? 9 : 11), letterSpacing: 2 }]}>
+            {t.onboarding.subtitle.toUpperCase()}
           </Text>
         </View>
 
