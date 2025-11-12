@@ -1,153 +1,95 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, View, StatusBar } from 'react-native';
-import styled from 'styled-components/native';
+import { SafeAreaView, ScrollView, View, Text, StyleSheet, StatusBar } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
-// Design System
-import { colors, spacing } from './src/design-system';
-
-// Components
-import { PrimaryButton, SecondaryButton } from './src/components/atoms/Button';
-import { StyledText } from './src/components/atoms/Text';
-import { TextInput } from './src/components/atoms/Input';
 
 // Create a client
 const queryClient = new QueryClient();
 
-const Container = styled(SafeAreaView)`
-  flex: 1;
-  background-color: ${colors.background};
-`;
-
-const Content = styled(ScrollView)`
-  flex: 1;
-  padding: ${spacing['6']}px;
-`;
-
-const Header = styled(View)`
-  margin-bottom: ${spacing['8']}px;
-  align-items: center;
-`;
-
-const Section = styled(View)`
-  margin-bottom: ${spacing['6']}px;
-`;
-
 export default function App() {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <Container>
-          <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-          <Content>
-            <Header>
-              <StyledText variant="h1" align="center">
-                KMERSERVICES
-              </StyledText>
-              <StyledText variant="body" color={colors.textSecondary} align="center">
-                Services de Beauté à la Demande
-              </StyledText>
-            </Header>
+        <SafeAreaView style={styles.container}>
+          <StatusBar barStyle="dark-content" />
+          <ScrollView style={styles.content}>
+            <View style={styles.header}>
+              <Text style={styles.title}>KMERSERVICES</Text>
+              <Text style={styles.subtitle}>Services de Beauté à la Demande 🇨🇲</Text>
+            </View>
 
-            <Section>
-              <StyledText variant="h3" style={{ marginBottom: spacing['4'] }}>
-                Design System Demo
-              </StyledText>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Bienvenue sur KmerServices</Text>
+              <Text style={styles.bodyText}>
+                Votre plateforme de services de beauté à domicile au Cameroun
+              </Text>
+            </View>
 
-              <StyledText variant="h5" style={{ marginBottom: spacing['3'] }}>
-                Typographie
-              </StyledText>
-              <StyledText variant="h1">Heading 1</StyledText>
-              <StyledText variant="h2">Heading 2</StyledText>
-              <StyledText variant="h3">Heading 3</StyledText>
-              <StyledText variant="body">Body text regular</StyledText>
-              <StyledText variant="caption" color={colors.textSecondary}>
-                Caption text
-              </StyledText>
-            </Section>
+            <View style={styles.section}>
+              <Text style={styles.bodyText}>✅ Expo SDK 54</Text>
+              <Text style={styles.bodyText}>✅ React 19.1.0</Text>
+              <Text style={styles.bodyText}>✅ React Native 0.81.5</Text>
+              <Text style={styles.bodyText}>✅ Supabase configuré</Text>
+            </View>
 
-            <Section>
-              <StyledText variant="h5" style={{ marginBottom: spacing['3'] }}>
-                Inputs
-              </StyledText>
-              <TextInput
-                label="Email"
-                placeholder="votre@email.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                label="Mot de passe"
-                placeholder="Entrez votre mot de passe"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </Section>
-
-            <Section>
-              <StyledText variant="h5" style={{ marginBottom: spacing['3'] }}>
-                Boutons
-              </StyledText>
-              <PrimaryButton
-                title="Bouton Principal"
-                onPress={() => console.log('Primary button pressed')}
-                fullWidth
-                style={{ marginBottom: spacing['3'] }}
-              />
-              <SecondaryButton
-                title="Bouton Secondaire"
-                onPress={() => console.log('Secondary button pressed')}
-                fullWidth
-                style={{ marginBottom: spacing['3'] }}
-              />
-              <PrimaryButton
-                title="Loading..."
-                onPress={() => {}}
-                loading
-                fullWidth
-                style={{ marginBottom: spacing['3'] }}
-              />
-              <PrimaryButton
-                title="Disabled"
-                onPress={() => {}}
-                disabled
-                fullWidth
-              />
-            </Section>
-
-            <Section>
-              <StyledText variant="h5" style={{ marginBottom: spacing['3'] }}>
-                Prix (XAF)
-              </StyledText>
-              <StyledText variant="priceLarge" color={colors.coral}>
-                25 000 XAF
-              </StyledText>
-              <StyledText variant="price" color={colors.coral}>
-                5 000 XAF
-              </StyledText>
-              <StyledText variant="priceSmall" color={colors.coral}>
-                1 500 XAF
-              </StyledText>
-            </Section>
-
-            <Section style={{ marginBottom: spacing['12'] }}>
-              <StyledText variant="caption" color={colors.textSecondary} align="center">
-                KmerServices v1.0.0
-              </StyledText>
-              <StyledText variant="caption" color={colors.textSecondary} align="center">
-                Cameroun 🇨🇲 | XAF
-              </StyledText>
-            </Section>
-          </Content>
-        </Container>
+            <View style={styles.footer}>
+              <Text style={styles.caption}>KmerServices v1.0.0</Text>
+              <Text style={styles.caption}>Cameroun 🇨🇲 | XAF</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  content: {
+    flex: 1,
+    padding: 24,
+  },
+  header: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 12,
+  },
+  bodyText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  footer: {
+    marginTop: 48,
+    alignItems: 'center',
+  },
+  caption: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+});
