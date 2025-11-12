@@ -30,7 +30,7 @@
 -- 1. CRÉER LES UTILISATEURS DANS LA TABLE USERS
 -- ============================================
 
-INSERT INTO users (id, email, phone, password, "firstName", "lastName", role, language, city, region, "isVerified", "isActive", "createdAt", "updatedAt")
+INSERT INTO users (id, email, phone, password, first_name, last_name, role, language, city, region, is_verified, is_active, created_at, updated_at)
 VALUES
   -- Client 1
   ('56811604-9372-479f-a3ee-35056e5812dd', 'elyna.dessui@email.com', '+237699123456', '$2b$10$dummyHashedPassword123456789012345678901234567890', 'Elyna', 'Des Sui', 'CLIENT', 'FRENCH', 'Douala', 'Littoral', true, true, NOW(), NOW()),
@@ -52,7 +52,7 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. CRÉER LES ADRESSES
 -- ============================================
 
-INSERT INTO addresses (id, "userId", label, quarter, street, landmark, city, region, country, location, latitude, longitude, instructions, "isPrimary", "createdAt", "updatedAt")
+INSERT INTO addresses (id, user_id, label, quarter, street, landmark, city, region, country, location, latitude, longitude, instructions, is_primary, created_at, updated_at)
 VALUES
   -- Adresse 1 - Client 1 Domicile
   (gen_random_uuid(), '56811604-9372-479f-a3ee-35056e5812dd', 'Domicile', 'Akwa', 'Rue de la République', 'Près de la pharmacie du rond-point', 'Douala', 'Littoral', 'Cameroun', ST_GeomFromText('POINT(9.7679 4.0511)', 4326), 4.0511, 9.7679, 'Bâtiment bleu, 2ème étage', true, NOW(), NOW()),
@@ -67,7 +67,7 @@ VALUES
 -- 3. CRÉER LES SERVICES
 -- ============================================
 
-INSERT INTO services (id, name, description, category, images, duration, "basePrice", purpose, "idealFor", "createdAt", "updatedAt")
+INSERT INTO services (id, name, description, category, images, duration, base_price, purpose, ideal_for, created_at, updated_at)
 VALUES
   -- Service 1: Deep Tissue Massage
   ('d1e2f3a4-b5c6-4d78-9e01-234567890abc', 'Deep Tissue Massage', 'Massage profond pour soulager les tensions musculaires', 'WELLNESS_MASSAGE', ARRAY['https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800'], 60, 25000, 'Soulager les douleurs musculaires profondes', 'Personnes souffrant de tensions chroniques', NOW(), NOW()),
@@ -95,10 +95,10 @@ VALUES
 -- ============================================
 
 INSERT INTO salons (
-  id, "userId", name, description, quarter, street, landmark, city, region, country,
-  location, latitude, longitude, logo, "coverImage", "ambianceImages",
-  "establishedYear", features, "openingHours", rating, "reviewCount", "serviceCount",
-  "isActive", "isVerified", "createdAt", "updatedAt"
+  id, user_id, name, description, quarter, street, landmark, city, region, country,
+  location, latitude, longitude, logo, cover_image, ambiance_images,
+  established_year, features, opening_hours, rating, review_count, service_count,
+  is_active, is_verified, created_at, updated_at
 )
 VALUES (
   '12345678-9abc-4def-0123-456789abcdef',
@@ -135,10 +135,10 @@ VALUES (
 
 -- Therapist 1 (Sophie Ndongo) - Affiliée au salon
 INSERT INTO therapists (
-  id, "userId", bio, experience, "isLicensed", "licenseNumber",
-  "isMobile", "travelRadius", "travelFee", location, latitude, longitude,
-  city, region, "portfolioImages", "salonId", rating, "reviewCount",
-  "bookingCount", "isActive", "createdAt", "updatedAt"
+  id, user_id, bio, experience, is_licensed, license_number,
+  is_mobile, travel_radius, travel_fee, location, latitude, longitude,
+  city, region, portfolio_images, salon_id, rating, review_count,
+  booking_count, is_active, created_at, updated_at
 )
 VALUES (
   '23456789-abcd-4ef0-1234-56789abcdef0',
@@ -167,10 +167,10 @@ VALUES (
 
 -- Therapist 2 (Alice Tchoumi) - Indépendante
 INSERT INTO therapists (
-  id, "userId", bio, experience, "isLicensed", "licenseNumber",
-  "isMobile", "travelRadius", "travelFee", location, latitude, longitude,
-  city, region, "portfolioImages", rating, "reviewCount",
-  "bookingCount", "isActive", "createdAt", "updatedAt"
+  id, user_id, bio, experience, is_licensed, license_number,
+  is_mobile, travel_radius, travel_fee, location, latitude, longitude,
+  city, region, portfolio_images, rating, review_count,
+  booking_count, is_active, created_at, updated_at
 )
 VALUES (
   '3456789a-bcde-4f01-2345-6789abcdef01',
@@ -200,7 +200,7 @@ VALUES (
 -- 6. CRÉER LES FORMATIONS (EDUCATION)
 -- ============================================
 
-INSERT INTO education ("therapistId", title, institution, year, "createdAt")
+INSERT INTO education (therapist_id, title, institution, year, created_at)
 VALUES
   -- Therapist 1 Education
   ('23456789-abcd-4ef0-1234-56789abcdef0', 'Certified Massage Therapist', 'Institut de Formation en Massage Thérapeutique, Paris', 2016, NOW()),
@@ -214,7 +214,7 @@ VALUES
 -- 7. CRÉER LES RELATIONS THERAPIST-SERVICE
 -- ============================================
 
-INSERT INTO therapist_services ("therapistId", "serviceId", price, duration, "isActive")
+INSERT INTO therapist_services (therapist_id, service_id, price, duration, is_active)
 VALUES
   -- Therapist 1 (Sophie) - Massages
   ('23456789-abcd-4ef0-1234-56789abcdef0', 'd1e2f3a4-b5c6-4d78-9e01-234567890abc', 25000, 60, true),  -- Deep Tissue
@@ -229,7 +229,7 @@ VALUES
 -- 8. CRÉER LES RELATIONS SALON-SERVICE
 -- ============================================
 
-INSERT INTO salon_services ("salonId", "serviceId", price, duration, "isActive")
+INSERT INTO salon_services (salon_id, service_id, price, duration, is_active)
 VALUES
   -- Beau Monde Esthétique - Tous les services
   ('12345678-9abc-4def-0123-456789abcdef', 'a4b5c6d7-e8f9-4012-3456-7890abcdef12', 15000, 60, true),   -- Coupe cheveux
@@ -244,7 +244,7 @@ VALUES
 -- ============================================
 
 -- Therapist 1 (Sophie) - Lundi à Vendredi 9h-18h
-INSERT INTO availability ("therapistId", "dayOfWeek", "startTime", "endTime", "isActive")
+INSERT INTO availability (therapist_id, day_of_week, start_time, end_time, is_active)
 VALUES
   ('23456789-abcd-4ef0-1234-56789abcdef0', 1, '09h00', '18h00', true),  -- Lundi
   ('23456789-abcd-4ef0-1234-56789abcdef0', 2, '09h00', '18h00', true),  -- Mardi
@@ -254,7 +254,7 @@ VALUES
   ('23456789-abcd-4ef0-1234-56789abcdef0', 6, '10h00', '16h00', true);  -- Samedi
 
 -- Therapist 2 (Alice) - Mardi à Samedi 10h-19h
-INSERT INTO availability ("therapistId", "dayOfWeek", "startTime", "endTime", "isActive")
+INSERT INTO availability (therapist_id, day_of_week, start_time, end_time, is_active)
 VALUES
   ('3456789a-bcde-4f01-2345-6789abcdef01', 2, '10h00', '19h00', true),  -- Mardi
   ('3456789a-bcde-4f01-2345-6789abcdef01', 3, '10h00', '19h00', true),  -- Mercredi
@@ -268,9 +268,9 @@ VALUES
 
 -- Booking 1 - Client 1 avec Therapist 1 (à domicile)
 INSERT INTO bookings (
-  id, "userId", "therapistId", "scheduledAt", duration, "locationType",
+  id, user_id, therapist_id, scheduled_at, duration, location_type,
   quarter, street, landmark, city, region, latitude, longitude, instructions,
-  subtotal, "travelFee", tip, total, status, "createdAt", "updatedAt"
+  subtotal, travel_fee, tip, total, status, created_at, updated_at
 )
 VALUES (
   '456789ab-cdef-4012-3456-789abcdef012',
@@ -297,7 +297,7 @@ VALUES (
 );
 
 -- Booking Item 1
-INSERT INTO booking_items ("bookingId", "serviceName", price, duration, "createdAt")
+INSERT INTO booking_items (booking_id, service_name, price, duration, created_at)
 VALUES (
   '456789ab-cdef-4012-3456-789abcdef012',
   'Deep Tissue Massage',
@@ -308,8 +308,8 @@ VALUES (
 
 -- Booking 2 - Client 2 avec Salon (en salon)
 INSERT INTO bookings (
-  id, "userId", "salonId", "scheduledAt", duration, "locationType",
-  quarter, landmark, city, region, subtotal, total, status, "createdAt", "updatedAt"
+  id, user_id, salon_id, scheduled_at, duration, location_type,
+  quarter, landmark, city, region, subtotal, total, status, created_at, updated_at
 )
 VALUES (
   '56789abc-def0-4123-4567-89abcdef0123',
@@ -330,7 +330,7 @@ VALUES (
 );
 
 -- Booking Item 2
-INSERT INTO booking_items ("bookingId", "serviceName", price, duration, "createdAt")
+INSERT INTO booking_items (booking_id, service_name, price, duration, created_at)
 VALUES (
   '56789abc-def0-4123-4567-89abcdef0123',
   'Coupe de Cheveux Femme',
@@ -343,7 +343,7 @@ VALUES (
 -- 11. CRÉER DES AVIS
 -- ============================================
 
-INSERT INTO reviews ("userId", "therapistId", rating, comment, cleanliness, professionalism, value, "createdAt", "updatedAt")
+INSERT INTO reviews (user_id, therapist_id, rating, comment, cleanliness, professionalism, value, created_at, updated_at)
 VALUES
   (
     '56811604-9372-479f-a3ee-35056e5812dd',
@@ -357,7 +357,7 @@ VALUES
     NOW()
   );
 
-INSERT INTO reviews ("userId", "salonId", rating, comment, cleanliness, professionalism, value, "createdAt", "updatedAt")
+INSERT INTO reviews (user_id, salon_id, rating, comment, cleanliness, professionalism, value, created_at, updated_at)
 VALUES
   (
     'fcbfa0f5-eef4-45d7-821e-ac4117e50d0c',
@@ -375,11 +375,11 @@ VALUES
 -- 12. CRÉER DES FAVORIS
 -- ============================================
 
-INSERT INTO favorites ("userId", "therapistId", "createdAt")
+INSERT INTO favorites (user_id, therapist_id, created_at)
 VALUES
   ('56811604-9372-479f-a3ee-35056e5812dd', '23456789-abcd-4ef0-1234-56789abcdef0', NOW());
 
-INSERT INTO favorites ("userId", "salonId", "createdAt")
+INSERT INTO favorites (user_id, salon_id, created_at)
 VALUES
   ('fcbfa0f5-eef4-45d7-821e-ac4117e50d0c', '12345678-9abc-4def-0123-456789abcdef', NOW());
 
