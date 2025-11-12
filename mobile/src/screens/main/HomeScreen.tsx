@@ -10,12 +10,17 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
+import { formatCurrency, type CountryCode } from '../../utils/currency';
 
 export const HomeScreen: React.FC = () => {
   const { user } = useAuth();
   const { language, setLanguage, t } = useI18n();
-  const { normalizeFontSize, spacing } = useResponsive();
+  const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
+
+  // Country code based on selected country (from CountryPicker context or user profile)
+  // For now, defaulting to CM (Cameroun)
+  const [countryCode] = useState<CountryCode>('CM');
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -101,7 +106,10 @@ export const HomeScreen: React.FC = () => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: spacing(10) }}
+        contentContainerStyle={{
+          paddingBottom: spacing(10),
+          paddingHorizontal: containerPaddingHorizontal,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Upcoming Bookings */}
@@ -186,7 +194,9 @@ export const HomeScreen: React.FC = () => {
               <View style={styles.recommendedHeader}>
                 <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>Ombre Color Treatm...</Text>
                 <View style={styles.recommendedPrice}>
-                  <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>$1245</Text>
+                  <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
+                    {formatCurrency(45000, countryCode)}
+                  </Text>
                   <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
                 </View>
               </View>
@@ -243,7 +253,9 @@ export const HomeScreen: React.FC = () => {
                     Bridal makeover - with nail care
                   </Text>
                   <View style={styles.packageFooter}>
-                    <Text style={[styles.packagePrice, { fontSize: normalizeFontSize(16) }]}>$1850</Text>
+                    <Text style={[styles.packagePrice, { fontSize: normalizeFontSize(16) }]}>
+                      {formatCurrency(65000, countryCode)}
+                    </Text>
                     <Text style={[styles.packageDuration, { fontSize: normalizeFontSize(12) }]}>⏰ 2h</Text>
                     <Text style={[styles.packageRating, { fontSize: normalizeFontSize(12) }]}>⭐ (360)</Text>
                   </View>
@@ -264,7 +276,9 @@ export const HomeScreen: React.FC = () => {
                   <Text style={[styles.dealIconText, { fontSize: normalizeFontSize(20) }]}>%</Text>
                 </View>
                 <Text style={[styles.dealTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]}>12% off</Text>
-                <Text style={[styles.dealSubtitle, { fontSize: normalizeFontSize(10) }]}>Min. order $85 Valid</Text>
+                <Text style={[styles.dealSubtitle, { fontSize: normalizeFontSize(10) }]}>
+                  Min. order {formatCurrency(30000, countryCode, false)} Valid
+                </Text>
                 <Text style={[styles.dealSubtitle, { fontSize: normalizeFontSize(10) }]}>for all services</Text>
               </View>
             ))}
@@ -280,7 +294,9 @@ export const HomeScreen: React.FC = () => {
               <Text style={[styles.giftCardIconText, { fontSize: normalizeFontSize(24) }]}>🎁</Text>
             </View>
             <View style={[styles.giftCardPrice, { marginBottom: spacing(3) }]}>
-              <Text style={[styles.giftCardPriceText, { fontSize: normalizeFontSize(40) }]}>$90</Text>
+              <Text style={[styles.giftCardPriceText, { fontSize: normalizeFontSize(40) }]}>
+                {formatCurrency(35000, countryCode)}
+              </Text>
             </View>
             <View>
               <Text style={[styles.giftCardTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(0.5) }]}>CARD 1</Text>

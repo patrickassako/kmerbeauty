@@ -12,8 +12,12 @@ export const useResponsive = () => {
   const isLargeDevice = SCREEN_WIDTH >= 414;
   const isTablet = SCREEN_WIDTH >= 768;
 
-  // Scale factor based on width
-  const scale = SCREEN_WIDTH / BASE_WIDTH;
+  // Sur tablette, on limite la largeur du contenu pour une meilleure lisibilité
+  const maxContentWidth = isTablet ? 700 : SCREEN_WIDTH;
+  const containerPaddingHorizontal = isTablet ? (SCREEN_WIDTH - maxContentWidth) / 2 : 0;
+
+  // Scale factor based on width - limité sur tablette pour éviter des éléments trop grands
+  const scale = isTablet ? Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.5) : SCREEN_WIDTH / BASE_WIDTH;
   const verticalScale = SCREEN_HEIGHT / BASE_HEIGHT;
 
   /**
@@ -50,6 +54,8 @@ export const useResponsive = () => {
     isMediumDevice,
     isLargeDevice,
     isTablet,
+    maxContentWidth,
+    containerPaddingHorizontal,
     normalize,
     normalizeFontSize,
     spacing,
