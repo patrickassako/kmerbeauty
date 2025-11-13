@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useSalon, useSalonServices, useSalonTherapists } from '../../hooks/useSalons';
+import { useSalonReviews } from '../../hooks/useReviews';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -44,7 +45,10 @@ export const SalonDetailsScreen: React.FC = () => {
   // Charger les thérapeutes du salon
   const { therapists: salonTherapists, loading: loadingTherapists } = useSalonTherapists(salonParam.id);
 
-  const loading = loadingSalon || loadingServices || loadingTherapists;
+  // Charger les reviews du salon
+  const { reviews: salonReviews, loading: loadingReviews } = useSalonReviews(salonParam.id);
+
+  const loading = loadingSalon || loadingServices || loadingTherapists || loadingReviews;
   const salon = salonData || salonParam;
 
   const onRefresh = async () => {
@@ -62,23 +66,40 @@ export const SalonDetailsScreen: React.FC = () => {
     Linking.openURL(url);
   };
 
-  // Mock reviews data (à remplacer par de vraies reviews plus tard)
-  const reviews = [
-    {
-      id: 1,
-      author: 'Marie D.',
-      rating: 5,
-      date: '1 semaine',
-      comment: 'Excellent salon ! Personnel très professionnel et accueillant.',
-    },
-    {
-      id: 2,
-      author: 'Sophie K.',
-      rating: 5,
-      date: '2 semaines',
-      comment: 'Toujours un plaisir de venir ici. Services impeccables!',
-    },
-  ];
+  // Format reviews avec dates relatives
+  const reviews = salonReviews.map((review) => {
+    const authorName = `${review.user.first_name} ${review.user.last_name.charAt(0)}.`;
+    const reviewDate = new Date(review.created_at);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - reviewDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    let dateText = '';
+    if (diffDays === 0) {
+      dateText = language === 'fr' ? "Aujourd'hui" : 'Today';
+    } else if (diffDays === 1) {
+      dateText = language === 'fr' ? 'Hier' : 'Yesterday';
+    } else if (diffDays < 7) {
+      dateText = language === 'fr' ? `Il y a ${diffDays} jours` : `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      dateText = language === 'fr'
+        ? `Il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`
+        : `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      dateText = language === 'fr'
+        ? `Il y a ${months} mois`
+        : `${months} month${months > 1 ? 's' : ''} ago`;
+    }
+
+    return {
+      id: review.id,
+      author: authorName,
+      rating: review.rating,
+      date: dateText,
+      comment: review.comment || '',
+    };
+  });
 
   return (
     <View style={styles.container}>

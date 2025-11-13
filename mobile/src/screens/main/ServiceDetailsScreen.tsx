@@ -109,16 +109,6 @@ export const ServiceDetailsScreen: React.FC = () => {
     'Finition et conseils personnalisés',
   ];
 
-  const reviews = [
-    {
-      id: 1,
-      author: 'Sophie M.',
-      rating: 5,
-      date: '1 semaine',
-      comment: 'Service excellent ! Très professionnel et résultats incroyables.',
-    },
-  ];
-
   return (
     <View style={styles.container}>
       {/* Header Image Gallery */}
@@ -439,46 +429,6 @@ export const ServiceDetailsScreen: React.FC = () => {
                   </Text>
                 </View>
               )}
-
-              {/* Reviews Section */}
-              <TouchableOpacity
-                style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1, borderBottomWidth: 1 }]}
-                onPress={() => toggleSection('reviews')}
-              >
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
-                    Avis ({reviews.length})
-                  </Text>
-                  <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                    {expandedSection === 'reviews' ? '▲' : '▼'}
-                  </Text>
-                </View>
-
-                {expandedSection === 'reviews' && (
-                  <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                    {reviews.map((review) => (
-                      <View key={review.id} style={[styles.reviewCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
-                        <View style={[styles.reviewHeader, { marginBottom: spacing(1) }]}>
-                          <View>
-                            <Text style={[styles.reviewAuthor, { fontSize: normalizeFontSize(14) }]}>
-                              {review.author}
-                            </Text>
-                            <Text style={[styles.reviewDate, { fontSize: normalizeFontSize(12) }]}>
-                              il y a {review.date}
-                            </Text>
-                          </View>
-                          <Text style={[styles.reviewRating, { fontSize: normalizeFontSize(14) }]}>
-                            {'⭐'.repeat(review.rating)}
-                          </Text>
-                        </View>
-                        <Text style={[styles.reviewComment, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                          {review.comment}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </TouchableOpacity>
             </>
           )}
         </View>
