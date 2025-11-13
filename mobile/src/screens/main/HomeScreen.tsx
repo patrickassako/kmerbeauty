@@ -120,7 +120,7 @@ export const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
         <View>
-          <Text style={[styles.logo, { fontSize: normalizeFontSize(20) }]}>SIMONE</Text>
+          <Text style={[styles.logo, { fontSize: normalizeFontSize(20) }]}>KMR-Beauty</Text>
           <Text style={[styles.tagline, { fontSize: normalizeFontSize(10) }]}>{t.home.tagline}</Text>
         </View>
 

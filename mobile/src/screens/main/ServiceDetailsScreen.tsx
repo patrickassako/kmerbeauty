@@ -65,6 +65,10 @@ export const ServiceDetailsScreen: React.FC = () => {
     navigation.navigate('ServiceProviders', { service });
   };
 
+  const handleBookNow = () => {
+    navigation.navigate('Booking', { service });
+  };
+
   // Mock data for components/steps (peut être enrichi depuis la BDD plus tard)
   const components = service.components || [
     'Consultation et analyse des besoins',
@@ -287,14 +291,22 @@ export const ServiceDetailsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Button */}
-      <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
+      {/* Bottom Action Buttons */}
+      <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5), flexDirection: 'row', gap: spacing(2) }]}>
         <TouchableOpacity
-          style={[styles.bookButton, { paddingVertical: spacing(2), borderRadius: spacing(3) }]}
+          style={[styles.viewProvidersButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2), borderWidth: 2 }]}
           onPress={handleViewProviders}
         >
-          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(16) }]}>
-            Voir les prestataires ({totalProviders})
+          <Text style={[styles.viewProvidersButtonText, { fontSize: normalizeFontSize(14) }]}>
+            Voir ({totalProviders})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.bookButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2) }]}
+          onPress={handleBookNow}
+        >
+          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(14) }]}>
+            Réserver maintenant
           </Text>
         </TouchableOpacity>
       </View>
@@ -469,6 +481,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
     backgroundColor: '#FFFFFF',
+  },
+  viewProvidersButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2D2D2D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewProvidersButtonText: {
+    color: '#2D2D2D',
+    fontWeight: '700',
   },
   bookButton: {
     backgroundColor: '#2D2D2D',

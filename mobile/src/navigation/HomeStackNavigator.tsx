@@ -6,6 +6,7 @@ import { SalonDetailsScreen } from '../screens/main/SalonDetailsScreen';
 import { ServiceDetailsScreen } from '../screens/main/ServiceDetailsScreen';
 import { ServiceProvidersScreen } from '../screens/main/ServiceProvidersScreen';
 import { SearchResultsScreen } from '../screens/main/SearchResultsScreen';
+import { BookingScreen } from '../screens/main/BookingScreen';
 import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 
@@ -71,6 +72,12 @@ export type HomeStackParamList = {
     providerId?: string;
     providerType?: 'therapist' | 'salon';
   };
+  Booking: {
+    service: Service;
+    providerId?: string;
+    providerType?: 'therapist' | 'salon';
+    providerName?: string;
+  };
   Chat: {
     providerId: string;
     providerType: 'therapist' | 'salon';
@@ -103,6 +110,7 @@ export const HomeStackNavigator: React.FC = () => {
       <Stack.Screen name="SalonDetails" component={SalonDetailsScreen} />
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
       <Stack.Screen name="PackageDetails" component={PackageDetailsScreenPlaceholder} />
+      <Stack.Screen name="Booking" component={BookingScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="BookingManagement" component={BookingManagementScreen} />
     </Stack.Navigator>
