@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -61,10 +62,11 @@ export const ServiceProvidersScreen: React.FC = () => {
       type: 'therapist' as const,
       id: therapist.id,
       name: `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute',
+      avatar: therapist.user?.avatar || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null),
       rating: therapist.rating,
       review_count: therapist.review_count,
-      price: service.base_price, // TODO: Get actual price from therapist_services
-      duration: service.duration,
+      price: therapist.service_price || service.base_price,
+      duration: therapist.service_duration || service.duration,
       distance: 0, // TODO: Calculate distance based on user location
       city: therapist.city,
       region: therapist.region,
@@ -74,10 +76,11 @@ export const ServiceProvidersScreen: React.FC = () => {
       type: 'salon' as const,
       id: salon.id,
       name: (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut',
+      avatar: salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null),
       rating: salon.rating,
       review_count: salon.review_count,
-      price: service.base_price, // TODO: Get actual price from salon_services
-      duration: service.duration,
+      price: salon.service_price || service.base_price,
+      duration: salon.service_duration || service.duration,
       distance: 0, // TODO: Calculate distance based on user location
       city: salon.city,
       region: salon.region,
@@ -142,24 +145,46 @@ export const ServiceProvidersScreen: React.FC = () => {
       </View>
 
       {/* Service Info Card */}
-      <View style={[styles.serviceInfoCard, { marginHorizontal: spacing(2.5), marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(2) }]}>
-        {(service.description_fr || service.description_en) && (
-          <Text style={[styles.serviceDescription, { fontSize: normalizeFontSize(14), marginBottom: spacing(1.5), lineHeight: normalizeFontSize(20) }]}>
-            {language === 'fr' ? service.description_fr : service.description_en}
-          </Text>
-        )}
-        <View style={styles.serviceInfoRow}>
-          <View style={styles.serviceInfoItem}>
-            <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Durée</Text>
-            <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
-              ⏰ {service.duration ? `${service.duration}min` : 'N/A'}
-            </Text>
+      <View style={[styles.serviceInfoCard, { marginHorizontal: spacing(2.5), marginBottom: spacing(2), borderRadius: spacing(2), overflow: 'hidden' }]}>
+        {/* Service Image */}
+        {service.images && service.images.length > 0 && (
+          <View style={[styles.serviceImageContainer, { height: spacing(25) }]}>
+            <Image
+              source={{ uri: service.images[0] }}
+              style={styles.serviceImage}
+              resizeMode="cover"
+            />
           </View>
-          <View style={styles.serviceInfoItem}>
-            <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Prix à partir de</Text>
-            <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
-              {service.base_price ? formatCurrency(service.base_price, countryCode) : 'N/A'}
+        )}
+
+        <View style={{ padding: spacing(2) }}>
+          {/* Category Badge */}
+          {service.category && (
+            <View style={[styles.categoryBadge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), marginBottom: spacing(1), alignSelf: 'flex-start' }]}>
+              <Text style={[styles.categoryBadgeText, { fontSize: normalizeFontSize(11) }]}>
+                {service.category}
+              </Text>
+            </View>
+          )}
+
+          {(service.description_fr || service.description_en) && (
+            <Text style={[styles.serviceDescription, { fontSize: normalizeFontSize(14), marginBottom: spacing(1.5), lineHeight: normalizeFontSize(20) }]}>
+              {language === 'fr' ? service.description_fr : service.description_en}
             </Text>
+          )}
+          <View style={styles.serviceInfoRow}>
+            <View style={styles.serviceInfoItem}>
+              <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Durée</Text>
+              <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
+                ⏰ {service.duration ? `${service.duration}min` : 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.serviceInfoItem}>
+              <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Prix à partir de</Text>
+              <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
+                {service.base_price ? formatCurrency(service.base_price, countryCode) : 'N/A'}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -262,9 +287,17 @@ export const ServiceProvidersScreen: React.FC = () => {
             {/* Provider Header */}
             <View style={styles.providerHeader}>
               <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
-                  {provider.type === 'salon' ? '🏪' : '👤'}
-                </Text>
+                {provider.avatar ? (
+                  <Image
+                    source={{ uri: provider.avatar }}
+                    style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
+                    {provider.type === 'salon' ? '🏪' : '👤'}
+                  </Text>
+                )}
               </View>
 
               <View style={styles.providerInfo}>
@@ -369,9 +402,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   serviceInfoCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+  },
+  serviceImageContainer: {
+    width: '100%',
+    backgroundColor: '#F5F5F5',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+  },
+  categoryBadge: {
+    backgroundColor: '#E3F2FD',
+  },
+  categoryBadgeText: {
+    color: '#1976D2',
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
   serviceDescription: {
     color: '#666',
@@ -435,6 +484,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  providerAvatarImage: {
+    width: '100%',
+    height: '100%',
   },
   providerAvatarText: {},
   providerInfo: {

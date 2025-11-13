@@ -124,12 +124,17 @@ export interface Therapist {
   created_at: string;
   updated_at: string;
 
+  // Service-specific fields (when filtered by serviceId)
+  service_price?: number;
+  service_duration?: number;
+
   // Relations
   user?: User;
   services?: TherapistService[];
   packages?: TherapistPackage[];
   gallery?: ProviderGallery[];
   work_zones?: WorkZone[];
+  salon?: Salon;
 }
 
 export interface TherapistService {
@@ -184,10 +189,15 @@ export interface Salon {
   rating: number;
   review_count: number;
   service_count: number;
+  years_experience?: number;
   is_active: boolean;
   is_verified: boolean;
   created_at: string;
   updated_at: string;
+
+  // Service-specific fields (when filtered by serviceId)
+  service_price?: number;
+  service_duration?: number;
 
   // Relations
   user?: User;

@@ -47,13 +47,26 @@ export class TherapistsService {
       const therapistIds = data.map((t) => t.id);
       const { data: therapistServices } = await supabase
         .from('therapist_services')
-        .select('therapist_id')
+        .select('therapist_id, price, duration')
         .eq('service_id', serviceId)
+        .eq('is_active', true)
         .in('therapist_id', therapistIds);
 
       if (therapistServices && therapistServices.length > 0) {
-        const filteredIds = therapistServices.map((ts) => ts.therapist_id);
-        return data.filter((t) => filteredIds.includes(t.id));
+        const priceMap = new Map(
+          therapistServices.map((ts) => [
+            ts.therapist_id,
+            { price: ts.price, duration: ts.duration },
+          ]),
+        );
+
+        return data
+          .filter((t) => priceMap.has(t.id))
+          .map((t) => ({
+            ...t,
+            service_price: priceMap.get(t.id)?.price,
+            service_duration: priceMap.get(t.id)?.duration,
+          }));
       }
 
       // Return empty array if no therapists offer this service

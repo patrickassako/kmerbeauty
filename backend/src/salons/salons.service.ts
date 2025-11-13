@@ -41,13 +41,26 @@ export class SalonsService {
       const salonIds = data.map((s) => s.id);
       const { data: salonServices } = await supabase
         .from('salon_services')
-        .select('salon_id')
+        .select('salon_id, price, duration')
         .eq('service_id', serviceId)
+        .eq('is_active', true)
         .in('salon_id', salonIds);
 
       if (salonServices && salonServices.length > 0) {
-        const filteredIds = salonServices.map((ss) => ss.salon_id);
-        return data.filter((s) => filteredIds.includes(s.id));
+        const priceMap = new Map(
+          salonServices.map((ss) => [
+            ss.salon_id,
+            { price: ss.price, duration: ss.duration },
+          ]),
+        );
+
+        return data
+          .filter((s) => priceMap.has(s.id))
+          .map((s) => ({
+            ...s,
+            service_price: priceMap.get(s.id)?.price,
+            service_duration: priceMap.get(s.id)?.duration,
+          }));
       }
 
       // Return empty array if no salons offer this service
