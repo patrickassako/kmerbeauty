@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useServices } from '../../hooks/useServices';
+import { useSalons } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, ServiceWithProviders, PackageWithProviders } from '../../navigation/HomeStackNavigator';
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
@@ -29,8 +30,12 @@ export const HomeScreen: React.FC = () => {
   // Charger les services depuis l'API
   const { services, loading: servicesLoading, error: servicesError, refetch } = useServices();
 
+  // Charger les salons depuis l'API
+  const { salons, loading: salonsLoading, error: salonsError, refetch: refetchSalons } = useSalons();
+
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -38,8 +43,21 @@ export const HomeScreen: React.FC = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refetch();
+    await Promise.all([refetch(), refetchSalons()]);
     setRefreshing(false);
+  };
+
+  const handleSalonPress = (salon: any) => {
+    // Navigate to salon details (ProviderDetailsScreen avec type salon)
+    navigation.navigate('ProviderDetails', {
+      provider: {
+        type: 'salon',
+        id: salon.id,
+        name: language === 'fr' ? salon.name_fr : salon.name_en,
+        rating: salon.rating,
+        reviewCount: salon.review_count,
+      },
+    });
   };
 
   // Convertir les services API en format ServiceWithProviders pour la compatibilité
@@ -97,12 +115,48 @@ export const HomeScreen: React.FC = () => {
       </View>
 
       {/* Search Bar */}
-      <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+      <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
         <View style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}>
           <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
         </View>
         <TouchableOpacity style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
           <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Toggle Home/Institute */}
+      <View style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            viewMode === 'home' && styles.toggleButtonActive,
+            { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3) }
+          ]}
+          onPress={() => setViewMode('home')}
+        >
+          <Text style={[
+            styles.toggleText,
+            viewMode === 'home' && styles.toggleTextActive,
+            { fontSize: normalizeFontSize(14) }
+          ]}>
+            {t.home.home || 'Services'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            viewMode === 'institute' && styles.toggleButtonActive,
+            { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3), marginLeft: spacing(1) }
+          ]}
+          onPress={() => setViewMode('institute')}
+        >
+          <Text style={[
+            styles.toggleText,
+            viewMode === 'institute' && styles.toggleTextActive,
+            { fontSize: normalizeFontSize(14) }
+          ]}>
+            {t.home.institute || 'Instituts'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -163,45 +217,101 @@ export const HomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Near Me (Services) */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders}</Text>
-            <TouchableOpacity>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-            {nearbyServices.map((service) => (
-              <TouchableOpacity
-                key={service.id}
-                style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
-                onPress={() => handleServicePress(service)}
-              >
-                <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                  <View style={styles.serviceImagePlaceholder}>
-                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
-                  </View>
-                  <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                    <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
-                      {service.providers.length} prestataires
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                  {language === 'fr' ? service.name_fr : service.name_en}
-                </Text>
-                <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
-                  À partir de {formatCurrency(service.base_price, countryCode)}
-                </Text>
-                <View style={styles.serviceFooter}>
-                  <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
-                </View>
+        {/* Near Me (Services) - Mode Home */}
+        {viewMode === 'home' && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders || 'Services Proches'}</Text>
+              <TouchableOpacity>
+                <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
+              {nearbyServices.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                  onPress={() => handleServicePress(service)}
+                >
+                  <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                    <View style={styles.serviceImagePlaceholder}>
+                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
+                    </View>
+                    <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                      <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
+                        {service.providers.length} prestataires
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                    {language === 'fr' ? service.name_fr : service.name_en}
+                  </Text>
+                  <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                    À partir de {formatCurrency(service.base_price, countryCode)}
+                  </Text>
+                  <View style={styles.serviceFooter}>
+                    <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Nearby Institutes - Mode Institute */}
+        {viewMode === 'institute' && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Instituts Proches</Text>
+              <TouchableOpacity>
+                <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {salonsLoading && !refreshing ? (
+              <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#000" />
+              </View>
+            ) : salons.length === 0 ? (
+              <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
+                <Text style={{ fontSize: normalizeFontSize(14), color: '#999' }}>
+                  Aucun institut disponible
+                </Text>
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
+                {salons.slice(0, 5).map((salon) => (
+                  <TouchableOpacity
+                    key={salon.id}
+                    style={[styles.instituteCard, { width: spacing(30), borderRadius: spacing(2), padding: spacing(2) }]}
+                    onPress={() => handleSalonPress(salon)}
+                  >
+                    <View style={[styles.instituteImage, { height: spacing(15), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                      <View style={styles.instituteImagePlaceholder}>
+                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Institut</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.instituteName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                      {language === 'fr' ? salon.name_fr : salon.name_en}
+                    </Text>
+                    <Text style={[styles.instituteLocation, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5), color: '#666' }]} numberOfLines={1}>
+                      📍 {salon.city}, {salon.quarter}
+                    </Text>
+                    <View style={styles.instituteFooter}>
+                      <Text style={[styles.instituteRating, { fontSize: normalizeFontSize(12) }]}>
+                        ⭐ {salon.rating} ({salon.review_count})
+                      </Text>
+                      <Text style={[styles.instituteServices, { fontSize: normalizeFontSize(12), color: '#FF6B6B' }]}>
+                        {salon.service_count} services
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
 
         {/* Recommended Service */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
@@ -626,5 +736,62 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#999',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 24,
+    padding: 4,
+  },
+  toggleButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#2D2D2D',
+  },
+  toggleText: {
+    fontWeight: '600',
+    color: '#666',
+  },
+  toggleTextActive: {
+    color: '#FFFFFF',
+  },
+  instituteCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  instituteImage: {
+    position: 'relative',
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+  },
+  instituteImagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  instituteName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  instituteLocation: {
+    color: '#666',
+  },
+  instituteFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  instituteRating: {
+    color: '#666',
+    fontWeight: '500',
+  },
+  instituteServices: {
+    color: '#FF6B6B',
+    fontWeight: '600',
   },
 });
