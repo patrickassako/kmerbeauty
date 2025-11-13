@@ -9,6 +9,7 @@ import { TherapistsModule } from './therapists/therapists.module';
 import { SalonsModule } from './salons/salons.module';
 import { CategoriesModule } from './categories/categories.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BookingsModule } from './bookings/bookings.module';
     SalonsModule,
     CategoriesModule,
     BookingsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

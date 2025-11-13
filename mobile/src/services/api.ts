@@ -375,5 +375,86 @@ export const bookingsApi = {
   },
 };
 
+// =============================================
+// Chat API
+// =============================================
+
+export interface ChatMessage {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  content: string;
+  type: 'TEXT' | 'IMAGE' | 'FILE';
+  attachments?: string[];
+  is_read: boolean;
+  read_at?: string;
+  created_at: string;
+}
+
+export interface Chat {
+  id: string;
+  booking_id: string;
+  client_id: string;
+  provider_id: string;
+  last_message?: string;
+  last_message_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  unread_count?: number;
+}
+
+export interface SendMessageDto {
+  sender_id: string;
+  content: string;
+  type?: 'TEXT' | 'IMAGE' | 'FILE';
+  attachments?: string[];
+}
+
+export const chatApi = {
+  /**
+   * Get or create a chat for a booking
+   */
+  getOrCreateChatByBooking: async (bookingId: string): Promise<Chat> => {
+    const response = await api.get(`/chat/booking/${bookingId}`);
+    return response.data;
+  },
+
+  /**
+   * Get messages for a chat
+   */
+  getMessages: async (chatId: string, limit?: number, offset?: number): Promise<ChatMessage[]> => {
+    const params: any = {};
+    if (limit) params.limit = limit;
+    if (offset) params.offset = offset;
+    const response = await api.get(`/chat/${chatId}/messages`, { params });
+    return response.data;
+  },
+
+  /**
+   * Send a message in a chat
+   */
+  sendMessage: async (chatId: string, data: SendMessageDto): Promise<ChatMessage> => {
+    const response = await api.post(`/chat/${chatId}/messages`, data);
+    return response.data;
+  },
+
+  /**
+   * Mark a message as read
+   */
+  markAsRead: async (messageId: string): Promise<ChatMessage> => {
+    const response = await api.patch(`/chat/messages/${messageId}/read`);
+    return response.data;
+  },
+
+  /**
+   * Get all chats for a user
+   */
+  getUserChats: async (userId: string): Promise<Chat[]> => {
+    const response = await api.get(`/chat/user/${userId}`);
+    return response.data;
+  },
+};
+
 // Export de l'instance axios pour des usages personnalisés
 export default api;

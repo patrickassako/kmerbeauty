@@ -8,6 +8,7 @@ import { ServiceProvidersScreen } from '../screens/main/ServiceProvidersScreen';
 import { SearchResultsScreen } from '../screens/main/SearchResultsScreen';
 import { BookingScreen } from '../screens/main/BookingScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
+import { ChatScreen } from '../screens/main/ChatScreen';
 import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 
@@ -69,9 +70,10 @@ export type HomeStackParamList = {
     bookingId: string;
   };
   Chat: {
+    bookingId: string;
     providerId: string;
+    providerName: string;
     providerType: 'therapist' | 'salon';
-    bookingId?: string;
   };
   BookingManagement: undefined;
 };
@@ -81,7 +83,6 @@ const Stack = createNativeStackNavigator<HomeStackParamList>();
 // Placeholder screens (à créer)
 const PackageProvidersScreen = () => null;
 const PackageDetailsScreenPlaceholder = () => null;
-const ChatScreen = () => null;
 const BookingManagementScreen = () => null;
 
 export const HomeStackNavigator: React.FC = () => {

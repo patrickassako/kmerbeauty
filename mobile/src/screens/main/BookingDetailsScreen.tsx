@@ -161,13 +161,14 @@ export const BookingDetailsScreen: React.FC = () => {
   };
 
   const handleOpenChat = () => {
-    // TODO: Naviguer vers l'écran de chat
-    Alert.alert(
-      language === 'fr' ? 'Chat' : 'Chat',
-      language === 'fr'
-        ? 'Fonctionnalité de chat à venir'
-        : 'Chat feature coming soon'
-    );
+    if (!booking) return;
+
+    navigation.navigate('Chat', {
+      bookingId: booking.id,
+      providerId: booking.therapist_id || booking.salon_id || '',
+      providerName: getProviderName(),
+      providerType: getProviderType(),
+    });
   };
 
   if (loading) {
