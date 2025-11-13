@@ -256,7 +256,16 @@ export const BookingScreen: React.FC = () => {
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('BookingDetails', { bookingId: booking.id }),
+            onPress: () => {
+              // Reset navigation pour éviter de revenir au processus de commande
+              navigation.reset({
+                index: 1,
+                routes: [
+                  { name: 'Home' as never },
+                  { name: 'BookingDetails' as never, params: { bookingId: booking.id } as never },
+                ],
+              });
+            },
           },
         ]
       );

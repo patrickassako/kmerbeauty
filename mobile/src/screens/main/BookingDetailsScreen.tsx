@@ -197,7 +197,10 @@ export const BookingDetailsScreen: React.FC = () => {
       <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
         <TouchableOpacity
           style={[styles.backButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5) }]}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            // Naviguer vers la liste des réservations au lieu de goBack
+            navigation.navigate('Bookings' as never);
+          }}
         >
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
