@@ -27,7 +27,7 @@ type ProviderDetailsNavigationProp = NativeStackNavigationProp<HomeStackParamLis
 export const ProviderDetailsScreen: React.FC = () => {
   const route = useRoute<ProviderDetailsRouteProp>();
   const navigation = useNavigation<ProviderDetailsNavigationProp>();
-  const { provider } = route.params;
+  const { providerId, providerType } = route.params;
 
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const { language } = useI18n();
@@ -35,18 +35,18 @@ export const ProviderDetailsScreen: React.FC = () => {
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
 
-  const isTherapist = provider.type === 'therapist';
+  const isTherapist = providerType === 'therapist';
 
   // Charger les détails du thérapeute ou salon
-  const { therapist, loading: loadingTherapist } = useTherapist(isTherapist ? provider.id : undefined);
-  const { salon, loading: loadingSalon } = useSalon(!isTherapist ? provider.id : undefined);
+  const { therapist, loading: loadingTherapist } = useTherapist(isTherapist ? providerId : undefined);
+  const { salon, loading: loadingSalon } = useSalon(!isTherapist ? providerId : undefined);
 
   // Charger les services
   const { services: therapistServices, loading: loadingTherapistServices } = useTherapistServices(
-    isTherapist ? provider.id : undefined
+    isTherapist ? providerId : undefined
   );
   const { services: salonServices, loading: loadingSalonServices } = useSalonServices(
-    !isTherapist ? provider.id : undefined
+    !isTherapist ? providerId : undefined
   );
 
   const loading = (isTherapist ? loadingTherapist || loadingTherapistServices : loadingSalon || loadingSalonServices);
@@ -64,12 +64,12 @@ export const ProviderDetailsScreen: React.FC = () => {
   // Utiliser les données réelles du provider
   const providerData = isTherapist ? therapist : salon;
   const education = therapist?.education || [];
-  const portfolio = providerData?.portfolio_images || [];
+  const portfolio = isTherapist ? (therapist?.portfolio_images || []) : (salon?.ambiance_images || []);
 
   // Obtenir le nom du provider
   const providerName = isTherapist
-    ? `${therapist?.user?.first_name || ''} ${therapist?.user?.last_name || ''}`.trim() || provider?.name
-    : (language === 'fr' ? salon?.name_fr : salon?.name_en) || provider?.name;
+    ? `${therapist?.user?.first_name || ''} ${therapist?.user?.last_name || ''}`.trim() || 'Thérapeute'
+    : (language === 'fr' ? salon?.name_fr : salon?.name_en) || 'Institut';
 
   // Obtenir la bio/description
   const providerBio = isTherapist
@@ -198,21 +198,21 @@ export const ProviderDetailsScreen: React.FC = () => {
                   </Text>
                 )}
                 <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>
-                  ⭐ {providerData?.rating || provider?.rating || '5.0'} ({providerData?.review_count || provider?.reviewCount || '0'})
+                  ⭐ {providerData?.rating != null ? providerData.rating.toFixed(1) : '5.0'} ({providerData?.review_count || 0})
                 </Text>
               </View>
 
               {/* Licensed & Experience */}
               <View style={[styles.badgesRow, { marginBottom: spacing(2) }]}>
-                {providerData?.is_licensed && (
+                {isTherapist && therapist?.is_licensed && (
                   <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1) }]}>
                     <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
                   </View>
                 )}
-                {providerData?.years_experience && (
+                {!isTherapist && salon?.years_experience && (
                   <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
                     <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>
-                      📅 {providerData.years_experience} Years Experience
+                      📅 {salon.years_experience} Years Experience
                     </Text>
                   </View>
                 )}
@@ -353,7 +353,7 @@ export const ProviderDetailsScreen: React.FC = () => {
 
               {expandedSection === 'portfolio' && (
                 <View style={[styles.portfolioGrid, { marginTop: spacing(2), gap: spacing(1.5) }]}>
-                  {portfolio.map((imageUrl, index) => (
+                  {portfolio.map((imageUrl: string, index: number) => (
                     <View
                       key={index}
                       style={[
