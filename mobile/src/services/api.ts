@@ -564,10 +564,15 @@ export const chatApi = {
   /**
    * Get or create a direct chat (without booking)
    */
-  getOrCreateDirectChat: async (clientId: string, providerId: string): Promise<Chat> => {
+  getOrCreateDirectChat: async (
+    clientId: string,
+    providerId: string,
+    providerType: 'therapist' | 'salon',
+  ): Promise<Chat> => {
     const response = await api.post('/chat/direct', {
       clientId,
       providerId,
+      providerType,
     });
     return response.data;
   },

@@ -63,7 +63,7 @@ export const ChatScreen: React.FC = () => {
         if (!user?.id) {
           throw new Error('User not authenticated');
         }
-        chatData = await chatApi.getOrCreateDirectChat(user.id, providerId);
+        chatData = await chatApi.getOrCreateDirectChat(user.id, providerId, providerType);
       }
 
       setChat(chatData);

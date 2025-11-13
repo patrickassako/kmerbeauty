@@ -65,15 +65,49 @@ export class ChatService {
    * Get or create a direct chat (without booking)
    * Used for customer inquiries before booking
    */
-  async getOrCreateDirectChat(clientId: string, providerId: string) {
+  async getOrCreateDirectChat(
+    clientId: string,
+    providerId: string,
+    providerType: 'therapist' | 'salon',
+  ) {
     const supabase = this.supabaseService.getClient();
+
+    // Get the user_id of the provider based on type
+    let providerUserId: string;
+
+    if (providerType === 'therapist') {
+      const { data: therapist, error: therapistError } = await supabase
+        .from('therapists')
+        .select('user_id')
+        .eq('id', providerId)
+        .single();
+
+      if (therapistError || !therapist) {
+        throw new Error(`Therapist not found: ${therapistError?.message || 'Unknown error'}`);
+      }
+
+      providerUserId = therapist.user_id;
+    } else {
+      // salon
+      const { data: salon, error: salonError } = await supabase
+        .from('salons')
+        .select('user_id')
+        .eq('id', providerId)
+        .single();
+
+      if (salonError || !salon) {
+        throw new Error(`Salon not found: ${salonError?.message || 'Unknown error'}`);
+      }
+
+      providerUserId = salon.user_id;
+    }
 
     // Check if chat already exists between client and provider (without booking)
     const { data: existingChat, error: findError } = await supabase
       .from('chats')
       .select('*')
       .eq('client_id', clientId)
-      .eq('provider_id', providerId)
+      .eq('provider_id', providerUserId)
       .is('booking_id', null)
       .single();
 
@@ -87,7 +121,7 @@ export class ChatService {
       .insert([
         {
           client_id: clientId,
-          provider_id: providerId,
+          provider_id: providerUserId,
           is_active: true,
           // booking_id is null for direct chats
         },

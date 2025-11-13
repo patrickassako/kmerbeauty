@@ -26,9 +26,13 @@ export class ChatController {
    */
   @Post('direct')
   async getOrCreateDirectChat(
-    @Body() body: { clientId: string; providerId: string },
+    @Body() body: { clientId: string; providerId: string; providerType: 'therapist' | 'salon' },
   ) {
-    return this.chatService.getOrCreateDirectChat(body.clientId, body.providerId);
+    return this.chatService.getOrCreateDirectChat(
+      body.clientId,
+      body.providerId,
+      body.providerType,
+    );
   }
 
   /**
