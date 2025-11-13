@@ -18,6 +18,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useTherapist, useTherapistServices } from '../../hooks/useTherapists';
 import { useSalon, useSalonServices } from '../../hooks/useSalons';
 import { useTherapistReviews, useSalonReviews } from '../../hooks/useReviews';
+import { useTherapistFavorite, useSalonFavorite } from '../../hooks/useFavorites';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -37,9 +38,26 @@ export const ProviderDetailsScreen: React.FC = () => {
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   const isTherapist = providerType === 'therapist';
+
+  // TODO: Remplacer par le vrai userId depuis le contexte d'authentification
+  // Pour l'instant, on utilise un userId de test depuis le seed
+  const currentUserId = '56811604-9372-479f-a3ee-35056e5812dd'; // Elyna Des Sui
+
+  // Gérer les favoris
+  const {
+    isFavorite: isTherapistFavorite,
+    toggleFavorite: toggleTherapistFavorite,
+  } = useTherapistFavorite(currentUserId, isTherapist ? providerId : undefined);
+
+  const {
+    isFavorite: isSalonFavorite,
+    toggleFavorite: toggleSalonFavorite,
+  } = useSalonFavorite(currentUserId, !isTherapist ? providerId : undefined);
+
+  const isFavorite = isTherapist ? isTherapistFavorite : isSalonFavorite;
+  const toggleFavorite = isTherapist ? toggleTherapistFavorite : toggleSalonFavorite;
 
   // Charger les détails du thérapeute ou salon
   const { therapist, loading: loadingTherapist } = useTherapist(isTherapist ? providerId : undefined);
@@ -489,7 +507,7 @@ export const ProviderDetailsScreen: React.FC = () => {
       <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
         <TouchableOpacity
           style={[styles.favoriteButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(3), marginRight: spacing(1.5) }]}
-          onPress={() => setIsFavorite(!isFavorite)}
+          onPress={toggleFavorite}
         >
           <Text style={[styles.favoriteButtonIcon, { fontSize: normalizeFontSize(18) }]}>
             {isFavorite ? '❤️' : '🤍'}

@@ -17,6 +17,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useSalon, useSalonServices, useSalonTherapists } from '../../hooks/useSalons';
 import { useSalonReviews } from '../../hooks/useReviews';
+import { useSalonFavorite } from '../../hooks/useFavorites';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -35,6 +36,12 @@ export const SalonDetailsScreen: React.FC = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>('services');
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+
+  // TODO: Remplacer par le vrai userId depuis le contexte d'authentification
+  const currentUserId = '56811604-9372-479f-a3ee-35056e5812dd'; // Elyna Des Sui
+
+  // Gérer les favoris
+  const { isFavorite, toggleFavorite } = useSalonFavorite(currentUserId, salonParam.id);
 
   // Charger les détails du salon
   const { salon: salonData, loading: loadingSalon } = useSalon(salonParam.id);
@@ -388,10 +395,22 @@ export const SalonDetailsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Button */}
+      {/* Bottom Buttons */}
       <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
         <TouchableOpacity
-          style={[styles.bookButton, { paddingVertical: spacing(2), borderRadius: spacing(3) }]}
+          style={[styles.favoriteButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(3), marginRight: spacing(1.5) }]}
+          onPress={toggleFavorite}
+        >
+          <Text style={[styles.favoriteButtonIcon, { fontSize: normalizeFontSize(18) }]}>
+            {isFavorite ? '❤️' : '🤍'}
+          </Text>
+          <Text style={[styles.favoriteButtonText, { fontSize: normalizeFontSize(16) }]}>
+            {isFavorite ? 'Favori' : 'Favoris'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bookButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
           onPress={() => { /* TODO: Navigate to booking */ }}
         >
           <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(16) }]}>Réserver</Text>
@@ -590,9 +609,25 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   bottomButtons: {
+    flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
     backgroundColor: '#FFFFFF',
+  },
+  favoriteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  favoriteButtonIcon: {
+    marginRight: 8,
+  },
+  favoriteButtonText: {
+    fontWeight: '600',
+    color: '#2D2D2D',
   },
   bookButton: {
     backgroundColor: '#2D2D2D',

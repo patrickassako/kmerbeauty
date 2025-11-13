@@ -473,6 +473,82 @@ export const reviewsApi = {
 };
 
 // =============================================
+// Favorites API
+// =============================================
+
+export const favoritesApi = {
+  /**
+   * Check if a therapist is favorited
+   */
+  checkTherapistFavorite: async (userId: string, therapistId: string): Promise<boolean> => {
+    const response = await api.get(`/favorites/check/therapist/${therapistId}`, {
+      params: { userId },
+    });
+    return response.data.isFavorite;
+  },
+
+  /**
+   * Check if a salon is favorited
+   */
+  checkSalonFavorite: async (userId: string, salonId: string): Promise<boolean> => {
+    const response = await api.get(`/favorites/check/salon/${salonId}`, {
+      params: { userId },
+    });
+    return response.data.isFavorite;
+  },
+
+  /**
+   * Add therapist to favorites
+   */
+  addTherapistToFavorites: async (userId: string, therapistId: string) => {
+    const response = await api.post('/favorites/therapist', {
+      userId,
+      therapistId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Add salon to favorites
+   */
+  addSalonToFavorites: async (userId: string, salonId: string) => {
+    const response = await api.post('/favorites/salon', {
+      userId,
+      salonId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Remove therapist from favorites
+   */
+  removeTherapistFromFavorites: async (userId: string, therapistId: string) => {
+    const response = await api.delete(`/favorites/therapist/${therapistId}`, {
+      params: { userId },
+    });
+    return response.data;
+  },
+
+  /**
+   * Remove salon from favorites
+   */
+  removeSalonFromFavorites: async (userId: string, salonId: string) => {
+    const response = await api.delete(`/favorites/salon/${salonId}`, {
+      params: { userId },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get all user favorites
+   */
+  getUserFavorites: async (userId: string) => {
+    const response = await api.get(`/favorites/user/${userId}`);
+    return response.data;
+  },
+};
+
+// =============================================
 // Chat API
 // =============================================
 
