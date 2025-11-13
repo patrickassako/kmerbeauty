@@ -273,5 +273,64 @@ export const categoriesApi = {
   },
 };
 
+// =============================================
+// Bookings API
+// =============================================
+
+export interface Booking {
+  id: string;
+  user_id: string;
+  service_id: string;
+  provider_id: string;
+  provider_type: 'therapist' | 'salon';
+  scheduled_date: string;
+  scheduled_time: string;
+  price: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  service?: any;
+  provider?: any;
+}
+
+export interface CreateBookingDto {
+  user_id: string;
+  service_id: string;
+  provider_id: string;
+  provider_type: 'therapist' | 'salon';
+  scheduled_date: string;
+  scheduled_time: string;
+  price: number;
+  notes?: string;
+}
+
+export const bookingsApi = {
+  /**
+   * Créer une nouvelle réservation
+   */
+  create: async (data: CreateBookingDto): Promise<Booking> => {
+    const response = await api.post('/bookings', data);
+    return response.data;
+  },
+
+  /**
+   * Récupérer toutes les réservations d'un utilisateur
+   */
+  getAll: async (userId?: string): Promise<Booking[]> => {
+    const params = userId ? { userId } : undefined;
+    const response = await api.get('/bookings', { params });
+    return response.data;
+  },
+
+  /**
+   * Récupérer une réservation par ID
+   */
+  getById: async (id: string): Promise<Booking> => {
+    const response = await api.get(`/bookings/${id}`);
+    return response.data;
+  },
+};
+
 // Export de l'instance axios pour des usages personnalisés
 export default api;

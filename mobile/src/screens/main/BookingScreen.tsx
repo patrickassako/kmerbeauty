@@ -13,8 +13,10 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
+import { bookingsApi } from '../../services/api';
 
 type BookingRouteProp = RouteProp<HomeStackParamList, 'Booking'>;
 type BookingNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Booking'>;
@@ -26,6 +28,7 @@ export const BookingScreen: React.FC = () => {
 
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
+  const { user } = useAuth();
   const [countryCode] = useState<CountryCode>('CM');
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -65,35 +68,55 @@ export const BookingScreen: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr'
+          ? 'Vous devez être connecté pour réserver'
+          : 'You must be logged in to book'
+      );
+      return;
+    }
+
+    if (!providerId || !providerType) {
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr'
+          ? 'Prestataire non sélectionné'
+          : 'Provider not selected'
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // TODO: Implémenter l'appel API pour créer la réservation
-      // const response = await bookingsApi.create({
-      //   service_id: service.id,
-      //   provider_id: providerId,
-      //   provider_type: providerType,
-      //   scheduled_date: selectedDate,
-      //   scheduled_time: selectedTime,
-      //   notes,
-      // });
-
-      // Simuler un délai
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Créer la réservation via l'API
+      const booking = await bookingsApi.create({
+        user_id: user.id,
+        service_id: service.id,
+        provider_id: providerId,
+        provider_type: providerType,
+        scheduled_date: selectedDate.toISOString().split('T')[0],
+        scheduled_time: selectedTime,
+        price: providerPrice || service.base_price,
+        notes,
+      });
 
       Alert.alert(
-        language === 'fr' ? 'Réservation confirmée' : 'Booking confirmed',
+        language === 'fr' ? 'Réservation confirmée !' : 'Booking confirmed!',
         language === 'fr'
-          ? `Votre réservation pour ${service.name_fr || service.name_en} est confirmée pour le ${selectedDate.toLocaleDateString('fr-FR')} à ${selectedTime}.`
-          : `Your booking for ${service.name_en || service.name_fr} is confirmed for ${selectedDate.toLocaleDateString('en-US')} at ${selectedTime}.`,
+          ? `Votre réservation pour ${service.name_fr || service.name_en} est confirmée.`
+          : `Your booking for ${service.name_en || service.name_fr} is confirmed.`,
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('BookingManagement'),
+            onPress: () => navigation.navigate('BookingDetails', { bookingId: booking.id }),
           },
         ]
       );
     } catch (error) {
+      console.error('Booking error:', error);
       Alert.alert(
         language === 'fr' ? 'Erreur' : 'Error',
         language === 'fr'
