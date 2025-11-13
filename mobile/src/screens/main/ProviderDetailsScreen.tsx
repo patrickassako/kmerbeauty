@@ -9,6 +9,7 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +17,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useTherapist, useTherapistServices } from '../../hooks/useTherapists';
 import { useSalon, useSalonServices } from '../../hooks/useSalons';
+import { useTherapistReviews, useSalonReviews } from '../../hooks/useReviews';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -34,6 +36,8 @@ export const ProviderDetailsScreen: React.FC = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const isTherapist = providerType === 'therapist';
 
@@ -49,7 +53,18 @@ export const ProviderDetailsScreen: React.FC = () => {
     !isTherapist ? providerId : undefined
   );
 
-  const loading = (isTherapist ? loadingTherapist || loadingTherapistServices : loadingSalon || loadingSalonServices);
+  // Charger les reviews
+  const { reviews: therapistReviews, loading: loadingTherapistReviews } = useTherapistReviews(
+    isTherapist ? providerId : undefined
+  );
+  const { reviews: salonReviews, loading: loadingSalonReviews } = useSalonReviews(
+    !isTherapist ? providerId : undefined
+  );
+
+  const loading = (isTherapist
+    ? loadingTherapist || loadingTherapistServices || loadingTherapistReviews
+    : loadingSalon || loadingSalonServices || loadingSalonReviews
+  );
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -81,16 +96,40 @@ export const ProviderDetailsScreen: React.FC = () => {
     ? (therapist?.salon ? (language === 'fr' ? therapist.salon.name_fr : therapist.salon.name_en) : 'Independent')
     : undefined;
 
-  // Mock reviews pour l'instant (TODO: implémenter l'API des reviews)
-  const reviews = [
-    {
-      id: 1,
-      author: 'Marie D.',
-      rating: 5,
-      date: '2 weeks ago',
-      comment: 'Excellent service! Very professional and the results were amazing.',
-    },
-  ];
+  // Reviews réelles
+  const reviews = (isTherapist ? therapistReviews : salonReviews).map((review) => {
+    const authorName = `${review.user.first_name} ${review.user.last_name.charAt(0)}.`;
+    const reviewDate = new Date(review.created_at);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - reviewDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    let dateText = '';
+    if (diffDays === 0) {
+      dateText = language === 'fr' ? "Aujourd'hui" : 'Today';
+    } else if (diffDays === 1) {
+      dateText = language === 'fr' ? 'Hier' : 'Yesterday';
+    } else if (diffDays < 7) {
+      dateText = language === 'fr' ? `Il y a ${diffDays} jours` : `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      dateText = language === 'fr'
+        ? `Il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`
+        : `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      dateText = language === 'fr'
+        ? `Il y a ${months} mois`
+        : `${months} month${months > 1 ? 's' : ''} ago`;
+    }
+
+    return {
+      id: review.id,
+      author: authorName,
+      rating: review.rating,
+      date: dateText,
+      comment: review.comment || '',
+    };
+  });
 
   // Services offerts par ce prestataire avec les bonnes données
   const services = (isTherapist ? therapistServices : salonServices).map((item) => ({
@@ -104,49 +143,8 @@ export const ProviderDetailsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header Image */}
-      <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
-        {!loading && providerData && (
-          isTherapist ? (
-            // Thérapeute: profile_image ou première image du portfolio
-            (therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
-              <Image
-                source={{ uri: therapist?.profile_image || therapist.portfolio_images[0] }}
-                style={styles.headerImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.headerImagePlaceholder}>
-                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-                  Provider Image
-                </Text>
-              </View>
-            )
-          ) : (
-            // Salon: cover_image ou première image d'ambiance
-            (salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0)) ? (
-              <Image
-                source={{ uri: salon?.cover_image || salon.ambiance_images[0] }}
-                style={styles.headerImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.headerImagePlaceholder}>
-                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-                  Provider Image
-                </Text>
-              </View>
-            )
-          )
-        ) || (
-          <View style={styles.headerImagePlaceholder}>
-            <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-              Provider Image
-            </Text>
-          </View>
-        )}
-
-        {/* Back Button */}
+      {/* Back and Close Buttons - Fixed at top */}
+      <View style={styles.fixedButtonsContainer}>
         <TouchableOpacity
           style={[styles.backButton, { top: spacing(6), left: spacing(2), width: spacing(5), height: spacing(5) }]}
           onPress={() => navigation.goBack()}
@@ -154,7 +152,6 @@ export const ProviderDetailsScreen: React.FC = () => {
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
 
-        {/* Close Button */}
         <TouchableOpacity
           style={[styles.closeButton, { top: spacing(6), right: spacing(2), width: spacing(5), height: spacing(5) }]}
           onPress={() => navigation.goBack()}
@@ -163,18 +160,59 @@ export const ProviderDetailsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Content - Fully Scrollable */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={{
           paddingBottom: spacing(12),
-          paddingHorizontal: isTablet ? containerPaddingHorizontal : 0,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Header Image */}
+        <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
+          {!loading && providerData && (
+            isTherapist ? (
+              // Thérapeute: profile_image ou première image du portfolio
+              (therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
+                <Image
+                  source={{ uri: therapist?.profile_image || therapist.portfolio_images[0] }}
+                  style={styles.headerImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.headerImagePlaceholder}>
+                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                    Provider Image
+                  </Text>
+                </View>
+              )
+            ) : (
+              // Salon: cover_image ou première image d'ambiance
+              (salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0)) ? (
+                <Image
+                  source={{ uri: salon?.cover_image || salon.ambiance_images[0] }}
+                  style={styles.headerImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.headerImagePlaceholder}>
+                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                    Provider Image
+                  </Text>
+                </View>
+              )
+            )
+          ) || (
+            <View style={styles.headerImagePlaceholder}>
+              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                Provider Image
+              </Text>
+            </View>
+          )}
+        </View>
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
           {loading ? (
             <View style={[styles.loadingContainer, { paddingVertical: spacing(10) }]}>
@@ -354,7 +392,7 @@ export const ProviderDetailsScreen: React.FC = () => {
               {expandedSection === 'portfolio' && (
                 <View style={[styles.portfolioGrid, { marginTop: spacing(2), gap: spacing(1.5) }]}>
                   {portfolio.map((imageUrl: string, index: number) => (
-                    <View
+                    <TouchableOpacity
                       key={index}
                       style={[
                         styles.portfolioItem,
@@ -364,6 +402,7 @@ export const ProviderDetailsScreen: React.FC = () => {
                           borderRadius: spacing(1.5),
                         },
                       ]}
+                      onPress={() => imageUrl && setSelectedImage(imageUrl)}
                     >
                       {imageUrl ? (
                         <Image
@@ -378,7 +417,7 @@ export const ProviderDetailsScreen: React.FC = () => {
                           </Text>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -436,21 +475,60 @@ export const ProviderDetailsScreen: React.FC = () => {
       {/* Bottom Buttons */}
       <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
         <TouchableOpacity
-          style={[styles.shopButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(3), marginRight: spacing(1.5) }]}
-          onPress={() => { /* TODO: Navigate to shop */ }}
+          style={[styles.favoriteButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(3), marginRight: spacing(1.5) }]}
+          onPress={() => setIsFavorite(!isFavorite)}
         >
-          <Text style={[styles.shopButtonIcon, { fontSize: normalizeFontSize(18) }]}>🏪</Text>
-          <Text style={[styles.shopButtonText, { fontSize: normalizeFontSize(16) }]}>View Shop</Text>
+          <Text style={[styles.favoriteButtonIcon, { fontSize: normalizeFontSize(18) }]}>
+            {isFavorite ? '❤️' : '🤍'}
+          </Text>
+          <Text style={[styles.favoriteButtonText, { fontSize: normalizeFontSize(16) }]}>
+            {isFavorite ? 'Favori' : 'Ajouter aux favoris'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.servicesButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
-          onPress={() => { /* TODO: Navigate to services */ }}
+          onPress={() => {
+            // Expand services section or navigate to full services view
+            setExpandedSection('services');
+          }}
         >
           <Text style={[styles.servicesButtonIcon, { fontSize: normalizeFontSize(18) }]}>✂️</Text>
           <Text style={[styles.servicesButtonText, { fontSize: normalizeFontSize(16) }]}>Services</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Image Zoom Modal */}
+      <Modal
+        visible={selectedImage !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalBackground}
+            activeOpacity={1}
+            onPress={() => setSelectedImage(null)}
+          >
+            <View style={styles.modalContent}>
+              {selectedImage && (
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={styles.zoomedImage}
+                  resizeMode="contain"
+                />
+              )}
+              <TouchableOpacity
+                style={[styles.modalCloseButton, { top: spacing(6), right: spacing(2), width: spacing(5), height: spacing(5) }]}
+                onPress={() => setSelectedImage(null)}
+              >
+                <Text style={[styles.closeIcon, { fontSize: normalizeFontSize(24) }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -459,6 +537,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  fixedButtonsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    pointerEvents: 'box-none',
   },
   headerImageContainer: {
     position: 'relative',
@@ -616,7 +702,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F0F0',
     backgroundColor: '#FFFFFF',
   },
-  shopButton: {
+  favoriteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -624,10 +710,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  shopButtonIcon: {
+  favoriteButtonIcon: {
     marginRight: 8,
   },
-  shopButtonText: {
+  favoriteButtonText: {
     fontWeight: '600',
     color: '#2D2D2D',
   },
@@ -643,6 +729,29 @@ const styles = StyleSheet.create({
   servicesButtonText: {
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  modalBackground: {
+    flex: 1,
+  },
+  modalContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomedImage: {
+    width: SCREEN_WIDTH,
+    height: '80%',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholderText: {
     color: '#999',

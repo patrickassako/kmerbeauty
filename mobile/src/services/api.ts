@@ -415,6 +415,67 @@ export interface SendMessageDto {
   attachments?: string[];
 }
 
+// =============================================
+// Reviews API
+// =============================================
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment?: string;
+  cleanliness?: number;
+  professionalism?: number;
+  value?: number;
+  created_at: string;
+  user: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar?: string;
+  };
+}
+
+export interface CreateReviewDto {
+  user_id: string;
+  therapist_id?: string;
+  salon_id?: string;
+  rating: number;
+  comment?: string;
+  cleanliness?: number;
+  professionalism?: number;
+  value?: number;
+}
+
+export const reviewsApi = {
+  /**
+   * Get reviews for a therapist
+   */
+  getTherapistReviews: async (therapistId: string): Promise<Review[]> => {
+    const response = await api.get(`/reviews/therapist/${therapistId}`);
+    return response.data;
+  },
+
+  /**
+   * Get reviews for a salon
+   */
+  getSalonReviews: async (salonId: string): Promise<Review[]> => {
+    const response = await api.get(`/reviews/salon/${salonId}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new review
+   */
+  createReview: async (data: CreateReviewDto): Promise<Review> => {
+    const response = await api.post('/reviews', data);
+    return response.data;
+  },
+};
+
+// =============================================
+// Chat API
+// =============================================
+
 export const chatApi = {
   /**
    * Get or create a chat for a booking

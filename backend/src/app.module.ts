@@ -10,6 +10,7 @@ import { SalonsModule } from './salons/salons.module';
 import { CategoriesModule } from './categories/categories.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ChatModule } from './chat/chat.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ChatModule } from './chat/chat.module';
     CategoriesModule,
     BookingsModule,
     ChatModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
