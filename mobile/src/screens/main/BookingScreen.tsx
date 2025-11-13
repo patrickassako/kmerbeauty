@@ -261,7 +261,7 @@ export const BookingScreen: React.FC = () => {
               navigation.reset({
                 index: 1,
                 routes: [
-                  { name: 'Home' as never },
+                  { name: 'HomeMain' as never },
                   { name: 'BookingDetails' as never, params: { bookingId: booking.id } as never },
                 ],
               });
