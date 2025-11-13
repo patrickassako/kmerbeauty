@@ -237,7 +237,11 @@ export const SalonDetailsScreen: React.FC = () => {
                           style={[styles.serviceCard, { marginBottom: spacing(1.5), padding: spacing(2), borderRadius: spacing(1.5) }]}
                           onPress={() => {
                             if (salonService.service) {
-                              navigation.navigate('ServiceDetails', { service: salonService.service });
+                              navigation.navigate('ServiceDetails', {
+                                service: salonService.service,
+                                providerId: salonParam.id,
+                                providerType: 'salon',
+                              });
                             }
                           }}
                         >

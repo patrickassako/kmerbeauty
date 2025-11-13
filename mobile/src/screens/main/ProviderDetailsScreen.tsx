@@ -322,14 +322,26 @@ export const ProviderDetailsScreen: React.FC = () => {
                       Aucun service disponible
                     </Text>
                   ) : (
-                    services.map((serviceItem) => (
-                      <TouchableOpacity
-                        key={serviceItem.id}
-                        style={[styles.serviceCard, { marginBottom: spacing(2), borderRadius: spacing(1.5), overflow: 'hidden' }]}
-                        onPress={() => {
-                          // Navigate to booking with this service
-                        }}
-                      >
+                    services.map((serviceItem, index) => {
+                      // Récupérer le service complet depuis les données chargées
+                      const fullService = isTherapist
+                        ? therapistServices[index]?.service
+                        : salonServices[index]?.service;
+
+                      return (
+                        <TouchableOpacity
+                          key={serviceItem.id}
+                          style={[styles.serviceCard, { marginBottom: spacing(2), borderRadius: spacing(1.5), overflow: 'hidden' }]}
+                          onPress={() => {
+                            if (fullService) {
+                              navigation.navigate('ServiceDetails', {
+                                service: fullService,
+                                providerId: providerId,
+                                providerType: providerType,
+                              });
+                            }
+                          }}
+                        >
                         {/* Service Image */}
                         {serviceItem.images && serviceItem.images.length > 0 && serviceItem.images[0] && (
                           <View style={[styles.serviceCardImageContainer, { height: spacing(20), marginBottom: spacing(1.5) }]}>
@@ -369,7 +381,8 @@ export const ProviderDetailsScreen: React.FC = () => {
                           </View>
                         </View>
                       </TouchableOpacity>
-                    ))
+                      );
+                    })
                   )}
                 </View>
               )}
