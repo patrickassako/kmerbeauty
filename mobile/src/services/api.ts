@@ -365,6 +365,14 @@ export const bookingsApi = {
     const response = await api.get(`/bookings/${id}`);
     return response.data;
   },
+
+  /**
+   * Annuler une réservation
+   */
+  cancel: async (id: string, reason?: string): Promise<Booking> => {
+    const response = await api.patch(`/bookings/${id}/cancel`, { reason });
+    return response.data;
+  },
 };
 
 // Export de l'instance axios pour des usages personnalisés

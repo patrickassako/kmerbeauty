@@ -229,4 +229,72 @@ export class BookingsService {
       provider: providerData,
     };
   }
+
+  async cancel(id: string, reason?: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // Mettre à jour le statut de la réservation
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'CANCELLED',
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to cancel booking: ${error.message}`);
+    }
+
+    // Récupérer les booking items
+    const { data: items } = await supabase
+      .from('booking_items')
+      .select('*')
+      .eq('booking_id', data.id);
+
+    // Récupérer les infos du prestataire
+    let providerData = null;
+    if (data.therapist_id) {
+      const { data: therapist } = await supabase
+        .from('therapists')
+        .select('id, profile_image, city, region, rating')
+        .eq('id', data.therapist_id)
+        .single();
+
+      if (therapist) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('first_name, last_name, phone, email')
+          .eq('id', therapist.id)
+          .single();
+
+        providerData = { ...therapist, user };
+      }
+    } else if (data.salon_id) {
+      const { data: salon } = await supabase
+        .from('salons')
+        .select('id, name_fr, name_en, logo, cover_image, city, region, rating')
+        .eq('id', data.salon_id)
+        .single();
+
+      if (salon) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('phone, email')
+          .eq('id', salon.id)
+          .single();
+
+        providerData = { ...salon, user };
+      }
+    }
+
+    return {
+      ...data,
+      items: items || [],
+      provider: providerData,
+    };
+  }
 }

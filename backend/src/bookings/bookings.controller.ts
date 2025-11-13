@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 
 export interface BookingItemDto {
@@ -48,5 +48,13 @@ export class BookingsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.bookingsService.findOne(id);
+  }
+
+  @Patch(':id/cancel')
+  async cancel(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.bookingsService.cancel(id, body.reason);
   }
 }

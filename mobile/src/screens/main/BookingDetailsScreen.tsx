@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -103,6 +104,72 @@ export const BookingDetailsScreen: React.FC = () => {
     return booking?.therapist_id ? 'therapist' : 'salon';
   };
 
+  const handleProviderPress = () => {
+    if (!booking?.provider) return;
+
+    if (booking.therapist_id) {
+      navigation.navigate('TherapistDetails', { therapistId: booking.therapist_id });
+    } else if (booking.salon_id) {
+      navigation.navigate('SalonDetails', { salonId: booking.salon_id });
+    }
+  };
+
+  const handleCancelBooking = () => {
+    if (!booking) return;
+
+    Alert.alert(
+      language === 'fr' ? 'Annuler la réservation' : 'Cancel booking',
+      language === 'fr'
+        ? 'Êtes-vous sûr de vouloir annuler cette réservation ?'
+        : 'Are you sure you want to cancel this booking?',
+      [
+        {
+          text: language === 'fr' ? 'Non' : 'No',
+          style: 'cancel',
+        },
+        {
+          text: language === 'fr' ? 'Oui, annuler' : 'Yes, cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await bookingsApi.cancel(booking.id);
+              Alert.alert(
+                language === 'fr' ? 'Réservation annulée' : 'Booking cancelled',
+                language === 'fr'
+                  ? 'Votre réservation a été annulée avec succès.'
+                  : 'Your booking has been cancelled successfully.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.goBack(),
+                  },
+                ]
+              );
+            } catch (error) {
+              console.error('Error cancelling booking:', error);
+              Alert.alert(
+                language === 'fr' ? 'Erreur' : 'Error',
+                language === 'fr'
+                  ? 'Impossible d\'annuler la réservation.'
+                  : 'Unable to cancel the booking.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenChat = () => {
+    // TODO: Naviguer vers l'écran de chat
+    Alert.alert(
+      language === 'fr' ? 'Chat' : 'Chat',
+      language === 'fr'
+        ? 'Fonctionnalité de chat à venir'
+        : 'Chat feature coming soon'
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -196,27 +263,63 @@ export const BookingDetailsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Provider Card */}
-        <View style={[styles.infoCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
-          <Text style={[styles.label, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
+        {/* Provider Card - Clickable */}
+        <TouchableOpacity
+          style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}
+          onPress={handleProviderPress}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.label, { fontSize: normalizeFontSize(12), marginBottom: spacing(1.5) }]}>
             {language === 'fr' ? 'Prestataire' : 'Provider'}
           </Text>
-          <View style={styles.providerRow}>
-            <Text style={[styles.value, { fontSize: normalizeFontSize(16), flex: 1 }]}>
-              {getProviderName()}
-            </Text>
-            {getProviderType() === 'salon' && (
-              <View style={[styles.typeBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                <Text style={[styles.typeBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+          <View style={styles.providerContent}>
+            {/* Avatar */}
+            <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+              {booking.provider?.profile_image || booking.provider?.logo ? (
+                <Image
+                  source={{ uri: booking.provider.profile_image || booking.provider.logo }}
+                  style={styles.providerAvatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.providerAvatarPlaceholder, { width: '100%', height: '100%', borderRadius: spacing(4) }]}>
+                  <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
+                    {getProviderType() === 'salon' ? '🏢' : '👤'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Info */}
+            <View style={[styles.providerInfo, { flex: 1, marginLeft: spacing(2) }]}>
+              <View style={styles.providerHeader}>
+                <Text style={[styles.providerName, { fontSize: normalizeFontSize(16), flex: 1 }]}>
+                  {getProviderName()}
+                </Text>
+                {getProviderType() === 'salon' && (
+                  <View style={[styles.typeBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                    <Text style={[styles.typeBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
-          {booking.provider?.city && (
-            <Text style={[styles.locationText, { fontSize: normalizeFontSize(14), marginTop: spacing(0.5) }]}>
-              📍 {booking.provider.city}
+              {booking.provider?.city && (
+                <Text style={[styles.providerLocation, { fontSize: normalizeFontSize(14), marginTop: spacing(0.5) }]}>
+                  📍 {booking.provider.city}
+                </Text>
+              )}
+              {booking.provider?.rating && (
+                <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12), marginTop: spacing(0.5) }]}>
+                  ⭐ {booking.provider.rating.toFixed(1)}
+                </Text>
+              )}
+            </View>
+
+            {/* Arrow */}
+            <Text style={[styles.providerArrow, { fontSize: normalizeFontSize(20), marginLeft: spacing(1) }]}>
+              →
             </Text>
-          )}
-        </View>
+          </View>
+        </TouchableOpacity>
 
         {/* Date & Time Card */}
         <View style={[styles.infoCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
@@ -298,6 +401,41 @@ export const BookingDetailsScreen: React.FC = () => {
               {formatCurrency(booking.total || 0, countryCode)}
             </Text>
           </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={[styles.actionsContainer, { marginTop: spacing(3), marginBottom: spacing(3) }]}>
+          {/* Chat Button - Only show if booking is confirmed */}
+          {booking.status.toUpperCase() === 'CONFIRMED' && (
+            <TouchableOpacity
+              style={[styles.chatButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2), marginRight: spacing(1) }]}
+              onPress={handleOpenChat}
+            >
+              <Text style={[styles.chatButtonText, { fontSize: normalizeFontSize(16) }]}>
+                💬 {language === 'fr' ? 'Chat' : 'Chat'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Cancel Button - Only show if booking is not completed or cancelled */}
+          {booking.status.toUpperCase() !== 'COMPLETED' && booking.status.toUpperCase() !== 'CANCELLED' && (
+            <TouchableOpacity
+              style={[
+                styles.cancelButton,
+                {
+                  flex: booking.status.toUpperCase() === 'CONFIRMED' ? 1 : undefined,
+                  paddingVertical: spacing(2),
+                  borderRadius: spacing(2),
+                  marginLeft: booking.status.toUpperCase() === 'CONFIRMED' ? spacing(1) : 0
+                }
+              ]}
+              onPress={handleCancelBooking}
+            >
+              <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Annuler la réservation' : 'Cancel booking'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Booking ID */}
@@ -440,6 +578,72 @@ const styles = StyleSheet.create({
   priceValue: {
     fontWeight: '700',
     color: '#FF6B6B',
+  },
+  providerCard: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  providerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  providerAvatar: {
+    overflow: 'hidden',
+  },
+  providerAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  providerAvatarPlaceholder: {
+    backgroundColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerAvatarText: {
+    textAlign: 'center',
+  },
+  providerInfo: {},
+  providerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  providerName: {
+    fontWeight: '700',
+    color: '#2D2D2D',
+  },
+  providerLocation: {
+    color: '#666',
+  },
+  providerRating: {
+    color: '#666',
+  },
+  providerArrow: {
+    color: '#999',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatButton: {
+    backgroundColor: '#2D2D2D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  cancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#F44336',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    color: '#F44336',
+    fontWeight: '700',
   },
   bookingId: {
     color: '#999',
