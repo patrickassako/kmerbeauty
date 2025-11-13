@@ -65,6 +65,7 @@ export const HomeScreen: React.FC = () => {
     ...service,
     priority: 10,
     providers: [], // Les providers seront chargés quand on clique sur un service
+    provider_count: service.provider_count || 0,
   }));
 
   // Mock data pour les bookings et packages (à implémenter plus tard)
@@ -240,7 +241,7 @@ export const HomeScreen: React.FC = () => {
                     </View>
                     <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
                       <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
-                        {service.providers.length} prestataires
+                        {service.provider_count || 0} prestataires
                       </Text>
                     </View>
                   </View>
@@ -328,7 +329,7 @@ export const HomeScreen: React.FC = () => {
                 </View>
                 <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
                   <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>
-                    📍 {nearbyServices[0].providers.length} prestataires disponibles
+                    📍 {nearbyServices[0].provider_count || 0} prestataires disponibles
                   </Text>
                 </View>
               </View>

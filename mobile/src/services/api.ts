@@ -8,11 +8,14 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
   timeout: 10000,
 });
 
-// Intercepteur pour ajouter le token d'authentification
+// Intercepteur pour ajouter le token d'authentification et désactiver le cache
 api.interceptors.request.use(
   (config) => {
     // TODO: Ajouter le token d'authentification depuis le store
@@ -20,6 +23,20 @@ api.interceptors.request.use(
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`;
     // }
+
+    // Désactiver le cache pour toutes les requêtes
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+
+    // Ajouter un timestamp pour éviter le cache du navigateur/app
+    if (config.method === 'get') {
+      config.params = {
+        ...config.params,
+        _t: Date.now(),
+      };
+    }
+
     return config;
   },
   (error) => {
@@ -42,6 +59,7 @@ export interface Service {
   purpose_en?: string;
   ideal_for_fr?: string;
   ideal_for_en?: string;
+  provider_count?: number;
   created_at: string;
   updated_at: string;
 }

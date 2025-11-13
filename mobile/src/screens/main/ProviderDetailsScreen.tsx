@@ -207,14 +207,21 @@ export const ProviderDetailsScreen: React.FC = () => {
 
               {expandedSection === 'education' && (
                 <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                  {education.map((item, index) => (
-                    <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
-                      <Text style={[styles.bullet, { fontSize: normalizeFontSize(14) }]}>✦</Text>
-                      <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                        {item}
-                      </Text>
-                    </View>
-                  ))}
+                  {education.map((item, index) => {
+                    // item est un objet avec {id, title, institution, year}
+                    const educationText = typeof item === 'string'
+                      ? item
+                      : `${item.title}${item.institution ? ` - ${item.institution}` : ''}${item.year ? ` (${item.year})` : ''}`;
+
+                    return (
+                      <View key={item.id || index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
+                        <Text style={[styles.bullet, { fontSize: normalizeFontSize(14) }]}>✦</Text>
+                        <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                          {educationText}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </TouchableOpacity>
