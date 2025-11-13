@@ -34,6 +34,10 @@ export class SalonsService {
 
     // Filter by service if provided
     if (serviceId) {
+      if (!data || data.length === 0) {
+        return [];
+      }
+
       const salonIds = data.map((s) => s.id);
       const { data: salonServices } = await supabase
         .from('salon_services')
@@ -45,6 +49,9 @@ export class SalonsService {
         const filteredIds = salonServices.map((ss) => ss.salon_id);
         return data.filter((s) => filteredIds.includes(s.id));
       }
+
+      // Return empty array if no salons offer this service
+      return [];
     }
 
     return data;

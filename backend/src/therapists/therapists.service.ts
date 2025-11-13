@@ -40,6 +40,10 @@ export class TherapistsService {
 
     // Filter by service if provided
     if (serviceId) {
+      if (!data || data.length === 0) {
+        return [];
+      }
+
       const therapistIds = data.map((t) => t.id);
       const { data: therapistServices } = await supabase
         .from('therapist_services')
@@ -51,6 +55,9 @@ export class TherapistsService {
         const filteredIds = therapistServices.map((ts) => ts.therapist_id);
         return data.filter((t) => filteredIds.includes(t.id));
       }
+
+      // Return empty array if no therapists offer this service
+      return [];
     }
 
     return data;
