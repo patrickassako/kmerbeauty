@@ -10,14 +10,22 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-import { chatApi, type ChatMessage, type Chat } from '../../services/api';
+import { chatApi, type ChatMessage, type Chat, type ChatOffer } from '../../services/api';
+import { MessageBubble } from '../../components/chat/MessageBubble';
+import { OfferMessage } from '../../components/chat/OfferMessage';
+import { CreateOfferModal } from '../../components/chat/CreateOfferModal';
+import { supabase } from '../../lib/supabase';
 
 type ChatRouteProp = RouteProp<HomeStackParamList, 'Chat'>;
 type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Chat'>;
@@ -33,23 +41,53 @@ export const ChatScreen: React.FC = () => {
 
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [offers, setOffers] = useState<ChatOffer[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+
+  // Voice recording state
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+
+  // Offer modal state
+  const [showOfferModal, setShowOfferModal] = useState(false);
+
+  // Check if user is provider
+  const isProvider = user?.role === 'PROVIDER';
 
   const flatListRef = useRef<FlatList>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const recordingInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     initializeChat();
+
+    // Request permissions
+    requestPermissions();
 
     // Cleanup polling on unmount
     return () => {
       if (pollingInterval.current) {
         clearInterval(pollingInterval.current);
       }
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
     };
   }, []);
+
+  const requestPermissions = async () => {
+    try {
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+      await ImagePicker.requestCameraPermissionsAsync();
+      await Audio.requestPermissionsAsync();
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+    }
+  };
 
   const initializeChat = async () => {
     try {
@@ -57,10 +95,8 @@ export const ChatScreen: React.FC = () => {
       let chatData;
 
       if (bookingId) {
-        // Get or create chat for this booking
         chatData = await chatApi.getOrCreateChatByBooking(bookingId);
       } else {
-        // Get or create direct chat (without booking)
         if (!user?.id) {
           throw new Error('User not authenticated');
         }
@@ -69,12 +105,16 @@ export const ChatScreen: React.FC = () => {
 
       setChat(chatData);
 
-      // Load messages
-      await loadMessages(chatData.id);
+      // Load messages and offers
+      await Promise.all([
+        loadMessages(chatData.id),
+        loadOffers(chatData.id),
+      ]);
 
       // Setup polling for new messages (every 3 seconds)
       pollingInterval.current = setInterval(() => {
         loadMessages(chatData.id, true);
+        loadOffers(chatData.id, true);
       }, 3000);
     } catch (error) {
       console.error('Error initializing chat:', error);
@@ -103,79 +143,324 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
+  const loadOffers = async (chatId: string, silent: boolean = false) => {
+    try {
+      const chatOffers = await chatApi.getChatOffers(chatId);
+      setOffers(chatOffers);
+    } catch (error) {
+      console.error('Error loading offers:', error);
+    }
+  };
+
+  // Upload file to Supabase Storage
+  const uploadFile = async (uri: string, bucket: string, fileName: string): Promise<string | null> => {
+    try {
+      // Read file as base64
+      const fileData = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Get file extension
+      const ext = uri.split('.').pop() || 'jpg';
+      const contentType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+                         ext === 'png' ? 'image/png' :
+                         ext === 'm4a' || ext === 'mp3' ? 'audio/mpeg' : 'application/octet-stream';
+
+      // Convert base64 to blob
+      const blob = await (await fetch(`data:${contentType};base64,${fileData}`)).blob();
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, blob, {
+          contentType,
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return null;
+    }
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim() || !user?.id || !chat?.id) return;
 
     try {
       setSending(true);
 
-      // Send message via API
       const message = await chatApi.sendMessage(chat.id, {
         sender_id: user.id,
         content: newMessage.trim(),
         type: 'TEXT',
+        reply_to_message_id: replyingTo?.id,
       });
 
-      // Add message to local state
       setMessages(prev => [...prev, message]);
       setNewMessage('');
+      setReplyingTo(null);
 
-      // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
       console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message');
     } finally {
       setSending(false);
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0] && chat?.id && user?.id) {
+        setSending(true);
+
+        // Upload image to Supabase Storage
+        const fileName = `chat-images/${chat.id}/${Date.now()}.jpg`;
+        const imageUrl = await uploadFile(result.assets[0].uri, 'chat-attachments', fileName);
+
+        if (imageUrl) {
+          // Send image message
+          const message = await chatApi.sendMessage(chat.id, {
+            sender_id: user.id,
+            content: newMessage.trim() || language === 'fr' ? 'Image' : 'Image',
+            type: 'IMAGE',
+            attachments: [imageUrl],
+            reply_to_message_id: replyingTo?.id,
+          });
+
+          setMessages(prev => [...prev, message]);
+          setNewMessage('');
+          setReplyingTo(null);
+
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        } else {
+          Alert.alert('Error', 'Failed to upload image');
+        }
+
+        setSending(false);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      setSending(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      setRecording(newRecording);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Update duration every second
+      recordingInterval.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      Alert.alert('Error', 'Failed to start recording');
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording || !chat?.id || !user?.id) return;
+
+    try {
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+
+      if (uri) {
+        setSending(true);
+
+        // Upload audio to Supabase Storage
+        const fileName = `chat-audio/${chat.id}/${Date.now()}.m4a`;
+        const audioUrl = await uploadFile(uri, 'chat-attachments', fileName);
+
+        if (audioUrl) {
+          // Send voice message
+          const message = await chatApi.sendMessage(chat.id, {
+            sender_id: user.id,
+            content: language === 'fr' ? 'Message vocal' : 'Voice message',
+            type: 'VOICE',
+            attachments: [audioUrl],
+            duration_seconds: recordingDuration,
+            reply_to_message_id: replyingTo?.id,
+          });
+
+          setMessages(prev => [...prev, message]);
+          setReplyingTo(null);
+
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        } else {
+          Alert.alert('Error', 'Failed to upload voice message');
+        }
+
+        setSending(false);
+      }
+
+      setRecording(null);
+      setRecordingDuration(0);
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      setRecording(null);
+      setRecordingDuration(0);
+      setSending(false);
+    }
+  };
+
+  const cancelRecording = async () => {
+    if (recording) {
+      await recording.stopAndUnloadAsync();
+      setRecording(null);
+      setIsRecording(false);
+      setRecordingDuration(0);
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+    }
+  };
+
+  const handleCreateOffer = async (offerData: {
+    service_name: string;
+    description: string;
+    price: number;
+    duration: number;
+  }) => {
+    if (!chat?.id || !user?.id) return;
+
+    try {
+      setSending(true);
+
+      const result = await chatApi.createOffer({
+        chat_id: chat.id,
+        sender_id: user.id,
+        ...offerData,
+      });
+
+      // Add message to local state
+      setMessages(prev => [...prev, result.message]);
+      setOffers(prev => [result.offer, ...prev]);
+
+      setShowOfferModal(false);
+
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.error('Error creating offer:', error);
+      Alert.alert('Error', 'Failed to create offer');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleAcceptOffer = async (offerId: string) => {
+    try {
+      await chatApi.respondToOffer(offerId, 'ACCEPTED');
+
+      // Reload offers
+      if (chat?.id) {
+        await loadOffers(chat.id);
+      }
+
+      Alert.alert(
+        language === 'fr' ? 'Offre Acceptée' : 'Offer Accepted',
+        language === 'fr'
+          ? 'Vous avez accepté cette offre. Le prestataire sera notifié.'
+          : 'You have accepted this offer. The provider will be notified.'
+      );
+    } catch (error) {
+      console.error('Error accepting offer:', error);
+      Alert.alert('Error', 'Failed to accept offer');
+    }
+  };
+
+  const handleDeclineOffer = async (offerId: string) => {
+    try {
+      await chatApi.respondToOffer(offerId, 'DECLINED');
+
+      // Reload offers
+      if (chat?.id) {
+        await loadOffers(chat.id);
+      }
+
+      Alert.alert(
+        language === 'fr' ? 'Offre Refusée' : 'Offer Declined',
+        language === 'fr'
+          ? 'Vous avez refusé cette offre.'
+          : 'You have declined this offer.'
+      );
+    } catch (error) {
+      console.error('Error declining offer:', error);
+      Alert.alert('Error', 'Failed to decline offer');
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMyMessage = item.sender_id === user?.id;
+    const offer = offers.find(o => o.message_id === item.id);
+
+    // Render offer message separately
+    if (item.type === 'SERVICE_SUGGESTION') {
+      return (
+        <OfferMessage
+          message={item}
+          offer={offer}
+          isMyMessage={isMyMessage}
+          onAccept={handleAcceptOffer}
+          onDecline={handleDeclineOffer}
+        />
+      );
+    }
 
     return (
-      <View
-        style={[
-          styles.messageContainer,
-          isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer,
-        ]}
-      >
-        <View
-          style={[
-            styles.messageBubble,
-            {
-              maxWidth: '80%',
-              padding: spacing(1.5),
-              borderRadius: spacing(2),
-            },
-            isMyMessage ? styles.myMessage : styles.otherMessage,
-          ]}
-        >
-          <Text style={[
-            styles.messageText,
-            { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) },
-            isMyMessage ? styles.myMessageText : styles.otherMessageText,
-          ]}>
-            {item.content}
-          </Text>
-          <Text style={[
-            styles.messageTime,
-            { fontSize: normalizeFontSize(11), marginTop: spacing(0.5) },
-            isMyMessage ? styles.myMessageTime : styles.otherMessageTime,
-          ]}>
-            {formatTime(item.created_at)}
-          </Text>
-        </View>
-      </View>
+      <MessageBubble
+        message={item}
+        isMyMessage={isMyMessage}
+        onReply={(msg) => setReplyingTo(msg)}
+      />
     );
   };
 
@@ -194,7 +479,6 @@ export const ChatScreen: React.FC = () => {
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
 
-        {/* Provider Image */}
         {providerImage ? (
           <Image
             source={{ uri: providerImage }}
@@ -218,7 +502,15 @@ export const ChatScreen: React.FC = () => {
           </Text>
         </View>
 
-        <View style={{ width: spacing(5) }} />
+        {/* Offer button (for providers only) */}
+        {isProvider && (
+          <TouchableOpacity
+            style={[styles.offerButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5) }]}
+            onPress={() => setShowOfferModal(true)}
+          >
+            <Text style={[styles.offerButtonIcon, { fontSize: normalizeFontSize(20) }]}>💼</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Messages List */}
@@ -249,8 +541,52 @@ export const ChatScreen: React.FC = () => {
         />
       )}
 
+      {/* Reply indicator */}
+      {replyingTo && (
+        <View style={[styles.replyingToContainer, { padding: spacing(1.5), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.replyingToLabel, { fontSize: normalizeFontSize(11) }]}>
+              {language === 'fr' ? 'Réponse à:' : 'Replying to:'}
+            </Text>
+            <Text style={[styles.replyingToText, { fontSize: normalizeFontSize(13) }]} numberOfLines={1}>
+              {replyingTo.content}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setReplyingTo(null)}>
+            <Text style={[styles.cancelReplyIcon, { fontSize: normalizeFontSize(20) }]}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Recording indicator */}
+      {isRecording && (
+        <View style={[styles.recordingIndicator, { padding: spacing(2), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+          <View style={[styles.recordingDot, { width: spacing(1.5), height: spacing(1.5), borderRadius: spacing(0.75) }]} />
+          <Text style={[styles.recordingText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1.5) }]}>
+            {language === 'fr' ? 'Enregistrement...' : 'Recording...'} {formatDuration(recordingDuration)}
+          </Text>
+          <TouchableOpacity
+            style={[styles.cancelRecordingButton, { marginLeft: 'auto', paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(1.5) }]}
+            onPress={cancelRecording}
+          >
+            <Text style={[styles.cancelRecordingText, { fontSize: normalizeFontSize(12) }]}>
+              {language === 'fr' ? 'Annuler' : 'Cancel'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Input Area */}
       <View style={[styles.inputContainer, { padding: spacing(2), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+        {/* Attachment buttons */}
+        <TouchableOpacity
+          style={[styles.attachButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5), marginRight: spacing(1) }]}
+          onPress={handlePickImage}
+          disabled={sending || isRecording}
+        >
+          <Text style={[styles.attachIcon, { fontSize: normalizeFontSize(20) }]}>📷</Text>
+        </TouchableOpacity>
+
         <TextInput
           style={[
             styles.input,
@@ -259,7 +595,7 @@ export const ChatScreen: React.FC = () => {
               padding: spacing(1.5),
               borderRadius: spacing(3),
               fontSize: normalizeFontSize(14),
-              marginRight: spacing(1.5),
+              marginRight: spacing(1),
             },
           ]}
           placeholder={language === 'fr' ? 'Tapez votre message...' : 'Type your message...'}
@@ -268,27 +604,58 @@ export const ChatScreen: React.FC = () => {
           onChangeText={setNewMessage}
           multiline
           maxLength={500}
+          editable={!isRecording}
         />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            {
-              width: spacing(6),
-              height: spacing(6),
-              borderRadius: spacing(3),
-            },
-            !newMessage.trim() && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSend}
-          disabled={!newMessage.trim() || sending}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={[styles.sendIcon, { fontSize: normalizeFontSize(20) }]}>➤</Text>
-          )}
-        </TouchableOpacity>
+
+        {/* Voice or Send button */}
+        {newMessage.trim() ? (
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              {
+                width: spacing(6),
+                height: spacing(6),
+                borderRadius: spacing(3),
+              },
+              !newMessage.trim() && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!newMessage.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={[styles.sendIcon, { fontSize: normalizeFontSize(20) }]}>➤</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.voiceButton,
+              {
+                width: spacing(6),
+                height: spacing(6),
+                borderRadius: spacing(3),
+              },
+              isRecording && styles.voiceButtonRecording,
+            ]}
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+            disabled={sending}
+          >
+            <Text style={[styles.voiceIcon, { fontSize: normalizeFontSize(20) }]}>
+              {isRecording ? '⏹' : '🎤'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Create Offer Modal */}
+      <CreateOfferModal
+        visible={showOfferModal}
+        onClose={() => setShowOfferModal(false)}
+        onSubmit={handleCreateOffer}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -313,6 +680,13 @@ const styles = StyleSheet.create({
   backIcon: {
     color: '#2D2D2D',
   },
+  providerImage: {},
+  providerImagePlaceholder: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerImagePlaceholderText: {},
   headerCenter: {
     alignItems: 'center',
   },
@@ -324,6 +698,14 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     color: '#4CAF50',
   },
+  offerButton: {
+    backgroundColor: '#FF9800',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offerButtonIcon: {
+    color: '#FFFFFF',
+  },
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -332,45 +714,52 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
   },
-  messageContainer: {
-    marginBottom: 12,
-  },
-  myMessageContainer: {
-    alignItems: 'flex-end',
-  },
-  otherMessageContainer: {
-    alignItems: 'flex-start',
-  },
-  messageBubble: {},
-  myMessage: {
-    backgroundColor: '#2D2D2D',
-  },
-  otherMessage: {
+  replyingToContainer: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  messageText: {},
-  myMessageText: {
-    color: '#FFFFFF',
+  replyingToLabel: {
+    color: '#666',
+    marginBottom: 2,
   },
-  otherMessageText: {
+  replyingToText: {
     color: '#2D2D2D',
   },
-  messageTime: {
-    textAlign: 'right',
+  cancelReplyIcon: {
+    color: '#666',
+    paddingHorizontal: 8,
   },
-  myMessageTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
+  recordingIndicator: {
+    backgroundColor: '#FFF3E0',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  otherMessageTime: {
-    color: '#999',
+  recordingDot: {
+    backgroundColor: '#F44336',
+  },
+  recordingText: {
+    color: '#E65100',
+    flex: 1,
+  },
+  cancelRecordingButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  cancelRecordingText: {
+    color: '#666',
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     backgroundColor: '#FFFFFF',
   },
+  attachButton: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachIcon: {},
   input: {
     backgroundColor: '#F5F5F5',
     borderWidth: 1,
@@ -389,15 +778,15 @@ const styles = StyleSheet.create({
   sendIcon: {
     color: '#FFFFFF',
   },
-  providerImage: {
-    // Styles applied inline, base definition for consistency
-  },
-  providerImagePlaceholder: {
-    backgroundColor: '#F5F5F5',
+  voiceButton: {
+    backgroundColor: '#4CAF50',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  providerImagePlaceholderText: {
-    // Emoji styling
+  voiceButtonRecording: {
+    backgroundColor: '#F44336',
+  },
+  voiceIcon: {
+    color: '#FFFFFF',
   },
 });
