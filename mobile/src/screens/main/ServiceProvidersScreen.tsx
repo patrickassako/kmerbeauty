@@ -133,7 +133,7 @@ export const ServiceProvidersScreen: React.FC = () => {
 
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { fontSize: normalizeFontSize(18) }]} numberOfLines={1}>
-            {language === 'fr' ? service.name_fr : service.name_en}
+            {(language === 'fr' ? service.name_fr : service.name_en) || 'Service'}
           </Text>
           <Text style={[styles.headerSubtitle, { fontSize: normalizeFontSize(12) }]}>
             {loading
@@ -148,18 +148,22 @@ export const ServiceProvidersScreen: React.FC = () => {
 
       {/* Service Info Card */}
       <View style={[styles.serviceInfoCard, { marginHorizontal: spacing(2.5), marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(2) }]}>
-        <Text style={[styles.serviceDescription, { fontSize: normalizeFontSize(14), marginBottom: spacing(1.5), lineHeight: normalizeFontSize(20) }]}>
-          {language === 'fr' ? service.description_fr : service.description_en}
-        </Text>
+        {(service.description_fr || service.description_en) && (
+          <Text style={[styles.serviceDescription, { fontSize: normalizeFontSize(14), marginBottom: spacing(1.5), lineHeight: normalizeFontSize(20) }]}>
+            {language === 'fr' ? service.description_fr : service.description_en}
+          </Text>
+        )}
         <View style={styles.serviceInfoRow}>
           <View style={styles.serviceInfoItem}>
             <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Durée</Text>
-            <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>⏰ {service.duration}min</Text>
+            <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
+              ⏰ {service.duration ? `${service.duration}min` : 'N/A'}
+            </Text>
           </View>
           <View style={styles.serviceInfoItem}>
             <Text style={[styles.serviceInfoLabel, { fontSize: normalizeFontSize(12) }]}>Prix à partir de</Text>
             <Text style={[styles.serviceInfoValue, { fontSize: normalizeFontSize(14) }]}>
-              {formatCurrency(service.base_price, countryCode)}
+              {service.base_price ? formatCurrency(service.base_price, countryCode) : 'N/A'}
             </Text>
           </View>
         </View>
