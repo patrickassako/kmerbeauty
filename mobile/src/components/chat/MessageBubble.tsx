@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   Image,
   Dimensions,
   Modal,
+  Animated,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import type { ChatMessage } from '../../services/api';
@@ -34,6 +36,41 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const swipeableRef = useRef<Swipeable>(null);
+
+  // Render reply action when swiping
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    const trans = dragX.interpolate({
+      inputRange: [0, 50, 100],
+      outputRange: [0, 0, 0],
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.swipeAction,
+          {
+            transform: [{ translateX: trans }],
+            width: spacing(10),
+          },
+        ]}
+      >
+        <Text style={[styles.swipeActionText, { fontSize: normalizeFontSize(20) }]}>
+          ↩️
+        </Text>
+      </Animated.View>
+    );
+  };
+
+  const handleSwipeableOpen = () => {
+    if (onReply) {
+      onReply(message);
+      swipeableRef.current?.close();
+    }
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -55,6 +92,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       if (sound) {
         await sound.unloadAsync();
       }
+
+      // Set audio mode to speakerphone for better volume
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+      });
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri },
@@ -234,95 +278,88 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer,
         ]}
       >
-        <TouchableOpacity
-          onLongPress={() => onLongPress?.(message)}
-          activeOpacity={0.7}
+        <Swipeable
+          ref={swipeableRef}
+          renderRightActions={onReply ? renderRightActions : undefined}
+          onSwipeableOpen={handleSwipeableOpen}
+          overshootRight={false}
+          rightThreshold={40}
         >
-          <View
-            style={[
-              styles.messageBubble,
-              {
-                maxWidth: message.type === 'IMAGE' ? undefined : '80%',
-                padding: spacing(1.5),
-                borderRadius: spacing(2),
-              },
-              isMyMessage ? styles.myMessage : styles.otherMessage,
-            ]}
+          <TouchableOpacity
+            onLongPress={() => onLongPress?.(message)}
+            activeOpacity={0.7}
           >
-            {/* Reply indicator */}
-            {message.reply_to_message_id && (
-              <View
-                style={[
-                  styles.replyIndicator,
-                  {
-                    padding: spacing(1),
-                    marginBottom: spacing(1),
-                    borderRadius: spacing(1),
-                    borderLeftWidth: 3,
-                  },
-                  isMyMessage
-                    ? styles.myReplyIndicator
-                    : styles.otherReplyIndicator,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.replyText,
-                    { fontSize: normalizeFontSize(12) },
-                    isMyMessage ? styles.myMessageText : styles.otherMessageText,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {language === 'fr' ? '↩ Réponse à...' : '↩ Reply to...'}
-                </Text>
-              </View>
-            )}
-
-            {renderContent()}
-
             <View
               style={[
-                styles.messageFooter,
-                { marginTop: spacing(0.5), flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+                styles.messageBubble,
+                {
+                  maxWidth: message.type === 'IMAGE' ? undefined : '80%',
+                  padding: spacing(1.5),
+                  borderRadius: spacing(2),
+                },
+                isMyMessage ? styles.myMessage : styles.otherMessage,
               ]}
             >
-              <Text
-                style={[
-                  styles.messageTime,
-                  { fontSize: normalizeFontSize(11) },
-                  isMyMessage ? styles.myMessageTime : styles.otherMessageTime,
-                ]}
-              >
-                {formatTime(message.created_at)}
-              </Text>
-              {isMyMessage && (
-                <Text
+              {/* Reply indicator */}
+              {message.reply_to_message_id && (
+                <View
                   style={[
-                    styles.readStatus,
-                    { fontSize: normalizeFontSize(11), marginLeft: spacing(0.5) },
+                    styles.replyIndicator,
+                    {
+                      padding: spacing(1),
+                      marginBottom: spacing(1),
+                      borderRadius: spacing(1),
+                      borderLeftWidth: 3,
+                    },
+                    isMyMessage
+                      ? styles.myReplyIndicator
+                      : styles.otherReplyIndicator,
                   ]}
                 >
-                  {message.is_read ? '✓✓' : '✓'}
-                </Text>
+                  <Text
+                    style={[
+                      styles.replyText,
+                      { fontSize: normalizeFontSize(12) },
+                      isMyMessage ? styles.myMessageText : styles.otherMessageText,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {language === 'fr' ? '↩ Réponse à...' : '↩ Reply to...'}
+                  </Text>
+                </View>
               )}
-            </View>
-          </View>
-        </TouchableOpacity>
 
-        {/* Reply button */}
-        {onReply && (
-          <TouchableOpacity
-            onPress={() => onReply(message)}
-            style={[
-              styles.replyButton,
-              { marginTop: spacing(0.5), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5) },
-            ]}
-          >
-            <Text style={[styles.replyButtonText, { fontSize: normalizeFontSize(11) }]}>
-              {language === 'fr' ? 'Répondre' : 'Reply'}
-            </Text>
+              {renderContent()}
+
+              <View
+                style={[
+                  styles.messageFooter,
+                  { marginTop: spacing(0.5), flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.messageTime,
+                    { fontSize: normalizeFontSize(11) },
+                    isMyMessage ? styles.myMessageTime : styles.otherMessageTime,
+                  ]}
+                >
+                  {formatTime(message.created_at)}
+                </Text>
+                {isMyMessage && (
+                  <Text
+                    style={[
+                      styles.readStatus,
+                      { fontSize: normalizeFontSize(11), marginLeft: spacing(0.5) },
+                    ]}
+                  >
+                    {message.is_read ? '✓✓' : '✓'}
+                  </Text>
+                )}
+              </View>
+            </View>
           </TouchableOpacity>
-        )}
+        </Swipeable>
       </View>
 
       {/* Image Modal */}
@@ -482,6 +519,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeButtonText: {
+    color: '#FFFFFF',
+  },
+  swipeAction: {
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: 20,
+    borderRadius: 12,
+    marginVertical: 4,
+  },
+  swipeActionText: {
     color: '#FFFFFF',
   },
 });
