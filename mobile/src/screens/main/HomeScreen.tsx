@@ -17,7 +17,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useServices } from '../../hooks/useServices';
 import { useSalons } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
-import { HomeStackParamList, ServiceWithProviders, PackageWithProviders } from '../../navigation/HomeStackNavigator';
+import { HomeStackParamList, PackageWithProviders } from '../../navigation/HomeStackNavigator';
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 
@@ -63,13 +63,8 @@ export const HomeScreen: React.FC = () => {
     });
   };
 
-  // Convertir les services API en format ServiceWithProviders pour la compatibilité
-  const nearbyServices: ServiceWithProviders[] = services.slice(0, 5).map(service => ({
-    ...service,
-    priority: 10,
-    providers: [], // Les providers seront chargés quand on clique sur un service
-    provider_count: service.provider_count || 0,
-  }));
+  // Services à proximité (top 5)
+  const nearbyServices = services.slice(0, 5);
 
   // Grouper les services par catégorie
   const servicesByCategory = services.reduce((acc, service) => {
@@ -77,14 +72,9 @@ export const HomeScreen: React.FC = () => {
     if (!acc[category]) {
       acc[category] = [];
     }
-    acc[category].push({
-      ...service,
-      priority: 10,
-      providers: [],
-      provider_count: service.provider_count || 0,
-    });
+    acc[category].push(service);
     return acc;
-  }, {} as Record<string, ServiceWithProviders[]>);
+  }, {} as Record<string, Service[]>);
 
   // Noms des catégories en français
   const categoryNames: Record<string, { fr: string; en: string }> = {
@@ -103,7 +93,7 @@ export const HomeScreen: React.FC = () => {
   const servicePackages: PackageWithProviders[] = [];
   const giftCards: GiftCard[] = [];
 
-  const handleServicePress = (service: ServiceWithProviders) => {
+  const handleServicePress = (service: Service) => {
     navigation.navigate('ServiceProviders', { service });
   };
 

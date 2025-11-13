@@ -11,21 +11,6 @@ import type { Service, ServicePackage, Therapist, Salon } from '../types/databas
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 
 // Type simplifié pour la navigation (avec les données essentielles)
-export type ServiceWithProviders = Service & {
-  providers: Array<{
-    type: 'therapist' | 'salon';
-    id: string;
-    name: string;
-    rating: number;
-    review_count: number;
-    price: number;
-    duration: number;
-    distance?: number;
-    city: string;
-    region: string;
-  }>;
-};
-
 export type PackageWithProviders = ServicePackage & {
   services: Service[];
   providers: Array<{
@@ -48,7 +33,7 @@ export type HomeStackParamList = {
     filters: SearchFilters;
   };
   ServiceProviders: {
-    service: ServiceWithProviders;
+    service: Service; // Changé de ServiceWithProviders à Service car l'écran charge les prestataires lui-même
     sortBy?: 'distance' | 'price';
   };
   PackageProviders: {
