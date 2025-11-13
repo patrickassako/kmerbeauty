@@ -3,13 +3,15 @@ import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   /**
    * Récupère les avis pour un thérapeute
    */
   async getTherapistReviews(therapistId: string) {
-    const { data, error } = await this.supabase.client
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
       .from('reviews')
       .select(`
         id,
@@ -40,7 +42,9 @@ export class ReviewsService {
    * Récupère les avis pour un salon
    */
   async getSalonReviews(salonId: string) {
-    const { data, error } = await this.supabase.client
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
       .from('reviews')
       .select(`
         id,
@@ -80,6 +84,8 @@ export class ReviewsService {
     professionalism?: number;
     value?: number;
   }) {
+    const supabase = this.supabaseService.getClient();
+
     // Vérifier qu'on a soit therapist_id soit salon_id
     if (!createReviewDto.therapist_id && !createReviewDto.salon_id) {
       throw new Error('Either therapist_id or salon_id must be provided');
@@ -89,7 +95,7 @@ export class ReviewsService {
       throw new Error('Cannot provide both therapist_id and salon_id');
     }
 
-    const { data, error } = await this.supabase.client
+    const { data, error } = await supabase
       .from('reviews')
       .insert(createReviewDto)
       .select()
@@ -113,8 +119,10 @@ export class ReviewsService {
    * Mettre à jour les stats de rating d'un thérapeute
    */
   private async updateTherapistStats(therapistId: string) {
+    const supabase = this.supabaseService.getClient();
+
     // Récupérer tous les avis
-    const { data: reviews } = await this.supabase.client
+    const { data: reviews } = await supabase
       .from('reviews')
       .select('rating')
       .eq('therapist_id', therapistId);
@@ -125,7 +133,7 @@ export class ReviewsService {
     const reviewCount = reviews.length;
 
     // Mettre à jour le thérapeute
-    await this.supabase.client
+    await supabase
       .from('therapists')
       .update({
         rating: avgRating,
@@ -138,8 +146,10 @@ export class ReviewsService {
    * Mettre à jour les stats de rating d'un salon
    */
   private async updateSalonStats(salonId: string) {
+    const supabase = this.supabaseService.getClient();
+
     // Récupérer tous les avis
-    const { data: reviews } = await this.supabase.client
+    const { data: reviews } = await supabase
       .from('reviews')
       .select('rating')
       .eq('salon_id', salonId);
@@ -150,7 +160,7 @@ export class ReviewsService {
     const reviewCount = reviews.length;
 
     // Mettre à jour le salon
-    await this.supabase.client
+    await supabase
       .from('salons')
       .update({
         rating: avgRating,
