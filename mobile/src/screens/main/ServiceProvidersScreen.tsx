@@ -103,13 +103,8 @@ export const ServiceProvidersScreen: React.FC = () => {
 
   const handleProviderPress = (provider: typeof providers[0]) => {
     navigation.navigate('ProviderDetails', {
-      provider: {
-        type: provider.type,
-        id: provider.id,
-        name: provider.name,
-        rating: provider.rating,
-        reviewCount: provider.review_count,
-      },
+      providerId: provider.id,
+      providerType: provider.type,
     });
   };
 
@@ -286,12 +281,12 @@ export const ServiceProvidersScreen: React.FC = () => {
 
                 <View style={styles.providerMeta}>
                   <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12) }]}>
-                    ⭐ {provider.rating ? provider.rating.toFixed(1) : '5.0'}
+                    ⭐ {provider.rating != null ? provider.rating.toFixed(1) : '5.0'}
                   </Text>
                   <Text style={[styles.providerReviews, { fontSize: normalizeFontSize(12) }]}>
-                    ({provider.review_count || 0} avis)
+                    ({provider.review_count != null ? provider.review_count : 0} avis)
                   </Text>
-                  {provider.distance && provider.distance > 0 && (
+                  {provider.distance != null && provider.distance > 0 && (
                     <>
                       <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
                       <Text style={[styles.providerDistance, { fontSize: normalizeFontSize(12) }]}>
