@@ -164,6 +164,15 @@ export const ChatScreen: React.FC = () => {
   // Upload file to Supabase Storage
   const uploadFile = async (uri: string, bucket: string, fileName: string): Promise<string | null> => {
     try {
+      // Vérifier l'authentification
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth session exists:', !!session);
+
+      if (!session) {
+        console.error('No authenticated session found');
+        return null;
+      }
+
       // Read file as base64
       const fileData = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,

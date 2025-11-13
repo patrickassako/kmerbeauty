@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { SignUpData } from '../screens/SignUpScreen';
 import { SignInData } from '../screens/SignInScreen';
 
@@ -38,7 +39,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuthStatus = async () => {
     try {
       const accessToken = await SecureStore.getItemAsync('accessToken');
-      if (accessToken) {
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+
+      if (accessToken && refreshToken) {
+        // Restaurer la session Supabase
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (sessionError) {
+          console.error('Failed to restore Supabase session:', sessionError);
+        } else {
+          console.log('✅ Supabase session restored successfully');
+        }
+
         // Try to get current user from backend
         const response = await api.get('/auth/me');
         setUser(response.data);
@@ -71,6 +86,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('accessToken', accessToken);
       await SecureStore.setItemAsync('refreshToken', refreshToken);
       await SecureStore.setItemAsync('user', JSON.stringify(userData));
+
+      // Initialiser la session Supabase
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        console.error('Failed to set Supabase session:', sessionError);
+      } else {
+        console.log('✅ Supabase session initialized after signup');
+      }
 
       setUser(userData);
     } catch (error: any) {
@@ -116,6 +143,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('refreshToken', refreshToken);
       await SecureStore.setItemAsync('user', JSON.stringify(userData));
 
+      // Initialiser la session Supabase
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        console.error('Failed to set Supabase session:', sessionError);
+      } else {
+        console.log('✅ Supabase session initialized after signin');
+      }
+
       setUser(userData);
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -151,6 +190,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (refreshToken) {
         await api.post('/auth/signout', { refreshToken });
       }
+
+      // Sign out from Supabase
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Sign out error:', error);
     } finally {
