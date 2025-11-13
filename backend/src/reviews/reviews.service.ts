@@ -105,67 +105,9 @@ export class ReviewsService {
       throw new Error(`Failed to create review: ${error.message}`);
     }
 
-    // Mettre à jour les stats du provider
-    if (createReviewDto.therapist_id) {
-      await this.updateTherapistStats(createReviewDto.therapist_id);
-    } else if (createReviewDto.salon_id) {
-      await this.updateSalonStats(createReviewDto.salon_id);
-    }
+    // Note: Les stats (rating, review_count) sont mises à jour automatiquement
+    // par les triggers PostgreSQL (voir migration 003_add_reviews_triggers.sql)
 
     return data;
-  }
-
-  /**
-   * Mettre à jour les stats de rating d'un thérapeute
-   */
-  private async updateTherapistStats(therapistId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    // Récupérer tous les avis
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('rating')
-      .eq('therapist_id', therapistId);
-
-    if (!reviews || reviews.length === 0) return;
-
-    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-    const reviewCount = reviews.length;
-
-    // Mettre à jour le thérapeute
-    await supabase
-      .from('therapists')
-      .update({
-        rating: avgRating,
-        review_count: reviewCount,
-      })
-      .eq('id', therapistId);
-  }
-
-  /**
-   * Mettre à jour les stats de rating d'un salon
-   */
-  private async updateSalonStats(salonId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    // Récupérer tous les avis
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('rating')
-      .eq('salon_id', salonId);
-
-    if (!reviews || reviews.length === 0) return;
-
-    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-    const reviewCount = reviews.length;
-
-    // Mettre à jour le salon
-    await supabase
-      .from('salons')
-      .update({
-        rating: avgRating,
-        review_count: reviewCount,
-      })
-      .eq('id', salonId);
   }
 }
