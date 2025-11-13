@@ -94,22 +94,57 @@ export const ProviderDetailsScreen: React.FC = () => {
 
   // Services offerts par ce prestataire avec les bonnes données
   const services = (isTherapist ? therapistServices : salonServices).map((item) => ({
-    id: item.service_id,
-    name: language === 'fr' ? item.service.name_fr : item.service.name_en,
-    description: language === 'fr' ? item.service.description_fr : item.service.description_en,
-    duration: item.service.duration,
-    price: item.price || item.service.base_price,
+    id: item.service_id || item.service?.id || '',
+    name: language === 'fr' ? item.service?.name_fr : item.service?.name_en,
+    description: language === 'fr' ? item.service?.description_fr : item.service?.description_en,
+    duration: item.service?.duration || item.duration,
+    price: item.price || item.service?.base_price || 0,
+    images: item.service?.images || [],
   }));
 
   return (
     <View style={styles.container}>
       {/* Header Image */}
       <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
-        <View style={styles.headerImagePlaceholder}>
-          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-            Provider Image
-          </Text>
-        </View>
+        {!loading && providerData && (
+          isTherapist ? (
+            // Thérapeute: avatar de l'utilisateur ou première image du portfolio
+            (therapist?.user?.avatar || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
+              <Image
+                source={{ uri: therapist?.user?.avatar || therapist.portfolio_images[0] }}
+                style={styles.headerImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.headerImagePlaceholder}>
+                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                  Provider Image
+                </Text>
+              </View>
+            )
+          ) : (
+            // Salon: cover_image ou première image d'ambiance
+            (salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0)) ? (
+              <Image
+                source={{ uri: salon?.cover_image || salon.ambiance_images[0] }}
+                style={styles.headerImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.headerImagePlaceholder}>
+                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                  Provider Image
+                </Text>
+              </View>
+            )
+          )
+        ) || (
+          <View style={styles.headerImagePlaceholder}>
+            <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+              Provider Image
+            </Text>
+          </View>
+        )}
 
         {/* Back Button */}
         <TouchableOpacity
@@ -252,35 +287,48 @@ export const ProviderDetailsScreen: React.FC = () => {
                     services.map((serviceItem) => (
                       <TouchableOpacity
                         key={serviceItem.id}
-                        style={[styles.serviceCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}
+                        style={[styles.serviceCard, { marginBottom: spacing(2), borderRadius: spacing(1.5), overflow: 'hidden' }]}
                         onPress={() => {
                           // Navigate to booking with this service
                         }}
                       >
-                        <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
-                          <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
-                            {serviceItem.name}
-                          </Text>
-                          <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
-                            {formatCurrency(serviceItem.price, countryCode)}
-                          </Text>
-                        </View>
-                        {serviceItem.description && (
-                          <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
-                            {serviceItem.description}
-                          </Text>
+                        {/* Service Image */}
+                        {serviceItem.images && serviceItem.images.length > 0 && serviceItem.images[0] && (
+                          <View style={[styles.serviceCardImageContainer, { height: spacing(20), marginBottom: spacing(1.5) }]}>
+                            <Image
+                              source={{ uri: serviceItem.images[0] }}
+                              style={styles.serviceCardImage}
+                              resizeMode="cover"
+                            />
+                          </View>
                         )}
-                        <View style={styles.serviceCardFooter}>
-                          <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
-                            ⏰ {serviceItem.duration} min
-                          </Text>
-                          <TouchableOpacity
-                            style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
-                          >
-                            <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
-                              Réserver
+
+                        <View style={{ padding: spacing(2) }}>
+                          <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
+                            <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
+                              {serviceItem.name}
                             </Text>
-                          </TouchableOpacity>
+                            <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
+                              {formatCurrency(serviceItem.price, countryCode)}
+                            </Text>
+                          </View>
+                          {serviceItem.description && (
+                            <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
+                              {serviceItem.description}
+                            </Text>
+                          )}
+                          <View style={styles.serviceCardFooter}>
+                            <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
+                              ⏰ {serviceItem.duration} min
+                            </Text>
+                            <TouchableOpacity
+                              style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
+                            >
+                              <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
+                                Réserver
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </TouchableOpacity>
                     ))
@@ -415,6 +463,10 @@ const styles = StyleSheet.create({
   headerImageContainer: {
     position: 'relative',
     backgroundColor: '#F5F5F5',
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
   },
   headerImagePlaceholder: {
     flex: 1,
@@ -599,6 +651,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderWidth: 1,
     borderColor: '#E8E8E8',
+  },
+  serviceCardImageContainer: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+  serviceCardImage: {
+    width: '100%',
+    height: '100%',
   },
   serviceCardHeader: {
     flexDirection: 'row',

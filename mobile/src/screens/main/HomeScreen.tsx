@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -236,9 +237,17 @@ export const HomeScreen: React.FC = () => {
                   onPress={() => handleServicePress(service)}
                 >
                   <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                    <View style={styles.serviceImagePlaceholder}>
-                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
-                    </View>
+                    {service.images && service.images.length > 0 && service.images[0] ? (
+                      <Image
+                        source={{ uri: service.images[0] }}
+                        style={styles.serviceImageActual}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.serviceImagePlaceholder}>
+                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
+                      </View>
+                    )}
                     <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
                       <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
                         {service.provider_count || 0} prestataires
@@ -289,9 +298,17 @@ export const HomeScreen: React.FC = () => {
                     onPress={() => handleSalonPress(salon)}
                   >
                     <View style={[styles.instituteImage, { height: spacing(15), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                      <View style={styles.instituteImagePlaceholder}>
-                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Institut</Text>
-                      </View>
+                      {salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0) ? (
+                        <Image
+                          source={{ uri: salon.cover_image || salon.ambiance_images[0] }}
+                          style={styles.instituteImageActual}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.instituteImagePlaceholder}>
+                          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Institut</Text>
+                        </View>
+                      )}
                     </View>
                     <Text style={[styles.instituteName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
                       {language === 'fr' ? salon.name_fr : salon.name_en}
@@ -324,9 +341,17 @@ export const HomeScreen: React.FC = () => {
               onPress={() => handleServicePress(nearbyServices[0])}
             >
               <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
-                <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
-                  <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
-                </View>
+                {nearbyServices[0].images && nearbyServices[0].images.length > 0 && nearbyServices[0].images[0] ? (
+                  <Image
+                    source={{ uri: nearbyServices[0].images[0] }}
+                    style={styles.recommendedImageActual}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
+                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
+                  </View>
+                )}
                 <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
                   <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>
                     📍 {nearbyServices[0].provider_count || 0} prestataires disponibles
@@ -585,6 +610,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     overflow: 'hidden',
   },
+  serviceImageActual: {
+    width: '100%',
+    height: '100%',
+  },
   serviceImagePlaceholder: {
     flex: 1,
     alignItems: 'center',
@@ -621,6 +650,11 @@ const styles = StyleSheet.create({
   },
   recommendedImage: {
     position: 'relative',
+    overflow: 'hidden',
+  },
+  recommendedImageActual: {
+    width: '100%',
+    height: '100%',
   },
   recommendedImagePlaceholder: {
     backgroundColor: '#F5F5F5',
@@ -767,6 +801,10 @@ const styles = StyleSheet.create({
     position: 'relative',
     backgroundColor: '#F5F5F5',
     overflow: 'hidden',
+  },
+  instituteImageActual: {
+    width: '100%',
+    height: '100%',
   },
   instituteImagePlaceholder: {
     flex: 1,

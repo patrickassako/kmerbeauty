@@ -143,14 +143,20 @@ export interface Salon {
 }
 
 export interface TherapistService {
+  service_id: string;
+  therapist_id: string;
   price: number;
   duration: number;
+  is_active: boolean;
   service: Service;
 }
 
 export interface SalonService {
+  service_id: string;
+  salon_id: string;
   price: number;
   duration: number;
+  is_active: boolean;
   service: Service;
 }
 
