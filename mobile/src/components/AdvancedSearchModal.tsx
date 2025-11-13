@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { useI18n } from '../i18n/I18nContext';
+import { useCategories } from '../hooks/useCategories';
 
 export interface SearchFilters {
   searchText?: string;
@@ -36,6 +38,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 }) => {
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
+  const { categories: dbCategories, loading: categoriesLoading } = useCategories();
 
   const [searchText, setSearchText] = useState(initialFilters?.searchText || '');
   const [category, setCategory] = useState(initialFilters?.category || '');
@@ -52,16 +55,17 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
   const cities = ['Douala', 'Yaoundé', 'Bafoussam', 'Garoua', 'Bamenda'];
   const quarters = ['Akwa', 'Bonanjo', 'Bali', 'Bonapriso', 'Deido', 'Logpom', 'New Bell'];
 
-  const categories: Array<{ value: string; label: { fr: string; en: string }; icon: string }> = [
-    { value: 'WELLNESS_MASSAGE', label: { fr: 'Massage & Bien-être', en: 'Massage & Wellness' }, icon: '💆' },
-    { value: 'FACIAL_CARE', label: { fr: 'Soins du visage', en: 'Facial Care' }, icon: '🧖' },
-    { value: 'HAIR_CARE', label: { fr: 'Coiffure', en: 'Hair Care' }, icon: '💇' },
-    { value: 'NAIL_CARE', label: { fr: 'Soins des ongles', en: 'Nail Care' }, icon: '💅' },
-    { value: 'BODY_CARE', label: { fr: 'Soins du corps', en: 'Body Care' }, icon: '🧴' },
-    { value: 'MAKEUP', label: { fr: 'Maquillage', en: 'Makeup' }, icon: '💄' },
-    { value: 'AESTHETIC', label: { fr: 'Esthétique', en: 'Aesthetic' }, icon: '✨' },
-    { value: 'OTHER', label: { fr: 'Autres', en: 'Other' }, icon: '🌟' },
-  ];
+  // Icônes pour les catégories
+  const categoryIcons: Record<string, string> = {
+    'WELLNESS_MASSAGE': '💆',
+    'FACIAL_CARE': '🧖',
+    'HAIR_CARE': '💇',
+    'NAIL_CARE': '💅',
+    'BODY_CARE': '🧴',
+    'MAKEUP': '💄',
+    'AESTHETIC': '✨',
+    'OTHER': '🌟',
+  };
 
   const providerTypes: Array<{ value: 'all' | 'therapist' | 'salon'; label: string }> = [
     { value: 'all', label: language === 'fr' ? 'Tous' : 'All' },
@@ -141,29 +145,33 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
               <Text style={[styles.filterLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
                 {language === 'fr' ? 'Catégorie' : 'Category'}
               </Text>
-              <View style={styles.chipContainer}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.value}
-                    style={[
-                      styles.chip,
-                      category === cat.value && styles.chipSelected,
-                      { paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(2.5), marginRight: spacing(1), marginBottom: spacing(1) },
-                    ]}
-                    onPress={() => setCategory(category === cat.value ? '' : cat.value)}
-                  >
-                    <Text
+              {categoriesLoading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <View style={styles.chipContainer}>
+                  {dbCategories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.category}
                       style={[
-                        styles.chipText,
-                        category === cat.value && styles.chipTextSelected,
-                        { fontSize: normalizeFontSize(12) },
+                        styles.chip,
+                        category === cat.category && styles.chipSelected,
+                        { paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(2.5), marginRight: spacing(1), marginBottom: spacing(1) },
                       ]}
+                      onPress={() => setCategory(category === cat.category ? '' : cat.category)}
                     >
-                      {cat.icon} {cat.label[language]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          category === cat.category && styles.chipTextSelected,
+                          { fontSize: normalizeFontSize(12) },
+                        ]}
+                      >
+                        {categoryIcons[cat.category] || '🌟'} {language === 'fr' ? cat.name_fr : cat.name_en}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Ville */}
@@ -331,7 +339,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    maxHeight: '90%',
+    height: '85%',
   },
   modalHeader: {
     flexDirection: 'row',

@@ -251,5 +251,27 @@ export const salonsApi = {
   },
 };
 
+// =============================================
+// Categories API
+// =============================================
+
+export interface CategoryTranslation {
+  category: string;
+  name_fr: string;
+  name_en: string;
+  description_fr?: string;
+  description_en?: string;
+}
+
+export const categoriesApi = {
+  /**
+   * Récupérer toutes les catégories avec leurs traductions
+   */
+  getAll: async (): Promise<CategoryTranslation[]> => {
+    const response = await api.get('/categories');
+    return response.data;
+  },
+};
+
 // Export de l'instance axios pour des usages personnalisés
 export default api;

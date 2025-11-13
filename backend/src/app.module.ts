@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ServicesModule } from './services/services.module';
 import { TherapistsModule } from './therapists/therapists.module';
 import { SalonsModule } from './salons/salons.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SalonsModule } from './salons/salons.module';
     ServicesModule,
     TherapistsModule,
     SalonsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
