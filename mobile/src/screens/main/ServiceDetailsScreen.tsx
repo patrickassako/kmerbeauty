@@ -57,8 +57,8 @@ export const ServiceDetailsScreen: React.FC = () => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const handleProviderPress = (provider: any) => {
-    navigation.navigate('ProviderDetails', { provider });
+  const handleProviderPress = (providerId: string, providerType: 'therapist' | 'salon') => {
+    navigation.navigate('ProviderDetails', { providerId, providerType });
   };
 
   const handleViewProviders = () => {
@@ -177,23 +177,138 @@ export const ServiceDetailsScreen: React.FC = () => {
                 </Text>
               )}
 
-              {/* Provider Count Info */}
-              <TouchableOpacity
-                style={[styles.providerSection, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}
-                onPress={handleViewProviders}
-              >
-                <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
-                  DISPONIBLE CHEZ
-                </Text>
-                <View style={styles.providerInfo}>
-                  <Text style={[styles.providerName, { fontSize: normalizeFontSize(16) }]}>
-                    {totalProviders} prestataire{totalProviders > 1 ? 's' : ''}
-                  </Text>
-                  <Text style={[styles.viewButton, { fontSize: normalizeFontSize(14) }]}>
-                    Voir →
-                  </Text>
+              {/* Providers List Section */}
+              {totalProviders > 0 && (
+                <View style={[{ marginBottom: spacing(3) }]}>
+                  <View style={[styles.sectionHeaderRow, { marginBottom: spacing(2) }]}>
+                    <View>
+                      <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12) }]}>
+                        DISPONIBLE CHEZ
+                      </Text>
+                      <Text style={[styles.providerCount, { fontSize: normalizeFontSize(16), marginTop: spacing(0.5) }]}>
+                        {totalProviders} prestataire{totalProviders > 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    {totalProviders > 3 && (
+                      <TouchableOpacity onPress={handleViewProviders}>
+                        <Text style={[styles.viewAllButton, { fontSize: normalizeFontSize(14) }]}>
+                          Voir tous →
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* Therapists */}
+                  {therapists.slice(0, 3).map((therapist) => {
+                    const therapistName = `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute';
+                    const avatar = therapist.profile_image || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null);
+
+                    return (
+                      <TouchableOpacity
+                        key={therapist.id}
+                        style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(2) }]}
+                        onPress={() => handleProviderPress(therapist.id, 'therapist')}
+                      >
+                        <View style={styles.providerCardContent}>
+                          <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+                            {avatar ? (
+                              <Image
+                                source={{ uri: avatar }}
+                                style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>👤</Text>
+                            )}
+                          </View>
+                          <View style={styles.providerCardInfo}>
+                            <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                              {therapistName}
+                            </Text>
+                            <View style={styles.providerCardMeta}>
+                              <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
+                                ⭐ {therapist.rating != null ? therapist.rating.toFixed(1) : '5.0'}
+                              </Text>
+                              <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
+                              <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
+                                {therapist.city || 'Ville inconnue'}
+                              </Text>
+                            </View>
+                            {therapist.service_price && (
+                              <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
+                                {formatCurrency(therapist.service_price, countryCode)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  {/* Salons */}
+                  {salons.slice(0, 3 - therapists.slice(0, 3).length).map((salon) => {
+                    const salonName = (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut';
+                    const avatar = salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null);
+
+                    return (
+                      <TouchableOpacity
+                        key={salon.id}
+                        style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(2) }]}
+                        onPress={() => handleProviderPress(salon.id, 'salon')}
+                      >
+                        <View style={styles.providerCardContent}>
+                          <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+                            {avatar ? (
+                              <Image
+                                source={{ uri: avatar }}
+                                style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>🏪</Text>
+                            )}
+                          </View>
+                          <View style={styles.providerCardInfo}>
+                            <View style={styles.providerCardNameRow}>
+                              <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                                {salonName}
+                              </Text>
+                              <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                                <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                              </View>
+                            </View>
+                            <View style={styles.providerCardMeta}>
+                              <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
+                                ⭐ {salon.rating != null ? salon.rating.toFixed(1) : '5.0'}
+                              </Text>
+                              <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
+                              <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
+                                {salon.city || 'Ville inconnue'}
+                              </Text>
+                            </View>
+                            {salon.service_price && (
+                              <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
+                                {formatCurrency(salon.service_price, countryCode)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  {totalProviders > 3 && (
+                    <TouchableOpacity
+                      style={[styles.viewAllProvidersButton, { padding: spacing(2), borderRadius: spacing(2), borderWidth: 1 }]}
+                      onPress={handleViewProviders}
+                    >
+                      <Text style={[styles.viewAllProvidersText, { fontSize: normalizeFontSize(14) }]}>
+                        Voir tous les {totalProviders} prestataires →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              </TouchableOpacity>
+              )}
 
               {/* Purpose Section */}
               {(service.purpose_fr || service.purpose_en) && (
@@ -291,25 +406,19 @@ export const ServiceDetailsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Buttons */}
-      <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5), flexDirection: 'row', gap: spacing(2) }]}>
-        <TouchableOpacity
-          style={[styles.viewProvidersButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2), borderWidth: 2 }]}
-          onPress={handleViewProviders}
-        >
-          <Text style={[styles.viewProvidersButtonText, { fontSize: normalizeFontSize(14) }]}>
-            Voir ({totalProviders})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.bookButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2) }]}
-          onPress={handleBookNow}
-        >
-          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(14) }]}>
-            Réserver maintenant
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Bottom Action Button */}
+      {!loading && totalProviders > 0 && (
+        <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
+          <TouchableOpacity
+            style={[styles.bookButton, { paddingVertical: spacing(2), borderRadius: spacing(2) }]}
+            onPress={handleBookNow}
+          >
+            <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(14) }]}>
+              Réserver maintenant
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -396,27 +505,95 @@ const styles = StyleSheet.create({
   description: {
     color: '#666',
   },
-  providerSection: {
-    backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   providerLabel: {
     color: '#999',
     textTransform: 'uppercase',
     fontWeight: '600',
   },
-  providerInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  providerName: {
-    fontWeight: '600',
+  providerCount: {
+    fontWeight: '700',
     color: '#2D2D2D',
   },
-  viewButton: {
+  viewAllButton: {
     color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  providerCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  providerCardContent: {
+    flexDirection: 'row',
+  },
+  providerAvatar: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  providerAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  providerAvatarText: {
+    color: '#666',
+  },
+  providerCardInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  providerCardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  providerCardName: {
+    fontWeight: '700',
+    color: '#2D2D2D',
+  },
+  providerCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  providerCardRating: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+    marginRight: 4,
+  },
+  metaSeparator: {
+    color: '#CCC',
+    marginRight: 4,
+  },
+  providerCardLocation: {
+    color: '#666',
+  },
+  providerCardPrice: {
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  salonBadge: {
+    backgroundColor: '#E3F2FD',
+  },
+  salonBadgeText: {
+    color: '#1976D2',
+    fontWeight: '600',
+  },
+  viewAllProvidersButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2D2D2D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewAllProvidersText: {
+    color: '#2D2D2D',
     fontWeight: '600',
   },
   section: {
@@ -481,16 +658,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
     backgroundColor: '#FFFFFF',
-  },
-  viewProvidersButton: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#2D2D2D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewProvidersButtonText: {
-    color: '#2D2D2D',
-    fontWeight: '700',
   },
   bookButton: {
     backgroundColor: '#2D2D2D',
