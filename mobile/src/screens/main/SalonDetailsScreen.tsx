@@ -413,10 +413,13 @@ export const SalonDetailsScreen: React.FC = () => {
           style={[styles.messageButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
           onPress={() => {
             // Navigate to Chat screen
+            const providerImage = salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : undefined);
+
             navigation.navigate('Chat', {
               providerId: salonParam.id,
               providerName: language === 'fr' ? salon.name_fr : salon.name_en,
               providerType: 'salon',
+              providerImage: providerImage,
             });
           }}
         >

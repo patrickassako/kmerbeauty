@@ -521,6 +521,10 @@ export const ProviderDetailsScreen: React.FC = () => {
           style={[styles.messageButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
           onPress={() => {
             // Navigate to Chat screen
+            const providerImage = isTherapist
+              ? therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : undefined)
+              : salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : undefined);
+
             navigation.navigate('Chat', {
               providerId: providerId,
               providerName: providerData
@@ -529,6 +533,7 @@ export const ProviderDetailsScreen: React.FC = () => {
                   : (language === 'fr' ? salon?.name_fr : salon?.name_en) || '')
                 : 'Provider',
               providerType: providerType,
+              providerImage: providerImage,
             });
           }}
         >

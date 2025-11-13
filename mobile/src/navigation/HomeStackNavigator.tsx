@@ -74,6 +74,7 @@ export type HomeStackParamList = {
     providerId: string;
     providerName: string;
     providerType: 'therapist' | 'salon';
+    providerImage?: string; // Optional provider image
   };
   BookingManagement: undefined;
 };

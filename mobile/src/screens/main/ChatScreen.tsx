@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -24,7 +25,7 @@ type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Chat'>;
 export const ChatScreen: React.FC = () => {
   const route = useRoute<ChatRouteProp>();
   const navigation = useNavigation<ChatNavigationProp>();
-  const { bookingId, providerId, providerName, providerType } = route.params;
+  const { bookingId, providerId, providerName, providerType, providerImage } = route.params;
 
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
@@ -192,6 +193,21 @@ export const ChatScreen: React.FC = () => {
         >
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
+
+        {/* Provider Image */}
+        {providerImage ? (
+          <Image
+            source={{ uri: providerImage }}
+            style={[styles.providerImage, { width: spacing(6), height: spacing(6), borderRadius: spacing(3), marginLeft: spacing(2) }]}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.providerImagePlaceholder, { width: spacing(6), height: spacing(6), borderRadius: spacing(3), marginLeft: spacing(2) }]}>
+            <Text style={[styles.providerImagePlaceholderText, { fontSize: normalizeFontSize(20) }]}>
+              {providerType === 'therapist' ? '👤' : '🏪'}
+            </Text>
+          </View>
+        )}
 
         <View style={[styles.headerCenter, { flex: 1, marginHorizontal: spacing(2) }]}>
           <Text style={[styles.headerTitle, { fontSize: normalizeFontSize(18) }]} numberOfLines={1}>
@@ -372,5 +388,16 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     color: '#FFFFFF',
+  },
+  providerImage: {
+    // Styles applied inline, base definition for consistency
+  },
+  providerImagePlaceholder: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerImagePlaceholderText: {
+    // Emoji styling
   },
 });
