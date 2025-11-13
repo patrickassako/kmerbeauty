@@ -94,7 +94,7 @@ export const HomeScreen: React.FC = () => {
   const giftCards: GiftCard[] = [];
 
   const handleServicePress = (service: Service) => {
-    navigation.navigate('ServiceProviders', { service });
+    navigation.navigate('ServiceDetails', { service });
   };
 
   const handlePackagePress = (pkg: PackageWithProviders) => {
