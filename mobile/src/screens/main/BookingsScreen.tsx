@@ -16,9 +16,8 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { bookingsApi, type Booking } from '../../services/api';
-import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
-type BookingsNavigationProp = NativeStackNavigationProp<HomeStackParamList>;
+type BookingsNavigationProp = NativeStackNavigationProp<any>;
 
 export const BookingsScreen: React.FC = () => {
   const navigation = useNavigation<BookingsNavigationProp>();
@@ -195,7 +194,12 @@ export const BookingsScreen: React.FC = () => {
               <TouchableOpacity
                 key={booking.id}
                 style={[styles.bookingCard, { borderRadius: spacing(2), padding: spacing(1.5), marginBottom: spacing(2) }]}
-                onPress={() => navigation.navigate('BookingDetails', { bookingId: booking.id })}
+                onPress={() => {
+                  navigation.navigate('Home', {
+                    screen: 'BookingDetails',
+                    params: { bookingId: booking.id },
+                  } as any);
+                }}
                 activeOpacity={0.7}
               >
                 {/* Status Badge */}

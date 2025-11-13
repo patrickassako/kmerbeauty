@@ -146,7 +146,14 @@ export const BookingDetailsScreen: React.FC = () => {
                 [
                   {
                     text: 'OK',
-                    onPress: () => navigation.goBack(),
+                    onPress: () => {
+                      const parentNav = navigation.getParent();
+                      if (parentNav) {
+                        parentNav.navigate('Bookings' as never);
+                      } else {
+                        navigation.goBack();
+                      }
+                    },
                   },
                 ]
               );
@@ -204,8 +211,13 @@ export const BookingDetailsScreen: React.FC = () => {
         <TouchableOpacity
           style={[styles.backButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5) }]}
           onPress={() => {
-            // Naviguer vers la liste des réservations au lieu de goBack
-            navigation.navigate('Bookings' as never);
+            // Naviguer vers le tab Bookings
+            const parentNav = navigation.getParent();
+            if (parentNav) {
+              parentNav.navigate('Bookings' as never);
+            } else {
+              navigation.goBack();
+            }
           }}
         >
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
