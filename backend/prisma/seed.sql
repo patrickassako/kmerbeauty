@@ -241,8 +241,8 @@ VALUES (
     {"fr": "Équipement moderne", "en": "Modern Equipment"}
   ]'::jsonb,
   '{"monday": {"open": "09:00", "close": "19:00"}, "tuesday": {"open": "09:00", "close": "19:00"}, "wednesday": {"open": "09:00", "close": "19:00"}, "thursday": {"open": "09:00", "close": "19:00"}, "friday": {"open": "09:00", "close": "20:00"}, "saturday": {"open": "10:00", "close": "18:00"}, "sunday": {"open": "closed", "close": "closed"}}'::jsonb,
-  4.8,
-  2340,
+  0,
+  0,
   6,
   true,
   true,
@@ -279,8 +279,8 @@ VALUES (
   'Littoral',
   ARRAY['https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800'],
   '12345678-9abc-4def-0123-456789abcdef',
-  4.9,
-  156,
+  0,
+  0,
   432,
   true,
   NOW(),
@@ -311,8 +311,8 @@ VALUES (
   'Douala',
   'Littoral',
   ARRAY['https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800', 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800'],
-  4.7,
-  89,
+  0,
+  0,
   267,
   true,
   NOW(),
@@ -468,6 +468,7 @@ VALUES (
 -- 11. CRÉER DES AVIS
 -- ============================================
 
+-- Reviews pour Therapist 1 (Sophie Ndongo)
 INSERT INTO reviews (id, user_id, therapist_id, rating, comment, cleanliness, professionalism, value, created_at, updated_at)
 VALUES
   (
@@ -479,10 +480,63 @@ VALUES
     5,
     5,
     5,
-    NOW(),
-    NOW()
+    NOW() - INTERVAL '2 weeks',
+    NOW() - INTERVAL '2 weeks'
+  ),
+  (
+    gen_random_uuid(),
+    'fcbfa0f5-eef4-45d7-821e-ac4117e50d0c',
+    '23456789-abcd-4ef0-1234-56789abcdef0',
+    4,
+    'Très bon massage, Sophie connaît bien son métier. L''ambiance était relaxante.',
+    4,
+    5,
+    4,
+    NOW() - INTERVAL '1 month',
+    NOW() - INTERVAL '1 month'
+  ),
+  (
+    gen_random_uuid(),
+    '56811604-9372-479f-a3ee-35056e5812dd',
+    '23456789-abcd-4ef0-1234-56789abcdef0',
+    5,
+    'Je recommande vivement ! Le massage deep tissue était parfait pour mes tensions musculaires.',
+    5,
+    5,
+    5,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '3 days'
   );
 
+-- Reviews pour Therapist 2 (Alice Tchoumi)
+INSERT INTO reviews (id, user_id, therapist_id, rating, comment, cleanliness, professionalism, value, created_at, updated_at)
+VALUES
+  (
+    gen_random_uuid(),
+    'fcbfa0f5-eef4-45d7-821e-ac4117e50d0c',
+    '3456789a-bcde-4f01-2345-6789abcdef01',
+    5,
+    'Alice est une esthéticienne incroyable ! Ma peau n''a jamais été aussi belle.',
+    5,
+    5,
+    5,
+    NOW() - INTERVAL '1 week',
+    NOW() - INTERVAL '1 week'
+  ),
+  (
+    gen_random_uuid(),
+    '56811604-9372-479f-a3ee-35056e5812dd',
+    '3456789a-bcde-4f01-2345-6789abcdef01',
+    4,
+    'Très professionnelle et minutieuse dans son travail. La manucure était impeccable.',
+    4,
+    5,
+    4,
+    NOW() - INTERVAL '2 weeks',
+    NOW() - INTERVAL '2 weeks'
+  );
+
+-- Reviews pour le Salon (Beau Monde Esthétique)
 INSERT INTO reviews (id, user_id, salon_id, rating, comment, cleanliness, professionalism, value, created_at, updated_at)
 VALUES
   (
@@ -494,8 +548,32 @@ VALUES
     5,
     5,
     4,
-    NOW(),
-    NOW()
+    NOW() - INTERVAL '1 week',
+    NOW() - INTERVAL '1 week'
+  ),
+  (
+    gen_random_uuid(),
+    '56811604-9372-479f-a3ee-35056e5812dd',
+    '12345678-9abc-4def-0123-456789abcdef',
+    4,
+    'Très bel établissement, personnel accueillant. Les services sont un peu chers mais de qualité.',
+    4,
+    5,
+    3,
+    NOW() - INTERVAL '3 weeks',
+    NOW() - INTERVAL '3 weeks'
+  ),
+  (
+    gen_random_uuid(),
+    'fcbfa0f5-eef4-45d7-821e-ac4117e50d0c',
+    '12345678-9abc-4def-0123-456789abcdef',
+    5,
+    'Mon salon préféré à Douala ! Toujours satisfaite de mes visites.',
+    5,
+    5,
+    5,
+    NOW() - INTERVAL '5 days',
+    NOW() - INTERVAL '5 days'
   );
 
 -- ============================================
@@ -509,6 +587,44 @@ VALUES
 INSERT INTO favorites (id, user_id, salon_id, created_at)
 VALUES
   (gen_random_uuid(), 'fcbfa0f5-eef4-45d7-821e-ac4117e50d0c', '12345678-9abc-4def-0123-456789abcdef', NOW());
+
+-- ============================================
+-- 13. CALCULER ET METTRE À JOUR LES RATINGS
+-- ============================================
+
+-- Mettre à jour les ratings et review_count pour les thérapeutes
+UPDATE therapists t
+SET
+  rating = (
+    SELECT ROUND(AVG(rating)::numeric, 2)
+    FROM reviews r
+    WHERE r.therapist_id = t.id
+  ),
+  review_count = (
+    SELECT COUNT(*)
+    FROM reviews r
+    WHERE r.therapist_id = t.id
+  )
+WHERE EXISTS (
+  SELECT 1 FROM reviews r WHERE r.therapist_id = t.id
+);
+
+-- Mettre à jour les ratings et review_count pour les salons
+UPDATE salons s
+SET
+  rating = (
+    SELECT ROUND(AVG(rating)::numeric, 2)
+    FROM reviews r
+    WHERE r.salon_id = s.id
+  ),
+  review_count = (
+    SELECT COUNT(*)
+    FROM reviews r
+    WHERE r.salon_id = s.id
+  )
+WHERE EXISTS (
+  SELECT 1 FROM reviews r WHERE r.salon_id = s.id
+);
 
 -- ============================================
 -- ✅ SCRIPT TERMINÉ
