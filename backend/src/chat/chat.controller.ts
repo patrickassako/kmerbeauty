@@ -21,6 +21,17 @@ export class ChatController {
   }
 
   /**
+   * Get or create a direct chat (without booking)
+   * POST /chat/direct
+   */
+  @Post('direct')
+  async getOrCreateDirectChat(
+    @Body() body: { clientId: string; providerId: string },
+  ) {
+    return this.chatService.getOrCreateDirectChat(body.clientId, body.providerId);
+  }
+
+  /**
    * Get messages for a chat
    */
   @Get(':chatId/messages')

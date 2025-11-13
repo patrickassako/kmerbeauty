@@ -70,7 +70,7 @@ export type HomeStackParamList = {
     bookingId: string;
   };
   Chat: {
-    bookingId: string;
+    bookingId?: string; // Optional for direct chats
     providerId: string;
     providerName: string;
     providerType: 'therapist' | 'salon';

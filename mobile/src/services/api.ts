@@ -562,6 +562,17 @@ export const chatApi = {
   },
 
   /**
+   * Get or create a direct chat (without booking)
+   */
+  getOrCreateDirectChat: async (clientId: string, providerId: string): Promise<Chat> => {
+    const response = await api.post('/chat/direct', {
+      clientId,
+      providerId,
+    });
+    return response.data;
+  },
+
+  /**
    * Get messages for a chat
    */
   getMessages: async (chatId: string, limit?: number, offset?: number): Promise<ChatMessage[]> => {

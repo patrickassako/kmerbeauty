@@ -53,8 +53,19 @@ export const ChatScreen: React.FC = () => {
   const initializeChat = async () => {
     try {
       setLoading(true);
-      // Get or create chat for this booking
-      const chatData = await chatApi.getOrCreateChatByBooking(bookingId);
+      let chatData;
+
+      if (bookingId) {
+        // Get or create chat for this booking
+        chatData = await chatApi.getOrCreateChatByBooking(bookingId);
+      } else {
+        // Get or create direct chat (without booking)
+        if (!user?.id) {
+          throw new Error('User not authenticated');
+        }
+        chatData = await chatApi.getOrCreateDirectChat(user.id, providerId);
+      }
+
       setChat(chatData);
 
       // Load messages

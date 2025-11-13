@@ -62,6 +62,47 @@ export class ChatService {
   }
 
   /**
+   * Get or create a direct chat (without booking)
+   * Used for customer inquiries before booking
+   */
+  async getOrCreateDirectChat(clientId: string, providerId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // Check if chat already exists between client and provider (without booking)
+    const { data: existingChat, error: findError } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('provider_id', providerId)
+      .is('booking_id', null)
+      .single();
+
+    if (existingChat) {
+      return existingChat;
+    }
+
+    // Create new direct chat
+    const { data: newChat, error: createError } = await supabase
+      .from('chats')
+      .insert([
+        {
+          client_id: clientId,
+          provider_id: providerId,
+          is_active: true,
+          // booking_id is null for direct chats
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (createError) {
+      throw new Error(`Failed to create direct chat: ${createError.message}`);
+    }
+
+    return newChat;
+  }
+
+  /**
    * Get messages for a chat
    */
   async getMessages(chatId: string, limit: number = 50, offset: number = 0) {

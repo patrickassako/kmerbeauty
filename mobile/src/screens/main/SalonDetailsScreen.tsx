@@ -410,10 +410,18 @@ export const SalonDetailsScreen: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.bookButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
-          onPress={() => { /* TODO: Navigate to booking */ }}
+          style={[styles.messageButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
+          onPress={() => {
+            // Navigate to Chat screen
+            navigation.navigate('Chat', {
+              providerId: salonParam.id,
+              providerName: language === 'fr' ? salon.name_fr : salon.name_en,
+              providerType: 'salon',
+            });
+          }}
         >
-          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(16) }]}>Réserver</Text>
+          <Text style={[styles.messageButtonIcon, { fontSize: normalizeFontSize(18) }]}>💬</Text>
+          <Text style={[styles.messageButtonText, { fontSize: normalizeFontSize(16) }]}>Message</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -629,12 +637,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2D2D2D',
   },
-  bookButton: {
-    backgroundColor: '#2D2D2D',
+  messageButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#2D2D2D',
   },
-  bookButtonText: {
+  messageButtonIcon: {
+    marginRight: 8,
+    color: '#FFFFFF',
+  },
+  messageButtonText: {
     fontWeight: '700',
     color: '#FFFFFF',
   },

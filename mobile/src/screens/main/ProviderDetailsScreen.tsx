@@ -518,14 +518,22 @@ export const ProviderDetailsScreen: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.servicesButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
+          style={[styles.messageButton, { flex: 1.5, paddingVertical: spacing(2), borderRadius: spacing(3) }]}
           onPress={() => {
-            // Expand services section or navigate to full services view
-            setExpandedSection('services');
+            // Navigate to Chat screen
+            navigation.navigate('Chat', {
+              providerId: providerId,
+              providerName: providerData
+                ? (isTherapist
+                  ? `${therapist?.user?.first_name || ''} ${therapist?.user?.last_name || ''}`.trim()
+                  : (language === 'fr' ? salon?.name_fr : salon?.name_en) || '')
+                : 'Provider',
+              providerType: providerType,
+            });
           }}
         >
-          <Text style={[styles.servicesButtonIcon, { fontSize: normalizeFontSize(18) }]}>✂️</Text>
-          <Text style={[styles.servicesButtonText, { fontSize: normalizeFontSize(16) }]}>Services</Text>
+          <Text style={[styles.messageButtonIcon, { fontSize: normalizeFontSize(18) }]}>💬</Text>
+          <Text style={[styles.messageButtonText, { fontSize: normalizeFontSize(16) }]}>Message</Text>
         </TouchableOpacity>
       </View>
 
@@ -748,16 +756,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2D2D2D',
   },
-  servicesButton: {
+  messageButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#2D2D2D',
   },
-  servicesButtonIcon: {
+  messageButtonIcon: {
     marginRight: 8,
   },
-  servicesButtonText: {
+  messageButtonText: {
     fontWeight: '700',
     color: '#FFFFFF',
   },
