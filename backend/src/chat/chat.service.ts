@@ -172,6 +172,9 @@ export class ChatService {
           content: sendMessageDto.content,
           type: sendMessageDto.type || 'TEXT',
           attachments: sendMessageDto.attachments || [],
+          reply_to_message_id: sendMessageDto.reply_to_message_id || null,
+          duration_seconds: sendMessageDto.duration_seconds || null,
+          offer_data: sendMessageDto.offer_data || null,
           is_read: false,
         },
       ])
@@ -256,5 +259,131 @@ export class ChatService {
     );
 
     return chatsWithUnread;
+  }
+
+  /**
+   * Create a custom offer (service personnalisé)
+   */
+  async createOffer(createOfferDto: any) {
+    const supabase = this.supabaseService.getClient();
+
+    // Créer le message avec l'offre
+    const { data: message, error: messageError } = await supabase
+      .from('chat_messages')
+      .insert([
+        {
+          chat_id: createOfferDto.chat_id,
+          sender_id: createOfferDto.sender_id,
+          content: `Offre personnalisée: ${createOfferDto.service_name}`,
+          type: 'SERVICE_SUGGESTION',
+          offer_data: {
+            service_name: createOfferDto.service_name,
+            description: createOfferDto.description,
+            price: createOfferDto.price,
+            duration: createOfferDto.duration,
+            custom_fields: createOfferDto.custom_fields || {},
+          },
+          is_read: false,
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (messageError) {
+      throw new Error(`Failed to create offer message: ${messageError.message}`);
+    }
+
+    // Créer l'entrée dans la table chat_offers
+    const { data: offer, error: offerError } = await supabase
+      .from('chat_offers')
+      .insert([
+        {
+          message_id: message.id,
+          chat_id: createOfferDto.chat_id,
+          service_name: createOfferDto.service_name,
+          description: createOfferDto.description,
+          price: createOfferDto.price,
+          duration: createOfferDto.duration,
+          custom_fields: createOfferDto.custom_fields || {},
+          expires_at: createOfferDto.expires_in_hours
+            ? new Date(Date.now() + createOfferDto.expires_in_hours * 60 * 60 * 1000).toISOString()
+            : new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // Default 48h
+        },
+      ])
+      .select('*')
+      .single();
+
+    if (offerError) {
+      throw new Error(`Failed to create offer: ${offerError.message}`);
+    }
+
+    return {
+      message,
+      offer,
+    };
+  }
+
+  /**
+   * Get offer details
+   */
+  async getOffer(offerId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('chat_offers')
+      .select('*')
+      .eq('id', offerId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch offer: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Respond to an offer (accept or decline)
+   */
+  async respondToOffer(offerId: string, respondToOfferDto: any) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('chat_offers')
+      .update({
+        status: respondToOfferDto.status,
+        client_response: respondToOfferDto.client_response,
+        responded_at: new Date().toISOString(),
+      })
+      .eq('id', offerId)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to respond to offer: ${error.message}`);
+    }
+
+    // TODO: Si accepté, créer automatiquement une réservation
+
+    return data;
+  }
+
+  /**
+   * Get all offers for a chat
+   */
+  async getChatOffers(chatId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('chat_offers')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch chat offers: ${error.message}`);
+    }
+
+    return data || [];
   }
 }

@@ -388,8 +388,17 @@ export interface ChatMessage {
   chat_id: string;
   sender_id: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE';
+  type: 'TEXT' | 'IMAGE' | 'VOICE' | 'SERVICE_SUGGESTION' | 'SYSTEM';
   attachments?: string[];
+  reply_to_message_id?: string;
+  duration_seconds?: number; // Pour les messages vocaux
+  offer_data?: {
+    service_name: string;
+    description?: string;
+    price: number;
+    duration: number;
+    custom_fields?: Record<string, any>;
+  };
   is_read: boolean;
   read_at?: string;
   created_at: string;
@@ -411,8 +420,46 @@ export interface Chat {
 export interface SendMessageDto {
   sender_id: string;
   content: string;
-  type?: 'TEXT' | 'IMAGE' | 'FILE';
+  type?: 'TEXT' | 'IMAGE' | 'VOICE' | 'SERVICE_SUGGESTION' | 'SYSTEM';
   attachments?: string[];
+  reply_to_message_id?: string;
+  duration_seconds?: number;
+  offer_data?: {
+    service_name: string;
+    description?: string;
+    price: number;
+    duration: number;
+    custom_fields?: Record<string, any>;
+  };
+}
+
+export interface ChatOffer {
+  id: string;
+  message_id: string;
+  chat_id: string;
+  service_name: string;
+  description?: string;
+  price: number;
+  duration: number;
+  custom_fields?: Record<string, any>;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  booking_id?: string;
+  expires_at?: string;
+  client_response?: string;
+  responded_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateOfferDto {
+  chat_id: string;
+  sender_id: string;
+  service_name: string;
+  description?: string;
+  price: number;
+  duration: number;
+  custom_fields?: Record<string, any>;
+  expires_in_hours?: number;
 }
 
 // =============================================
@@ -609,6 +656,45 @@ export const chatApi = {
    */
   getUserChats: async (userId: string): Promise<Chat[]> => {
     const response = await api.get(`/chat/user/${userId}`);
+    return response.data;
+  },
+
+  /**
+   * Create a custom offer (service personnalisé)
+   */
+  createOffer: async (data: CreateOfferDto): Promise<{ message: ChatMessage; offer: ChatOffer }> => {
+    const response = await api.post('/chat/offers', data);
+    return response.data;
+  },
+
+  /**
+   * Get offer details
+   */
+  getOffer: async (offerId: string): Promise<ChatOffer> => {
+    const response = await api.get(`/chat/offers/${offerId}`);
+    return response.data;
+  },
+
+  /**
+   * Respond to an offer (accept or decline)
+   */
+  respondToOffer: async (
+    offerId: string,
+    status: 'ACCEPTED' | 'DECLINED',
+    clientResponse?: string,
+  ): Promise<ChatOffer> => {
+    const response = await api.patch(`/chat/offers/${offerId}/respond`, {
+      status,
+      client_response: clientResponse,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get all offers for a chat
+   */
+  getChatOffers: async (chatId: string): Promise<ChatOffer[]> => {
+    const response = await api.get(`/chat/${chatId}/offers`);
     return response.data;
   },
 };

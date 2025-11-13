@@ -4,8 +4,33 @@ import { ChatService } from './chat.service';
 export interface SendMessageDto {
   sender_id: string;
   content: string;
-  type?: 'TEXT' | 'IMAGE' | 'FILE';
+  type?: 'TEXT' | 'IMAGE' | 'VOICE' | 'SERVICE_SUGGESTION' | 'SYSTEM';
   attachments?: string[];
+  reply_to_message_id?: string;
+  duration_seconds?: number; // Pour les messages vocaux
+  offer_data?: {
+    service_name: string;
+    description?: string;
+    price: number;
+    duration: number; // minutes
+    custom_fields?: Record<string, any>;
+  };
+}
+
+export interface CreateOfferDto {
+  chat_id: string;
+  sender_id: string;
+  service_name: string;
+  description?: string;
+  price: number;
+  duration: number;
+  custom_fields?: Record<string, any>;
+  expires_in_hours?: number;
+}
+
+export interface RespondToOfferDto {
+  status: 'ACCEPTED' | 'DECLINED';
+  client_response?: string;
 }
 
 @Controller('chat')
@@ -74,5 +99,44 @@ export class ChatController {
   @Get('user/:userId')
   async getUserChats(@Param('userId') userId: string) {
     return this.chatService.getUserChats(userId);
+  }
+
+  /**
+   * Create a custom offer (service personnalisé)
+   * POST /chat/offers
+   */
+  @Post('offers')
+  async createOffer(@Body() createOfferDto: CreateOfferDto) {
+    return this.chatService.createOffer(createOfferDto);
+  }
+
+  /**
+   * Get offer details
+   * GET /chat/offers/:offerId
+   */
+  @Get('offers/:offerId')
+  async getOffer(@Param('offerId') offerId: string) {
+    return this.chatService.getOffer(offerId);
+  }
+
+  /**
+   * Respond to an offer (accept or decline)
+   * PATCH /chat/offers/:offerId/respond
+   */
+  @Patch('offers/:offerId/respond')
+  async respondToOffer(
+    @Param('offerId') offerId: string,
+    @Body() respondToOfferDto: RespondToOfferDto,
+  ) {
+    return this.chatService.respondToOffer(offerId, respondToOfferDto);
+  }
+
+  /**
+   * Get all offers for a chat
+   * GET /chat/:chatId/offers
+   */
+  @Get(':chatId/offers')
+  async getChatOffers(@Param('chatId') chatId: string) {
+    return this.chatService.getChatOffers(chatId);
   }
 }
