@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  TextInput,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +17,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-import { bookingsApi } from '../../services/api';
+import { bookingsApi, therapistsApi, salonsApi } from '../../services/api';
 
 type BookingRouteProp = RouteProp<HomeStackParamList, 'Booking'>;
 type BookingNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Booking'>;
@@ -33,8 +34,12 @@ export const BookingScreen: React.FC = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
+  const [address, setAddress] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [providerServices, setProviderServices] = useState<any[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([service.id]);
 
   // Générer les dates disponibles (7 prochains jours)
   const availableDates = Array.from({ length: 7 }, (_, i) => {
@@ -49,6 +54,41 @@ export const BookingScreen: React.FC = () => {
     '14:00', '15:00', '16:00', '17:00', '18:00',
   ];
 
+  // Charger les services du prestataire
+  useEffect(() => {
+    if (providerId && providerType) {
+      loadProviderServices();
+    }
+  }, [providerId, providerType]);
+
+  const loadProviderServices = async () => {
+    try {
+      setLoadingServices(true);
+      let services: any[] = [];
+
+      if (providerType === 'therapist') {
+        services = await therapistsApi.getServices(providerId);
+      } else {
+        services = await salonsApi.getServices(providerId);
+      }
+
+      // Filtrer pour ne garder que les services actifs et différents du service principal
+      const otherServices = services
+        .filter(s => s.service?.id !== service.id && s.service?.id)
+        .map(s => ({
+          ...s.service,
+          service_price: s.price,
+          service_duration: s.duration,
+        }));
+
+      setProviderServices(otherServices);
+    } catch (error) {
+      console.error('Error loading provider services:', error);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
   };
@@ -57,6 +97,38 @@ export const BookingScreen: React.FC = () => {
     setSelectedTime(time);
   };
 
+  const toggleServiceSelection = (serviceId: string) => {
+    setSelectedServices(prev => {
+      if (prev.includes(serviceId)) {
+        // Ne pas permettre de désélectionner le service principal
+        if (serviceId === service.id) return prev;
+        return prev.filter(id => id !== serviceId);
+      } else {
+        return [...prev, serviceId];
+      }
+    });
+  };
+
+  // Calculer le prix total et la durée totale
+  const calculateTotals = () => {
+    let totalPrice = providerPrice || service.base_price;
+    let totalDuration = service.duration || 0;
+
+    selectedServices.forEach(serviceId => {
+      if (serviceId !== service.id) {
+        const additionalService = providerServices.find(s => s.id === serviceId);
+        if (additionalService) {
+          totalPrice += additionalService.service_price || additionalService.base_price || 0;
+          totalDuration += additionalService.duration || 0;
+        }
+      }
+    });
+
+    return { totalPrice, totalDuration };
+  };
+
+  const { totalPrice, totalDuration } = calculateTotals();
+
   const handleBooking = async () => {
     if (!selectedDate || !selectedTime) {
       Alert.alert(
@@ -64,6 +136,16 @@ export const BookingScreen: React.FC = () => {
         language === 'fr'
           ? 'Veuillez sélectionner une date et une heure'
           : 'Please select a date and time'
+      );
+      return;
+    }
+
+    if (!address.trim()) {
+      Alert.alert(
+        language === 'fr' ? 'Adresse manquante' : 'Address missing',
+        language === 'fr'
+          ? 'Veuillez saisir votre adresse complète'
+          : 'Please enter your complete address'
       );
       return;
     }
@@ -91,6 +173,29 @@ export const BookingScreen: React.FC = () => {
     setLoading(true);
 
     try {
+      // Préparer les notes avec adresse et services additionnels
+      let notesContent = `Adresse: ${address}`;
+
+      // Ajouter les services additionnels dans les notes
+      if (selectedServices.length > 1) {
+        const additionalServicesList = selectedServices
+          .filter(id => id !== service.id)
+          .map(id => {
+            const svc = providerServices.find(s => s.id === id);
+            return svc ? `- ${language === 'fr' ? svc.name_fr : svc.name_en}` : '';
+          })
+          .filter(Boolean)
+          .join('\n');
+
+        if (additionalServicesList) {
+          notesContent += `\n\nServices additionnels:\n${additionalServicesList}`;
+        }
+      }
+
+      if (additionalNotes.trim()) {
+        notesContent += `\n\nNotes: ${additionalNotes}`;
+      }
+
       // Créer la réservation via l'API
       const booking = await bookingsApi.create({
         user_id: user.id,
@@ -99,8 +204,8 @@ export const BookingScreen: React.FC = () => {
         provider_type: providerType,
         scheduled_date: selectedDate.toISOString().split('T')[0],
         scheduled_time: selectedTime,
-        price: providerPrice || service.base_price,
-        notes,
+        price: totalPrice,
+        notes: notesContent,
       });
 
       Alert.alert(
@@ -230,6 +335,98 @@ export const BookingScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Address Input */}
+        <View style={[styles.section, { marginBottom: spacing(3) }]}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
+            {language === 'fr' ? 'Adresse complète *' : 'Complete address *'}
+          </Text>
+          <TextInput
+            style={[styles.addressInput, { padding: spacing(2), borderRadius: spacing(2), fontSize: normalizeFontSize(14), minHeight: spacing(12) }]}
+            placeholder={language === 'fr' ? 'Entrez votre adresse complète (rue, quartier, ville)...' : 'Enter your complete address (street, district, city)...'}
+            placeholderTextColor="#999"
+            value={address}
+            onChangeText={setAddress}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Additional Services */}
+        {providerServices.length > 0 && (
+          <View style={[styles.section, { marginBottom: spacing(3) }]}>
+            <View style={[styles.sectionHeaderRow, { marginBottom: spacing(2) }]}>
+              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Services additionnels' : 'Additional services'}
+              </Text>
+              {selectedServices.length > 1 && (
+                <Text style={[styles.selectedCount, { fontSize: normalizeFontSize(12) }]}>
+                  {selectedServices.length - 1} {language === 'fr' ? 'sélectionné(s)' : 'selected'}
+                </Text>
+              )}
+            </View>
+            <Text style={[styles.sectionSubtitle, { fontSize: normalizeFontSize(12), marginBottom: spacing(2) }]}>
+              {language === 'fr'
+                ? 'Autres services proposés par ce prestataire'
+                : 'Other services offered by this provider'}
+            </Text>
+            {loadingServices ? (
+              <ActivityIndicator size="small" color="#2D2D2D" />
+            ) : (
+              <View style={styles.additionalServicesGrid}>
+                {providerServices.map((svc) => {
+                  const isSelected = selectedServices.includes(svc.id);
+                  return (
+                    <TouchableOpacity
+                      key={svc.id}
+                      style={[
+                        styles.additionalServiceCard,
+                        { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(2) },
+                        isSelected && styles.additionalServiceCardSelected,
+                      ]}
+                      onPress={() => toggleServiceSelection(svc.id)}
+                    >
+                      <View style={styles.additionalServiceHeader}>
+                        <View style={styles.additionalServiceInfo}>
+                          <Text style={[styles.additionalServiceName, { fontSize: normalizeFontSize(14) }]} numberOfLines={2}>
+                            {language === 'fr' ? svc.name_fr : svc.name_en}
+                          </Text>
+                          <View style={styles.additionalServiceMeta}>
+                            <Text style={[styles.additionalServiceDuration, { fontSize: normalizeFontSize(12) }]}>
+                              ⏰ {svc.duration}min
+                            </Text>
+                            <Text style={[styles.additionalServicePrice, { fontSize: normalizeFontSize(14) }]}>
+                              {formatCurrency(svc.service_price || svc.base_price, countryCode)}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={[styles.checkboxContainer, { width: spacing(3), height: spacing(3), borderRadius: spacing(1.5) }, isSelected && styles.checkboxSelected]}>
+                          {isSelected && <Text style={[styles.checkmark, { fontSize: normalizeFontSize(14) }]}>✓</Text>}
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Additional Notes */}
+        <View style={[styles.section, { marginBottom: spacing(3) }]}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
+            {language === 'fr' ? 'Notes additionnelles (optionnel)' : 'Additional notes (optional)'}
+          </Text>
+          <TextInput
+            style={[styles.notesInput, { padding: spacing(2), borderRadius: spacing(2), fontSize: normalizeFontSize(14), minHeight: spacing(12) }]}
+            placeholder={language === 'fr' ? 'Ajoutez des informations supplémentaires (préférences, demandes spéciales, etc.)...' : 'Add additional information (preferences, special requests, etc.)...'}
+            placeholderTextColor="#999"
+            value={additionalNotes}
+            onChangeText={setAdditionalNotes}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
         {/* Date Selection */}
         <View style={[styles.section, { marginBottom: spacing(3) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
@@ -317,18 +514,28 @@ export const BookingScreen: React.FC = () => {
             </View>
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(14) }]}>
-                {language === 'fr' ? 'Durée' : 'Duration'}:
+                {language === 'fr' ? 'Durée totale' : 'Total duration'}:
               </Text>
               <Text style={[styles.summaryValue, { fontSize: normalizeFontSize(14) }]}>
-                {service.duration} min
+                {totalDuration} min
               </Text>
             </View>
+            {selectedServices.length > 1 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(12), color: '#999' }]}>
+                  {language === 'fr' ? 'Services inclus' : 'Included services'}:
+                </Text>
+                <Text style={[styles.summaryValue, { fontSize: normalizeFontSize(12), color: '#999' }]}>
+                  {selectedServices.length}
+                </Text>
+              </View>
+            )}
             <View style={[styles.summaryRow, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#F0F0F0' }]}>
               <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(16), fontWeight: '700' }]}>
-                {language === 'fr' ? 'Total' : 'Total'}:
+                {language === 'fr' ? 'Prix total' : 'Total price'}:
               </Text>
               <Text style={[styles.summaryTotal, { fontSize: normalizeFontSize(18) }]}>
-                {formatCurrency(service.base_price, countryCode)}
+                {formatCurrency(totalPrice, countryCode)}
               </Text>
             </View>
           </View>
@@ -459,6 +666,85 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '700',
     color: '#2D2D2D',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectedCount: {
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  sectionSubtitle: {
+    color: '#666',
+    lineHeight: 18,
+  },
+  addressInput: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    color: '#2D2D2D',
+  },
+  notesInput: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    color: '#2D2D2D',
+  },
+  additionalServicesGrid: {
+    width: '100%',
+  },
+  additionalServiceCard: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  additionalServiceCardSelected: {
+    backgroundColor: '#FFF5F5',
+    borderColor: '#FF6B6B',
+    borderWidth: 2,
+  },
+  additionalServiceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  additionalServiceInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  additionalServiceName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+    marginBottom: 6,
+  },
+  additionalServiceMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  additionalServiceDuration: {
+    color: '#666',
+  },
+  additionalServicePrice: {
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  checkboxContainer: {
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   dateScroll: {
     flexDirection: 'row',
