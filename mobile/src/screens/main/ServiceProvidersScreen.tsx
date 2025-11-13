@@ -73,7 +73,7 @@ export const ServiceProvidersScreen: React.FC = () => {
     const salonProviders = salons.map((salon) => ({
       type: 'salon' as const,
       id: salon.id,
-      name: language === 'fr' ? salon.name_fr : salon.name_en,
+      name: (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut',
       rating: salon.rating,
       review_count: salon.review_count,
       price: service.base_price, // TODO: Get actual price from salon_services
@@ -302,7 +302,7 @@ export const ServiceProvidersScreen: React.FC = () => {
                 </View>
 
                 <Text style={[styles.providerLocation, { fontSize: normalizeFontSize(12) }]}>
-                  {provider.city}, {provider.region}
+                  {provider.city || 'Ville inconnue'}, {provider.region || 'Région inconnue'}
                 </Text>
               </View>
             </View>
@@ -313,14 +313,14 @@ export const ServiceProvidersScreen: React.FC = () => {
                 <View style={styles.providerDetailsItem}>
                   <Text style={[styles.providerDetailsLabel, { fontSize: normalizeFontSize(11) }]}>Prix</Text>
                   <Text style={[styles.providerPrice, { fontSize: normalizeFontSize(16) }]}>
-                    {formatCurrency(provider.price, countryCode)}
+                    {provider.price ? formatCurrency(provider.price, countryCode) : 'N/A'}
                   </Text>
                 </View>
 
                 <View style={styles.providerDetailsItem}>
                   <Text style={[styles.providerDetailsLabel, { fontSize: normalizeFontSize(11) }]}>Durée</Text>
                   <Text style={[styles.providerDuration, { fontSize: normalizeFontSize(14) }]}>
-                    ⏰ {provider.duration}min
+                    ⏰ {provider.duration ? `${provider.duration}min` : 'N/A'}
                   </Text>
                 </View>
 
