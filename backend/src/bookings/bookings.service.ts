@@ -124,10 +124,10 @@ export class BookingsService {
     // Pour chaque booking, récupérer les items et le prestataire
     const bookingsWithDetails = await Promise.all(
       data.map(async (booking) => {
-        // Récupérer les booking items
+        // Récupérer les booking items avec les infos du service
         const { data: items } = await supabase
           .from('booking_items')
-          .select('*')
+          .select('*, service:services(id, images)')
           .eq('booking_id', booking.id);
 
         // Récupérer les infos du prestataire
@@ -181,10 +181,10 @@ export class BookingsService {
       throw new Error(`Failed to fetch booking: ${error.message}`);
     }
 
-    // Récupérer les booking items
+    // Récupérer les booking items avec les infos du service
     const { data: items } = await supabase
       .from('booking_items')
-      .select('*')
+      .select('*, service:services(id, images)')
       .eq('booking_id', data.id);
 
     // Récupérer les infos du prestataire
@@ -249,10 +249,10 @@ export class BookingsService {
       throw new Error(`Failed to cancel booking: ${error.message}`);
     }
 
-    // Récupérer les booking items
+    // Récupérer les booking items avec les infos du service
     const { data: items } = await supabase
       .from('booking_items')
-      .select('*')
+      .select('*, service:services(id, images)')
       .eq('booking_id', data.id);
 
     // Récupérer les infos du prestataire

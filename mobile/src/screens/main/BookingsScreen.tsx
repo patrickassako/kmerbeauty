@@ -124,6 +124,16 @@ export const BookingsScreen: React.FC = () => {
     return language === 'fr' ? 'Service' : 'Service';
   };
 
+  const getServiceImage = (booking: Booking): string | null => {
+    if (booking.items && booking.items.length > 0) {
+      const firstItem = booking.items[0];
+      if (firstItem.service?.images && firstItem.service.images.length > 0) {
+        return firstItem.service.images[0];
+      }
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -180,6 +190,7 @@ export const BookingsScreen: React.FC = () => {
         ) : (
           bookings.map((booking) => {
             const dateTime = formatDateTime(booking.scheduled_at);
+            const serviceImage = getServiceImage(booking);
             return (
               <TouchableOpacity
                 key={booking.id}
@@ -202,11 +213,19 @@ export const BookingsScreen: React.FC = () => {
                 <View style={styles.bookingContent}>
                   {/* Image/Icon */}
                   <View style={[styles.bookingImage, { width: spacing(12), height: spacing(12), borderRadius: spacing(1.5) }]}>
-                    <View style={styles.bookingImagePlaceholder}>
-                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(24) }]}>
-                        {booking.therapist_id ? '👤' : '🏢'}
-                      </Text>
-                    </View>
+                    {serviceImage ? (
+                      <Image
+                        source={{ uri: serviceImage }}
+                        style={styles.serviceImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.bookingImagePlaceholder}>
+                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(24) }]}>
+                          {booking.therapist_id ? '👤' : '🏢'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   {/* Info */}
@@ -314,6 +333,10 @@ const styles = StyleSheet.create({
   bookingImage: {
     backgroundColor: '#E0E0E0',
     overflow: 'hidden',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
   },
   bookingImagePlaceholder: {
     flex: 1,

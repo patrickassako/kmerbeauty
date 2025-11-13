@@ -285,6 +285,10 @@ export interface BookingItem {
   price: number;
   duration: number;
   created_at?: string;
+  service?: {
+    id: string;
+    images: string[];
+  };
 }
 
 export interface Booking {

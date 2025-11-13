@@ -108,9 +108,14 @@ export const BookingDetailsScreen: React.FC = () => {
     if (!booking?.provider) return;
 
     if (booking.therapist_id) {
-      navigation.navigate('TherapistDetails', { therapistId: booking.therapist_id });
+      navigation.navigate('ProviderDetails', {
+        providerId: booking.therapist_id,
+        providerType: 'therapist',
+      });
     } else if (booking.salon_id) {
-      navigation.navigate('SalonDetails', { salonId: booking.salon_id });
+      navigation.navigate('SalonDetails', {
+        salon: booking.provider as any,
+      });
     }
   };
 
