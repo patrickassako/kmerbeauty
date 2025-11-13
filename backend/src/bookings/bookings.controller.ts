@@ -1,15 +1,34 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 
+export interface BookingItemDto {
+  service_id: string;
+  service_name: string;
+  price: number;
+  duration: number;
+}
+
 export interface CreateBookingDto {
   user_id: string;
-  service_id: string;
-  provider_id: string;
-  provider_type: 'therapist' | 'salon';
-  scheduled_date: string;
-  scheduled_time: string;
-  price: number;
+  therapist_id?: string;
+  salon_id?: string;
+  scheduled_at: string; // ISO date string
+  duration: number; // Total duration in minutes
+  location_type: 'AT_HOME' | 'AT_SALON';
+  quarter?: string;
+  street?: string;
+  landmark?: string;
+  city: string;
+  region: string;
+  latitude?: number;
+  longitude?: number;
+  instructions?: string;
+  subtotal: number;
+  travel_fee?: number;
+  tip?: number;
+  total: number;
   notes?: string;
+  items: BookingItemDto[]; // Services in the booking
 }
 
 @Controller('bookings')

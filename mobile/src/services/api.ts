@@ -277,32 +277,67 @@ export const categoriesApi = {
 // Bookings API
 // =============================================
 
+export interface BookingItem {
+  id?: string;
+  booking_id?: string;
+  service_id: string;
+  service_name: string;
+  price: number;
+  duration: number;
+  created_at?: string;
+}
+
 export interface Booking {
   id: string;
   user_id: string;
-  service_id: string;
-  provider_id: string;
-  provider_type: 'therapist' | 'salon';
-  scheduled_date: string;
-  scheduled_time: string;
-  price: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  therapist_id?: string;
+  salon_id?: string;
+  scheduled_at: string;
+  duration: number;
+  location_type: 'AT_HOME' | 'AT_SALON';
+  quarter?: string;
+  street?: string;
+  landmark?: string;
+  city: string;
+  region: string;
+  latitude?: number;
+  longitude?: number;
+  instructions?: string;
+  subtotal: number;
+  travel_fee?: number;
+  tip?: number;
+  total: number;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
+  cancelled_at?: string;
+  cancel_reason?: string;
   created_at: string;
   updated_at: string;
-  service?: any;
+  items?: BookingItem[];
   provider?: any;
 }
 
 export interface CreateBookingDto {
   user_id: string;
-  service_id: string;
-  provider_id: string;
-  provider_type: 'therapist' | 'salon';
-  scheduled_date: string;
-  scheduled_time: string;
-  price: number;
+  therapist_id?: string;
+  salon_id?: string;
+  scheduled_at: string;
+  duration: number;
+  location_type: 'AT_HOME' | 'AT_SALON';
+  quarter?: string;
+  street?: string;
+  landmark?: string;
+  city: string;
+  region: string;
+  latitude?: number;
+  longitude?: number;
+  instructions?: string;
+  subtotal: number;
+  travel_fee?: number;
+  tip?: number;
+  total: number;
   notes?: string;
+  items: BookingItem[];
 }
 
 export const bookingsApi = {

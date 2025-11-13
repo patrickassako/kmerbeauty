@@ -173,39 +173,60 @@ export const BookingScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      // Préparer les notes avec adresse et services additionnels
-      let notesContent = `Adresse: ${address}`;
+      // Combiner date et heure pour scheduled_at
+      const [hours, minutes] = selectedTime.split(':');
+      const scheduledAt = new Date(selectedDate);
+      scheduledAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // Ajouter les services additionnels dans les notes
-      if (selectedServices.length > 1) {
-        const additionalServicesList = selectedServices
-          .filter(id => id !== service.id)
-          .map(id => {
-            const svc = providerServices.find(s => s.id === id);
-            return svc ? `- ${language === 'fr' ? svc.name_fr : svc.name_en}` : '';
-          })
-          .filter(Boolean)
-          .join('\n');
-
-        if (additionalServicesList) {
-          notesContent += `\n\nServices additionnels:\n${additionalServicesList}`;
+      // Préparer les items (services)
+      const bookingItems = selectedServices.map(serviceId => {
+        if (serviceId === service.id) {
+          return {
+            service_id: service.id,
+            service_name: language === 'fr' ? service.name_fr : service.name_en,
+            price: providerPrice || service.base_price,
+            duration: service.duration || 0,
+          };
+        } else {
+          const additionalService = providerServices.find(s => s.id === serviceId);
+          if (additionalService) {
+            return {
+              service_id: additionalService.id,
+              service_name: language === 'fr' ? additionalService.name_fr : additionalService.name_en,
+              price: additionalService.service_price || additionalService.base_price,
+              duration: additionalService.duration || 0,
+            };
+          }
+          return null;
         }
-      }
+      }).filter(Boolean) as any[];
 
-      if (additionalNotes.trim()) {
-        notesContent += `\n\nNotes: ${additionalNotes}`;
-      }
+      // Parser l'adresse pour extraire city et region (simple parsing)
+      const addressParts = address.split(',').map(p => p.trim());
+      const city = addressParts.length > 0 ? addressParts[addressParts.length - 1] : 'Douala';
+      const region = 'Littoral'; // Valeur par défaut pour le Cameroun
+
+      // Préparer les notes
+      let notesContent = additionalNotes.trim() || '';
 
       // Créer la réservation via l'API
       const booking = await bookingsApi.create({
         user_id: user.id,
-        service_id: service.id,
-        provider_id: providerId,
-        provider_type: providerType,
-        scheduled_date: selectedDate.toISOString().split('T')[0],
-        scheduled_time: selectedTime,
-        price: totalPrice,
-        notes: notesContent,
+        therapist_id: providerType === 'therapist' ? providerId : undefined,
+        salon_id: providerType === 'salon' ? providerId : undefined,
+        scheduled_at: scheduledAt.toISOString(),
+        duration: totalDuration,
+        location_type: 'AT_HOME', // Par défaut, peut être modifié plus tard
+        street: address,
+        city: city,
+        region: region,
+        instructions: notesContent || undefined,
+        subtotal: totalPrice,
+        travel_fee: 0,
+        tip: 0,
+        total: totalPrice,
+        notes: notesContent || undefined,
+        items: bookingItems,
       });
 
       Alert.alert(

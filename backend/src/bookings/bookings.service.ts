@@ -9,76 +9,96 @@ export class BookingsService {
   async create(createBookingDto: CreateBookingDto) {
     const supabase = this.supabaseService.getClient();
 
-    // Créer le booking d'abord
-    const { data, error } = await supabase
+    // Créer le booking
+    const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert([
         {
           user_id: createBookingDto.user_id,
-          service_id: createBookingDto.service_id,
-          provider_id: createBookingDto.provider_id,
-          provider_type: createBookingDto.provider_type,
-          scheduled_date: createBookingDto.scheduled_date,
-          scheduled_time: createBookingDto.scheduled_time,
-          price: createBookingDto.price,
+          therapist_id: createBookingDto.therapist_id || null,
+          salon_id: createBookingDto.salon_id || null,
+          scheduled_at: createBookingDto.scheduled_at,
+          duration: createBookingDto.duration,
+          location_type: createBookingDto.location_type,
+          quarter: createBookingDto.quarter,
+          street: createBookingDto.street,
+          landmark: createBookingDto.landmark,
+          city: createBookingDto.city,
+          region: createBookingDto.region,
+          latitude: createBookingDto.latitude,
+          longitude: createBookingDto.longitude,
+          instructions: createBookingDto.instructions,
+          subtotal: createBookingDto.subtotal,
+          travel_fee: createBookingDto.travel_fee || 0,
+          tip: createBookingDto.tip || 0,
+          total: createBookingDto.total,
           notes: createBookingDto.notes,
-          status: 'pending',
+          status: 'PENDING',
         },
       ])
       .select('*')
       .single();
 
-    if (error) {
-      throw new Error(`Failed to create booking: ${error.message}`);
+    if (bookingError) {
+      throw new Error(`Failed to create booking: ${bookingError.message}`);
     }
 
-    // Récupérer les infos du service séparément
-    const { data: serviceData } = await supabase
-      .from('services')
-      .select('id, name_fr, name_en, duration, base_price, images')
-      .eq('id', createBookingDto.service_id)
-      .single();
+    // Créer les booking items (services)
+    if (createBookingDto.items && createBookingDto.items.length > 0) {
+      const bookingItems = createBookingDto.items.map((item) => ({
+        booking_id: booking.id,
+        service_name: item.service_name,
+        price: item.price,
+        duration: item.duration,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('booking_items')
+        .insert(bookingItems);
+
+      if (itemsError) {
+        // Si erreur lors de la création des items, supprimer le booking
+        await supabase.from('bookings').delete().eq('id', booking.id);
+        throw new Error(`Failed to create booking items: ${itemsError.message}`);
+      }
+    }
 
     // Récupérer les infos du prestataire
     let providerData = null;
-    if (createBookingDto.provider_type === 'therapist') {
+    if (createBookingDto.therapist_id) {
       const { data: therapist } = await supabase
         .from('therapists')
-        .select(
-          `
-          id,
-          user:user_id (
-            first_name,
-            last_name,
-            phone
-          ),
-          profile_image,
-          city
-        `,
-        )
-        .eq('id', createBookingDto.provider_id)
+        .select('id, profile_image, city')
+        .eq('id', createBookingDto.therapist_id)
         .single();
-      providerData = therapist;
-    } else {
+
+      if (therapist) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('first_name, last_name, phone')
+          .eq('id', therapist.id)
+          .single();
+
+        providerData = { ...therapist, user };
+      }
+    } else if (createBookingDto.salon_id) {
       const { data: salon } = await supabase
         .from('salons')
-        .select(
-          `
-          id,
-          name_fr,
-          name_en,
-          logo,
-          city
-        `,
-        )
-        .eq('id', createBookingDto.provider_id)
+        .select('id, name_fr, name_en, logo, city')
+        .eq('id', createBookingDto.salon_id)
         .single();
       providerData = salon;
     }
 
+    // Récupérer les booking items créés
+    const { data: items } = await supabase
+      .from('booking_items')
+      .select('*')
+      .eq('booking_id', booking.id);
+
     return {
-      ...data,
-      service: serviceData,
+      ...booking,
+      items: items || [],
       provider: providerData,
     };
   }
@@ -101,59 +121,51 @@ export class BookingsService {
       throw new Error(`Failed to fetch bookings: ${error.message}`);
     }
 
-    // Pour chaque booking, récupérer les infos du service et du prestataire
-    const bookingsWithProviders = await Promise.all(
+    // Pour chaque booking, récupérer les items et le prestataire
+    const bookingsWithDetails = await Promise.all(
       data.map(async (booking) => {
-        // Récupérer le service
-        const { data: serviceData } = await supabase
-          .from('services')
-          .select('id, name_fr, name_en, duration, base_price, images')
-          .eq('id', booking.service_id)
-          .single();
+        // Récupérer les booking items
+        const { data: items } = await supabase
+          .from('booking_items')
+          .select('*')
+          .eq('booking_id', booking.id);
+
+        // Récupérer les infos du prestataire
         let providerData = null;
-        if (booking.provider_type === 'therapist') {
+        if (booking.therapist_id) {
           const { data: therapist } = await supabase
             .from('therapists')
-            .select(
-              `
-              id,
-              user:user_id (
-                first_name,
-                last_name
-              ),
-              profile_image,
-              city
-            `,
-            )
-            .eq('id', booking.provider_id)
+            .select('id, profile_image, city')
+            .eq('id', booking.therapist_id)
             .single();
-          providerData = therapist;
-        } else {
+
+          if (therapist) {
+            const { data: user } = await supabase
+              .from('users')
+              .select('first_name, last_name')
+              .eq('id', therapist.id)
+              .single();
+
+            providerData = { ...therapist, user };
+          }
+        } else if (booking.salon_id) {
           const { data: salon } = await supabase
             .from('salons')
-            .select(
-              `
-              id,
-              name_fr,
-              name_en,
-              logo,
-              city
-            `,
-            )
-            .eq('id', booking.provider_id)
+            .select('id, name_fr, name_en, logo, city')
+            .eq('id', booking.salon_id)
             .single();
           providerData = salon;
         }
 
         return {
           ...booking,
-          service: serviceData,
+          items: items || [],
           provider: providerData,
         };
       }),
     );
 
-    return bookingsWithProviders;
+    return bookingsWithDetails;
   }
 
   async findOne(id: string) {
@@ -169,65 +181,51 @@ export class BookingsService {
       throw new Error(`Failed to fetch booking: ${error.message}`);
     }
 
-    // Récupérer les infos du service séparément
-    const { data: serviceData } = await supabase
-      .from('services')
-      .select(
-        'id, name_fr, name_en, description_fr, description_en, duration, base_price, images, category',
-      )
-      .eq('id', data.service_id)
-      .single();
+    // Récupérer les booking items
+    const { data: items } = await supabase
+      .from('booking_items')
+      .select('*')
+      .eq('booking_id', data.id);
 
     // Récupérer les infos du prestataire
     let providerData = null;
-    if (data.provider_type === 'therapist') {
+    if (data.therapist_id) {
       const { data: therapist } = await supabase
         .from('therapists')
-        .select(
-          `
-          id,
-          user:user_id (
-            first_name,
-            last_name,
-            phone,
-            email
-          ),
-          profile_image,
-          city,
-          region,
-          rating
-        `,
-        )
-        .eq('id', data.provider_id)
+        .select('id, profile_image, city, region, rating')
+        .eq('id', data.therapist_id)
         .single();
-      providerData = therapist;
-    } else {
+
+      if (therapist) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('first_name, last_name, phone, email')
+          .eq('id', therapist.id)
+          .single();
+
+        providerData = { ...therapist, user };
+      }
+    } else if (data.salon_id) {
       const { data: salon } = await supabase
         .from('salons')
-        .select(
-          `
-          id,
-          name_fr,
-          name_en,
-          logo,
-          cover_image,
-          city,
-          region,
-          rating,
-          user:user_id (
-            phone,
-            email
-          )
-        `,
-        )
-        .eq('id', data.provider_id)
+        .select('id, name_fr, name_en, logo, cover_image, city, region, rating')
+        .eq('id', data.salon_id)
         .single();
-      providerData = salon;
+
+      if (salon) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('phone, email')
+          .eq('id', salon.id)
+          .single();
+
+        providerData = { ...salon, user };
+      }
     }
 
     return {
       ...data,
-      service: serviceData,
+      items: items || [],
       provider: providerData,
     };
   }
