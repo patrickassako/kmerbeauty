@@ -79,6 +79,15 @@ export const ChatScreen: React.FC = () => {
     };
   }, []);
 
+  // Cleanup recording on unmount
+  useEffect(() => {
+    return () => {
+      if (recording) {
+        recording.stopAndUnloadAsync().catch(() => {});
+      }
+    };
+  }, [recording]);
+
   const requestPermissions = async () => {
     try {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -166,13 +175,17 @@ export const ChatScreen: React.FC = () => {
                          ext === 'png' ? 'image/png' :
                          ext === 'm4a' || ext === 'mp3' ? 'audio/mpeg' : 'application/octet-stream';
 
-      // Convert base64 to blob
-      const blob = await (await fetch(`data:${contentType};base64,${fileData}`)).blob();
+      // Decode base64 to ArrayBuffer for React Native
+      const binaryString = atob(fileData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from(bucket)
-        .upload(fileName, blob, {
+        .upload(fileName, bytes, {
           contentType,
           upsert: false,
         });
@@ -268,6 +281,16 @@ export const ChatScreen: React.FC = () => {
 
   const startRecording = async () => {
     try {
+      // Clean up any existing recording first
+      if (recording) {
+        try {
+          await recording.stopAndUnloadAsync();
+        } catch (e) {
+          // Ignore errors when stopping
+        }
+        setRecording(null);
+      }
+
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
