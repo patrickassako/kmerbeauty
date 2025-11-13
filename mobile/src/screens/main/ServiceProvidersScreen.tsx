@@ -62,7 +62,7 @@ export const ServiceProvidersScreen: React.FC = () => {
       type: 'therapist' as const,
       id: therapist.id,
       name: `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute',
-      avatar: therapist.user?.avatar || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null),
+      avatar: therapist.profile_image || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null),
       rating: therapist.rating,
       review_count: therapist.review_count,
       price: therapist.service_price || service.base_price,

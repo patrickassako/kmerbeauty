@@ -103,6 +103,7 @@ export interface PackageService {
 export interface Therapist {
   id: string;
   user_id: string;
+  profile_image?: string;
   bio_fr?: string;
   bio_en?: string;
   experience: number; // Années

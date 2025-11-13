@@ -108,10 +108,10 @@ export const ProviderDetailsScreen: React.FC = () => {
       <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
         {!loading && providerData && (
           isTherapist ? (
-            // Thérapeute: avatar de l'utilisateur ou première image du portfolio
-            (therapist?.user?.avatar || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
+            // Thérapeute: profile_image ou première image du portfolio
+            (therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
               <Image
-                source={{ uri: therapist?.user?.avatar || therapist.portfolio_images[0] }}
+                source={{ uri: therapist?.profile_image || therapist.portfolio_images[0] }}
                 style={styles.headerImage}
                 resizeMode="cover"
               />
