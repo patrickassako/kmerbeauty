@@ -294,7 +294,7 @@ export interface Booking {
   salon_id?: string;
   scheduled_at: string;
   duration: number;
-  location_type: 'AT_HOME' | 'AT_SALON';
+  location_type: 'HOME' | 'SALON';
   quarter?: string;
   street?: string;
   landmark?: string;
@@ -323,7 +323,7 @@ export interface CreateBookingDto {
   salon_id?: string;
   scheduled_at: string;
   duration: number;
-  location_type: 'AT_HOME' | 'AT_SALON';
+  location_type: 'HOME' | 'SALON';
   quarter?: string;
   street?: string;
   landmark?: string;

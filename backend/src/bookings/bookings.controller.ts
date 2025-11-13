@@ -14,7 +14,7 @@ export interface CreateBookingDto {
   salon_id?: string;
   scheduled_at: string; // ISO date string
   duration: number; // Total duration in minutes
-  location_type: 'AT_HOME' | 'AT_SALON';
+  location_type: 'HOME' | 'SALON';
   quarter?: string;
   street?: string;
   landmark?: string;

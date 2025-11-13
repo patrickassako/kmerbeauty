@@ -34,12 +34,16 @@ export const BookingScreen: React.FC = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [locationType, setLocationType] = useState<'HOME' | 'SALON'>('SALON');
   const [address, setAddress] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingServices, setLoadingServices] = useState(false);
   const [providerServices, setProviderServices] = useState<any[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([service.id]);
+
+  // Frais de déplacement fixes (peut être calculé dynamiquement plus tard)
+  const TRAVEL_FEE = 1000; // 1000 XAF
 
   // Générer les dates disponibles (7 prochains jours)
   const availableDates = Array.from({ length: 7 }, (_, i) => {
@@ -111,23 +115,27 @@ export const BookingScreen: React.FC = () => {
 
   // Calculer le prix total et la durée totale
   const calculateTotals = () => {
-    let totalPrice = providerPrice || service.base_price;
+    let subtotal = providerPrice || service.base_price;
     let totalDuration = service.duration || 0;
 
     selectedServices.forEach(serviceId => {
       if (serviceId !== service.id) {
         const additionalService = providerServices.find(s => s.id === serviceId);
         if (additionalService) {
-          totalPrice += additionalService.service_price || additionalService.base_price || 0;
+          subtotal += additionalService.service_price || additionalService.base_price || 0;
           totalDuration += additionalService.duration || 0;
         }
       }
     });
 
-    return { totalPrice, totalDuration };
+    // Ajouter les frais de déplacement si service à domicile
+    const travelFee = locationType === 'HOME' ? TRAVEL_FEE : 0;
+    const totalPrice = subtotal + travelFee;
+
+    return { subtotal, travelFee, totalPrice, totalDuration };
   };
 
-  const { totalPrice, totalDuration } = calculateTotals();
+  const { subtotal, travelFee, totalPrice, totalDuration } = calculateTotals();
 
   const handleBooking = async () => {
     if (!selectedDate || !selectedTime) {
@@ -140,12 +148,12 @@ export const BookingScreen: React.FC = () => {
       return;
     }
 
-    if (!address.trim()) {
+    if (locationType === 'HOME' && !address.trim()) {
       Alert.alert(
         language === 'fr' ? 'Adresse manquante' : 'Address missing',
         language === 'fr'
-          ? 'Veuillez saisir votre adresse complète'
-          : 'Please enter your complete address'
+          ? 'Veuillez saisir votre adresse complète pour un service à domicile'
+          : 'Please enter your complete address for home service'
       );
       return;
     }
@@ -202,9 +210,20 @@ export const BookingScreen: React.FC = () => {
       }).filter(Boolean) as any[];
 
       // Parser l'adresse pour extraire city et region (simple parsing)
-      const addressParts = address.split(',').map(p => p.trim());
-      const city = addressParts.length > 0 ? addressParts[addressParts.length - 1] : 'Douala';
-      const region = 'Littoral'; // Valeur par défaut pour le Cameroun
+      let city = 'Douala';
+      let region = 'Littoral';
+      let street = '';
+
+      if (locationType === 'HOME' && address.trim()) {
+        const addressParts = address.split(',').map(p => p.trim());
+        street = address;
+        city = addressParts.length > 0 ? addressParts[addressParts.length - 1] : 'Douala';
+        region = 'Littoral'; // Valeur par défaut pour le Cameroun
+      } else {
+        // Si salon, utiliser l'adresse du prestataire (on pourrait la récupérer du provider)
+        city = 'Douala';
+        region = 'Littoral';
+      }
 
       // Préparer les notes
       let notesContent = additionalNotes.trim() || '';
@@ -216,13 +235,13 @@ export const BookingScreen: React.FC = () => {
         salon_id: providerType === 'salon' ? providerId : undefined,
         scheduled_at: scheduledAt.toISOString(),
         duration: totalDuration,
-        location_type: 'AT_HOME', // Par défaut, peut être modifié plus tard
-        street: address,
+        location_type: locationType,
+        street: street || undefined,
         city: city,
         region: region,
         instructions: notesContent || undefined,
-        subtotal: totalPrice,
-        travel_fee: 0,
+        subtotal: subtotal,
+        travel_fee: travelFee,
         tip: 0,
         total: totalPrice,
         notes: notesContent || undefined,
@@ -356,21 +375,83 @@ export const BookingScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Address Input */}
+        {/* Location Type Selection */}
         <View style={[styles.section, { marginBottom: spacing(3) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
-            {language === 'fr' ? 'Adresse complète *' : 'Complete address *'}
+            {language === 'fr' ? 'Lieu du service' : 'Service location'}
           </Text>
-          <TextInput
-            style={[styles.addressInput, { padding: spacing(2), borderRadius: spacing(2), fontSize: normalizeFontSize(14), minHeight: spacing(12) }]}
-            placeholder={language === 'fr' ? 'Entrez votre adresse complète (rue, quartier, ville)...' : 'Enter your complete address (street, district, city)...'}
-            placeholderTextColor="#999"
-            value={address}
-            onChangeText={setAddress}
-            multiline
-            textAlignVertical="top"
-          />
+          <View style={styles.locationTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.locationTypeButton,
+                { flex: 1, padding: spacing(2), borderRadius: spacing(2), marginRight: spacing(1) },
+                locationType === 'SALON' && styles.locationTypeButtonSelected,
+              ]}
+              onPress={() => setLocationType('SALON')}
+            >
+              <Text style={[styles.locationTypeIcon, { fontSize: normalizeFontSize(24), marginBottom: spacing(0.5) }]}>
+                🏢
+              </Text>
+              <Text style={[
+                styles.locationTypeText,
+                { fontSize: normalizeFontSize(14) },
+                locationType === 'SALON' && styles.locationTypeTextSelected,
+              ]}>
+                {language === 'fr' ? 'En institut' : 'At salon'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.locationTypeButton,
+                { flex: 1, padding: spacing(2), borderRadius: spacing(2), marginLeft: spacing(1) },
+                locationType === 'HOME' && styles.locationTypeButtonSelected,
+              ]}
+              onPress={() => setLocationType('HOME')}
+            >
+              <Text style={[styles.locationTypeIcon, { fontSize: normalizeFontSize(24), marginBottom: spacing(0.5) }]}>
+                🏠
+              </Text>
+              <Text style={[
+                styles.locationTypeText,
+                { fontSize: normalizeFontSize(14) },
+                locationType === 'HOME' && styles.locationTypeTextSelected,
+              ]}>
+                {language === 'fr' ? 'À domicile' : 'At home'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Travel Fee Notice for Home Service */}
+          {locationType === 'HOME' && (
+            <View style={[styles.travelFeeNotice, { marginTop: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
+              <Text style={[styles.travelFeeIcon, { fontSize: normalizeFontSize(16) }]}>ℹ️</Text>
+              <Text style={[styles.travelFeeText, { fontSize: normalizeFontSize(12), flex: 1, marginLeft: spacing(1) }]}>
+                {language === 'fr'
+                  ? `Des frais de déplacement de ${formatCurrency(TRAVEL_FEE, countryCode)} seront ajoutés pour un service à domicile.`
+                  : `A travel fee of ${formatCurrency(TRAVEL_FEE, countryCode)} will be added for home service.`}
+              </Text>
+            </View>
+          )}
         </View>
+
+        {/* Address Input - Only for Home Service */}
+        {locationType === 'HOME' && (
+          <View style={[styles.section, { marginBottom: spacing(3) }]}>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
+              {language === 'fr' ? 'Adresse complète *' : 'Complete address *'}
+            </Text>
+            <TextInput
+              style={[styles.addressInput, { padding: spacing(2), borderRadius: spacing(2), fontSize: normalizeFontSize(14), minHeight: spacing(12) }]}
+              placeholder={language === 'fr' ? 'Entrez votre adresse complète (rue, quartier, ville)...' : 'Enter your complete address (street, district, city)...'}
+              placeholderTextColor="#999"
+              value={address}
+              onChangeText={setAddress}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        )}
 
         {/* Additional Services */}
         {providerServices.length > 0 && (
@@ -552,8 +633,26 @@ export const BookingScreen: React.FC = () => {
               </View>
             )}
             <View style={[styles.summaryRow, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#F0F0F0' }]}>
+              <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Sous-total services' : 'Services subtotal'}:
+              </Text>
+              <Text style={[styles.summaryValue, { fontSize: normalizeFontSize(14) }]}>
+                {formatCurrency(subtotal, countryCode)}
+              </Text>
+            </View>
+            {travelFee > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {language === 'fr' ? 'Frais de déplacement' : 'Travel fee'}:
+                </Text>
+                <Text style={[styles.summaryValue, { fontSize: normalizeFontSize(14) }]}>
+                  {formatCurrency(travelFee, countryCode)}
+                </Text>
+              </View>
+            )}
+            <View style={[styles.summaryRow, { marginTop: spacing(1), paddingTop: spacing(1), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
               <Text style={[styles.summaryLabel, { fontSize: normalizeFontSize(16), fontWeight: '700' }]}>
-                {language === 'fr' ? 'Prix total' : 'Total price'}:
+                {language === 'fr' ? 'Total' : 'Total'}:
               </Text>
               <Text style={[styles.summaryTotal, { fontSize: normalizeFontSize(18) }]}>
                 {formatCurrency(totalPrice, countryCode)}
@@ -699,6 +798,47 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     color: '#666',
+    lineHeight: 18,
+  },
+  locationTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  locationTypeButton: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationTypeButtonSelected: {
+    backgroundColor: '#FFF5F5',
+    borderColor: '#FF6B6B',
+  },
+  locationTypeIcon: {
+    textAlign: 'center',
+  },
+  locationTypeText: {
+    color: '#666',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  locationTypeTextSelected: {
+    color: '#FF6B6B',
+    fontWeight: '700',
+  },
+  travelFeeNotice: {
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  travelFeeIcon: {
+    marginTop: 2,
+  },
+  travelFeeText: {
+    color: '#1976D2',
     lineHeight: 18,
   },
   addressInput: {
