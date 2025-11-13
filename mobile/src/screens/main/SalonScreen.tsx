@@ -11,16 +11,12 @@ import {
   TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useSalons } from '../../hooks/useSalons';
-import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-
-type SalonScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 
 export const SalonScreen: React.FC = () => {
-  const navigation = useNavigation<SalonScreenNavigationProp>();
+  const navigation = useNavigation<any>();
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
   const { salons, loading, refetch } = useSalons();
@@ -42,9 +38,13 @@ export const SalonScreen: React.FC = () => {
   });
 
   const handleSalonPress = (salon: typeof salons[0]) => {
-    navigation.navigate('ProviderDetails', {
-      providerId: salon.id,
-      providerType: 'salon',
+    // Navigate to Home tab, then to ProviderDetails
+    navigation.navigate('Home', {
+      screen: 'ProviderDetails',
+      params: {
+        providerId: salon.id,
+        providerType: 'salon',
+      },
     });
   };
 

@@ -11,18 +11,14 @@ import {
   TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useServices } from '../../hooks/useServices';
 import { useCategories } from '../../hooks/useCategories';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
-import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-
-type ServiceScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList>;
 
 export const ServiceScreen: React.FC = () => {
-  const navigation = useNavigation<ServiceScreenNavigationProp>();
+  const navigation = useNavigation<any>();
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
   const { services, loading, refetch } = useServices();
@@ -61,11 +57,11 @@ export const ServiceScreen: React.FC = () => {
   });
 
   const handleServicePress = (service: typeof services[0]) => {
-    navigation.navigate('ServiceProviders', {
-      service: {
-        ...service,
-        providers: [],
-        provider_count: service.provider_count || 0,
+    // Navigate to Home tab, then to ServiceDetails
+    navigation.navigate('Home', {
+      screen: 'ServiceDetails',
+      params: {
+        service: service,
       },
     });
   };
@@ -98,24 +94,24 @@ export const ServiceScreen: React.FC = () => {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={[{ paddingLeft: spacing(2.5), marginBottom: spacing(2) }]}
-        contentContainerStyle={{ paddingRight: spacing(2.5) }}
+        style={[{ paddingLeft: spacing(2.5), marginBottom: spacing(1.5), maxHeight: spacing(5) }]}
+        contentContainerStyle={{ paddingRight: spacing(2.5), alignItems: 'center' }}
       >
         <TouchableOpacity
-          style={[styles.categoryChip, selectedCategory === 'all' && styles.categoryChipActive, { paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(2.5), marginRight: spacing(1) }]}
+          style={[styles.categoryChip, selectedCategory === 'all' && styles.categoryChipActive, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.75), borderRadius: spacing(2), marginRight: spacing(1) }]}
           onPress={() => setSelectedCategory('all')}
         >
-          <Text style={[styles.categoryChipText, selectedCategory === 'all' && styles.categoryChipTextActive, { fontSize: normalizeFontSize(12) }]}>
+          <Text style={[styles.categoryChipText, selectedCategory === 'all' && styles.categoryChipTextActive, { fontSize: normalizeFontSize(11) }]}>
             Tout
           </Text>
         </TouchableOpacity>
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.category}
-            style={[styles.categoryChip, selectedCategory === cat.category && styles.categoryChipActive, { paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(2.5), marginRight: spacing(1) }]}
+            style={[styles.categoryChip, selectedCategory === cat.category && styles.categoryChipActive, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.75), borderRadius: spacing(2), marginRight: spacing(1) }]}
             onPress={() => setSelectedCategory(cat.category)}
           >
-            <Text style={[styles.categoryChipText, selectedCategory === cat.category && styles.categoryChipTextActive, { fontSize: normalizeFontSize(12) }]}>
+            <Text style={[styles.categoryChipText, selectedCategory === cat.category && styles.categoryChipTextActive, { fontSize: normalizeFontSize(11) }]}>
               {categoryIcons[cat.category]} {language === 'fr' ? cat.name_fr : cat.name_en}
             </Text>
           </TouchableOpacity>
@@ -161,6 +157,11 @@ export const ServiceScreen: React.FC = () => {
                     <Text style={{ color: '#CCC' }}>•</Text>
                     <Text style={{ fontSize: normalizeFontSize(12), color: '#666' }}>{service.duration}min</Text>
                   </View>
+                  {service.provider_count !== undefined && service.provider_count > 0 && (
+                    <Text style={{ fontSize: normalizeFontSize(11), color: '#999', marginTop: 2 }}>
+                      {service.provider_count} prestataire{service.provider_count > 1 ? 's' : ''}
+                    </Text>
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
