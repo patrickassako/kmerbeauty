@@ -101,13 +101,19 @@ export const ServiceProvidersScreen: React.FC = () => {
     }
   }, [providers, sortBy]);
 
-  const handleProviderPress = (provider: typeof service.providers[0]) => {
+  const handleProviderPress = (provider: typeof providers[0]) => {
     navigation.navigate('ProviderDetails', {
-      provider: provider,
+      provider: {
+        type: provider.type,
+        id: provider.id,
+        name: provider.name,
+        rating: provider.rating,
+        reviewCount: provider.review_count,
+      },
     });
   };
 
-  const handleContactPress = (provider: typeof service.providers[0]) => {
+  const handleContactPress = (provider: typeof providers[0]) => {
     navigation.navigate('Chat', {
       providerId: provider.id,
       providerType: provider.type,

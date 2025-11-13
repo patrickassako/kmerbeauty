@@ -69,6 +69,33 @@ export const HomeScreen: React.FC = () => {
     provider_count: service.provider_count || 0,
   }));
 
+  // Grouper les services par catégorie
+  const servicesByCategory = services.reduce((acc, service) => {
+    const category = service.category || 'OTHER';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push({
+      ...service,
+      priority: 10,
+      providers: [],
+      provider_count: service.provider_count || 0,
+    });
+    return acc;
+  }, {} as Record<string, ServiceWithProviders[]>);
+
+  // Noms des catégories en français
+  const categoryNames: Record<string, { fr: string; en: string }> = {
+    WELLNESS_MASSAGE: { fr: 'Massage & Bien-être', en: 'Massage & Wellness' },
+    FACIAL_CARE: { fr: 'Soins du visage', en: 'Facial Care' },
+    HAIR_CARE: { fr: 'Coiffure', en: 'Hair Care' },
+    NAIL_CARE: { fr: 'Soins des ongles', en: 'Nail Care' },
+    BODY_CARE: { fr: 'Soins du corps', en: 'Body Care' },
+    MAKEUP: { fr: 'Maquillage', en: 'Makeup' },
+    AESTHETIC: { fr: 'Esthétique', en: 'Aesthetic' },
+    OTHER: { fr: 'Autres services', en: 'Other Services' },
+  };
+
   // Mock data pour les bookings et packages (à implémenter plus tard)
   const upcomingBookings: Booking[] = [];
   const servicePackages: PackageWithProviders[] = [];
@@ -381,27 +408,59 @@ export const HomeScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Categories */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.categories}</Text>
-            <TouchableOpacity>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Services par Catégorie */}
+        {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
+          categoryServices.length > 0 && (
+            <View key={category} style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>
+                  {categoryNames[category]?.[language] || category}
+                </Text>
+                <TouchableOpacity>
+                  <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll || 'Voir tout'}</Text>
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.categoriesGrid}>
-            {['Coiffure', 'Soins yeux', 'Massage'].map((category, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.categoryCard, { paddingVertical: spacing(2), paddingHorizontal: spacing(2), borderRadius: spacing(1.5) }]}
-              >
-                <Text style={[styles.categoryIcon, { fontSize: normalizeFontSize(20), marginBottom: spacing(0.5) }]}>✂️</Text>
-                <Text style={[styles.categoryName, { fontSize: normalizeFontSize(12) }]}>{category}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
+                {categoryServices.slice(0, 10).map((service) => (
+                  <TouchableOpacity
+                    key={service.id}
+                    style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                    onPress={() => handleServicePress(service)}
+                  >
+                    <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                      {service.images && service.images.length > 0 && service.images[0] ? (
+                        <Image
+                          source={{ uri: service.images[0] }}
+                          style={styles.serviceImageActual}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.serviceImagePlaceholder}>
+                          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
+                        </View>
+                      )}
+                      <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                        <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
+                          {service.provider_count || 0} prestataires
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                      {language === 'fr' ? service.name_fr : service.name_en}
+                    </Text>
+                    <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                      À partir de {formatCurrency(service.base_price, countryCode)}
+                    </Text>
+                    <View style={styles.serviceFooter}>
+                      <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )
+        ))}
 
         {/* Service Packages */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
