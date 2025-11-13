@@ -157,7 +157,7 @@ export const ChatScreen: React.FC = () => {
     try {
       // Read file as base64
       const fileData = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       // Get file extension
@@ -225,7 +225,7 @@ export const ChatScreen: React.FC = () => {
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         quality: 0.8,
       });
