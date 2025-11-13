@@ -282,12 +282,12 @@ export const ServiceProvidersScreen: React.FC = () => {
 
                 <View style={styles.providerMeta}>
                   <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12) }]}>
-                    ⭐ {provider.rating.toFixed(1)}
+                    ⭐ {provider.rating ? provider.rating.toFixed(1) : '5.0'}
                   </Text>
                   <Text style={[styles.providerReviews, { fontSize: normalizeFontSize(12) }]}>
-                    ({provider.review_count} avis)
+                    ({provider.review_count || 0} avis)
                   </Text>
-                  {provider.distance && (
+                  {provider.distance && provider.distance > 0 && (
                     <>
                       <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
                       <Text style={[styles.providerDistance, { fontSize: normalizeFontSize(12) }]}>
