@@ -9,6 +9,7 @@ export class BookingsService {
   async create(createBookingDto: CreateBookingDto) {
     const supabase = this.supabaseService.getClient();
 
+    // Créer le booking d'abord
     const { data, error } = await supabase
       .from('bookings')
       .insert([
@@ -24,24 +25,19 @@ export class BookingsService {
           status: 'pending',
         },
       ])
-      .select(
-        `
-        *,
-        service:service_id (
-          id,
-          name_fr,
-          name_en,
-          duration,
-          base_price,
-          images
-        )
-      `,
-      )
+      .select('*')
       .single();
 
     if (error) {
       throw new Error(`Failed to create booking: ${error.message}`);
     }
+
+    // Récupérer les infos du service séparément
+    const { data: serviceData } = await supabase
+      .from('services')
+      .select('id, name_fr, name_en, duration, base_price, images')
+      .eq('id', createBookingDto.service_id)
+      .single();
 
     // Récupérer les infos du prestataire
     let providerData = null;
@@ -82,6 +78,7 @@ export class BookingsService {
 
     return {
       ...data,
+      service: serviceData,
       provider: providerData,
     };
   }
@@ -91,19 +88,7 @@ export class BookingsService {
 
     let query = supabase
       .from('bookings')
-      .select(
-        `
-        *,
-        service:service_id (
-          id,
-          name_fr,
-          name_en,
-          duration,
-          base_price,
-          images
-        )
-      `,
-      )
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (userId) {
@@ -116,9 +101,15 @@ export class BookingsService {
       throw new Error(`Failed to fetch bookings: ${error.message}`);
     }
 
-    // Pour chaque booking, récupérer les infos du prestataire
+    // Pour chaque booking, récupérer les infos du service et du prestataire
     const bookingsWithProviders = await Promise.all(
       data.map(async (booking) => {
+        // Récupérer le service
+        const { data: serviceData } = await supabase
+          .from('services')
+          .select('id, name_fr, name_en, duration, base_price, images')
+          .eq('id', booking.service_id)
+          .single();
         let providerData = null;
         if (booking.provider_type === 'therapist') {
           const { data: therapist } = await supabase
@@ -156,6 +147,7 @@ export class BookingsService {
 
         return {
           ...booking,
+          service: serviceData,
           provider: providerData,
         };
       }),
@@ -169,28 +161,22 @@ export class BookingsService {
 
     const { data, error } = await supabase
       .from('bookings')
-      .select(
-        `
-        *,
-        service:service_id (
-          id,
-          name_fr,
-          name_en,
-          description_fr,
-          description_en,
-          duration,
-          base_price,
-          images,
-          category
-        )
-      `,
-      )
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) {
       throw new Error(`Failed to fetch booking: ${error.message}`);
     }
+
+    // Récupérer les infos du service séparément
+    const { data: serviceData } = await supabase
+      .from('services')
+      .select(
+        'id, name_fr, name_en, description_fr, description_en, duration, base_price, images, category',
+      )
+      .eq('id', data.service_id)
+      .single();
 
     // Récupérer les infos du prestataire
     let providerData = null;
@@ -241,6 +227,7 @@ export class BookingsService {
 
     return {
       ...data,
+      service: serviceData,
       provider: providerData,
     };
   }
