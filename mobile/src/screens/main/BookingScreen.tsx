@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,7 +22,7 @@ type BookingNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Book
 export const BookingScreen: React.FC = () => {
   const route = useRoute<BookingRouteProp>();
   const navigation = useNavigation<BookingNavigationProp>();
-  const { service, providerId, providerType, providerName } = route.params;
+  const { service, providerId, providerType, providerName, providerPrice } = route.params;
 
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
@@ -149,35 +150,61 @@ export const BookingScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Service Info */}
-        <View style={[styles.serviceCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
-          <Text style={[styles.serviceLabel, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
-            {language === 'fr' ? 'Service' : 'Service'}
-          </Text>
-          <Text style={[styles.serviceName, { fontSize: normalizeFontSize(18), marginBottom: spacing(1) }]}>
-            {language === 'fr' ? service.name_fr : service.name_en}
-          </Text>
-          <View style={styles.serviceDetails}>
-            <Text style={[styles.serviceDetail, { fontSize: normalizeFontSize(14) }]}>
-              ⏰ {service.duration}min
-            </Text>
-            <Text style={[styles.serviceDivider, { fontSize: normalizeFontSize(14), marginHorizontal: spacing(1.5) }]}>
-              •
-            </Text>
-            <Text style={[styles.serviceDetail, { fontSize: normalizeFontSize(14) }]}>
-              {formatCurrency(service.base_price, countryCode)}
-            </Text>
-          </View>
-
-          {providerName && (
-            <View style={[styles.providerInfo, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#F0F0F0' }]}>
-              <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12) }]}>
-                {language === 'fr' ? 'Prestataire' : 'Provider'}
-              </Text>
-              <Text style={[styles.providerName, { fontSize: normalizeFontSize(14) }]}>
-                {providerName}
+        <View style={[styles.serviceCard, { borderRadius: spacing(2), marginBottom: spacing(3), overflow: 'hidden' }]}>
+          {/* Service Image */}
+          {service.images && service.images.length > 0 && service.images[0] ? (
+            <View style={[styles.serviceImageContainer, { height: spacing(25) }]}>
+              <Image
+                source={{ uri: service.images[0] }}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            </View>
+          ) : (
+            <View style={[styles.serviceImagePlaceholder, { height: spacing(25) }]}>
+              <Text style={[styles.serviceImagePlaceholderText, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Photo du service' : 'Service photo'}
               </Text>
             </View>
           )}
+
+          <View style={[{ padding: spacing(2) }]}>
+            <Text style={[styles.serviceLabel, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
+              {language === 'fr' ? 'Service' : 'Service'}
+            </Text>
+            <Text style={[styles.serviceName, { fontSize: normalizeFontSize(18), marginBottom: spacing(1) }]}>
+              {language === 'fr' ? service.name_fr : service.name_en}
+            </Text>
+            <View style={styles.serviceDetails}>
+              <Text style={[styles.serviceDetail, { fontSize: normalizeFontSize(14) }]}>
+                ⏰ {service.duration}min
+              </Text>
+              <Text style={[styles.serviceDivider, { fontSize: normalizeFontSize(14), marginHorizontal: spacing(1.5) }]}>
+                •
+              </Text>
+              <Text style={[styles.serviceDetail, { fontSize: normalizeFontSize(14), fontWeight: '700', color: '#FF6B6B' }]}>
+                {formatCurrency(providerPrice || service.base_price, countryCode)}
+              </Text>
+            </View>
+
+            {providerName && (
+              <View style={[styles.providerInfo, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#F0F0F0' }]}>
+                <View style={styles.providerHeaderRow}>
+                  <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12) }]}>
+                    {language === 'fr' ? 'Prestataire' : 'Provider'}
+                  </Text>
+                  {providerType === 'salon' && (
+                    <View style={[styles.providerTypeBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1) }]}>
+                      <Text style={[styles.providerTypeBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.providerName, { fontSize: normalizeFontSize(14) }]}>
+                  {providerName}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Date Selection */}
@@ -345,9 +372,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+  },
+  serviceImageContainer: {
+    width: '100%',
+    backgroundColor: '#F5F5F5',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+  },
+  serviceImagePlaceholder: {
+    width: '100%',
+    backgroundColor: '#E0E0E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceImagePlaceholderText: {
+    color: '#999',
   },
   serviceLabel: {
     color: '#999',
@@ -368,9 +412,21 @@ const styles = StyleSheet.create({
     color: '#CCC',
   },
   providerInfo: {},
+  providerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   providerLabel: {
     color: '#999',
-    marginBottom: 4,
+  },
+  providerTypeBadge: {
+    backgroundColor: '#E3F2FD',
+  },
+  providerTypeBadgeText: {
+    color: '#1976D2',
+    fontWeight: '600',
   },
   providerName: {
     fontWeight: '600',

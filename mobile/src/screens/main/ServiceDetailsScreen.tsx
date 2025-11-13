@@ -35,6 +35,12 @@ export const ServiceDetailsScreen: React.FC = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>('whatsIncluded');
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<{
+    id: string;
+    type: 'therapist' | 'salon';
+    name: string;
+    price: number;
+  } | null>(null);
 
   // Charger les détails du service
   const { service: serviceData, loading: loadingService } = useService(serviceParam.id);
@@ -57,7 +63,21 @@ export const ServiceDetailsScreen: React.FC = () => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const handleProviderPress = (providerId: string, providerType: 'therapist' | 'salon') => {
+  const handleSelectProvider = (providerId: string, providerType: 'therapist' | 'salon', providerName: string, price: number) => {
+    // Si le même prestataire est cliqué, le désélectionner
+    if (selectedProvider?.id === providerId) {
+      setSelectedProvider(null);
+    } else {
+      setSelectedProvider({
+        id: providerId,
+        type: providerType,
+        name: providerName,
+        price,
+      });
+    }
+  };
+
+  const handleViewProviderDetails = (providerId: string, providerType: 'therapist' | 'salon') => {
     navigation.navigate('ProviderDetails', { providerId, providerType });
   };
 
@@ -66,7 +86,17 @@ export const ServiceDetailsScreen: React.FC = () => {
   };
 
   const handleBookNow = () => {
-    navigation.navigate('Booking', { service });
+    if (!selectedProvider) {
+      return; // Ne rien faire si aucun prestataire n'est sélectionné
+    }
+
+    navigation.navigate('Booking', {
+      service,
+      providerId: selectedProvider.id,
+      providerType: selectedProvider.type,
+      providerName: selectedProvider.name,
+      providerPrice: selectedProvider.price,
+    });
   };
 
   // Mock data for components/steps (peut être enrichi depuis la BDD plus tard)
@@ -202,46 +232,71 @@ export const ServiceDetailsScreen: React.FC = () => {
                   {therapists.slice(0, 3).map((therapist) => {
                     const therapistName = `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute';
                     const avatar = therapist.profile_image || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null);
+                    const isSelected = selectedProvider?.id === therapist.id;
+                    const price = therapist.service_price || service.base_price;
 
                     return (
-                      <TouchableOpacity
-                        key={therapist.id}
-                        style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(2) }]}
-                        onPress={() => handleProviderPress(therapist.id, 'therapist')}
-                      >
-                        <View style={styles.providerCardContent}>
-                          <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                            {avatar ? (
-                              <Image
-                                source={{ uri: avatar }}
-                                style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>👤</Text>
-                            )}
-                          </View>
-                          <View style={styles.providerCardInfo}>
-                            <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
-                              {therapistName}
-                            </Text>
-                            <View style={styles.providerCardMeta}>
-                              <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
-                                ⭐ {therapist.rating != null ? therapist.rating.toFixed(1) : '5.0'}
-                              </Text>
-                              <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
-                              <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
-                                {therapist.city || 'Ville inconnue'}
+                      <View key={therapist.id} style={[{ marginBottom: spacing(2) }]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.providerCard,
+                            { padding: spacing(2), borderRadius: spacing(2) },
+                            isSelected && styles.providerCardSelected,
+                          ]}
+                          onPress={() => handleSelectProvider(therapist.id, 'therapist', therapistName, price)}
+                        >
+                          <View style={styles.providerCardContent}>
+                            <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+                              {avatar ? (
+                                <Image
+                                  source={{ uri: avatar }}
+                                  style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                                  resizeMode="cover"
+                                />
+                              ) : (
+                                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>👤</Text>
+                              )}
+                              {isSelected && (
+                                <View style={[styles.selectedBadge, { position: 'absolute', top: 0, right: 0, width: spacing(3), height: spacing(3), borderRadius: spacing(1.5) }]}>
+                                  <Text style={[styles.selectedBadgeText, { fontSize: normalizeFontSize(12) }]}>✓</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.providerCardInfo}>
+                              <View style={styles.providerCardNameRow}>
+                                <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                                  {therapistName}
+                                </Text>
+                                {isSelected && (
+                                  <View style={[styles.selectedLabel, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                                    <Text style={[styles.selectedLabelText, { fontSize: normalizeFontSize(10) }]}>Sélectionné</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <View style={styles.providerCardMeta}>
+                                <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
+                                  ⭐ {therapist.rating != null ? therapist.rating.toFixed(1) : '5.0'}
+                                </Text>
+                                <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
+                                <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
+                                  {therapist.city || 'Ville inconnue'}
+                                </Text>
+                              </View>
+                              <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
+                                {formatCurrency(price, countryCode)}
                               </Text>
                             </View>
-                            {therapist.service_price && (
-                              <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
-                                {formatCurrency(therapist.service_price, countryCode)}
-                              </Text>
-                            )}
                           </View>
-                        </View>
-                      </TouchableOpacity>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.viewDetailsLink, { paddingVertical: spacing(0.5), paddingLeft: spacing(2), marginTop: spacing(0.5) }]}
+                          onPress={() => handleViewProviderDetails(therapist.id, 'therapist')}
+                        >
+                          <Text style={[styles.viewDetailsLinkText, { fontSize: normalizeFontSize(12) }]}>
+                            Voir les détails →
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     );
                   })}
 
@@ -249,51 +304,74 @@ export const ServiceDetailsScreen: React.FC = () => {
                   {salons.slice(0, 3 - therapists.slice(0, 3).length).map((salon) => {
                     const salonName = (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut';
                     const avatar = salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null);
+                    const isSelected = selectedProvider?.id === salon.id;
+                    const price = salon.service_price || service.base_price;
 
                     return (
-                      <TouchableOpacity
-                        key={salon.id}
-                        style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(2) }]}
-                        onPress={() => handleProviderPress(salon.id, 'salon')}
-                      >
-                        <View style={styles.providerCardContent}>
-                          <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                            {avatar ? (
-                              <Image
-                                source={{ uri: avatar }}
-                                style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>🏪</Text>
-                            )}
-                          </View>
-                          <View style={styles.providerCardInfo}>
-                            <View style={styles.providerCardNameRow}>
-                              <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
-                                {salonName}
-                              </Text>
-                              <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
-                                <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                      <View key={salon.id} style={[{ marginBottom: spacing(2) }]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.providerCard,
+                            { padding: spacing(2), borderRadius: spacing(2) },
+                            isSelected && styles.providerCardSelected,
+                          ]}
+                          onPress={() => handleSelectProvider(salon.id, 'salon', salonName, price)}
+                        >
+                          <View style={styles.providerCardContent}>
+                            <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+                              {avatar ? (
+                                <Image
+                                  source={{ uri: avatar }}
+                                  style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                                  resizeMode="cover"
+                                />
+                              ) : (
+                                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>🏪</Text>
+                              )}
+                              {isSelected && (
+                                <View style={[styles.selectedBadge, { position: 'absolute', top: 0, right: 0, width: spacing(3), height: spacing(3), borderRadius: spacing(1.5) }]}>
+                                  <Text style={[styles.selectedBadgeText, { fontSize: normalizeFontSize(12) }]}>✓</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.providerCardInfo}>
+                              <View style={styles.providerCardNameRow}>
+                                <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16), flex: 1 }]} numberOfLines={1}>
+                                  {salonName}
+                                </Text>
+                                <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                                  <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                                </View>
+                                {isSelected && (
+                                  <View style={[styles.selectedLabel, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                                    <Text style={[styles.selectedLabelText, { fontSize: normalizeFontSize(10) }]}>Sélectionné</Text>
+                                  </View>
+                                )}
                               </View>
-                            </View>
-                            <View style={styles.providerCardMeta}>
-                              <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
-                                ⭐ {salon.rating != null ? salon.rating.toFixed(1) : '5.0'}
-                              </Text>
-                              <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
-                              <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
-                                {salon.city || 'Ville inconnue'}
-                              </Text>
-                            </View>
-                            {salon.service_price && (
+                              <View style={styles.providerCardMeta}>
+                                <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
+                                  ⭐ {salon.rating != null ? salon.rating.toFixed(1) : '5.0'}
+                                </Text>
+                                <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
+                                <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
+                                  {salon.city || 'Ville inconnue'}
+                                </Text>
+                              </View>
                               <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
-                                {formatCurrency(salon.service_price, countryCode)}
+                                {formatCurrency(price, countryCode)}
                               </Text>
-                            )}
+                            </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.viewDetailsLink, { paddingVertical: spacing(0.5), paddingLeft: spacing(2), marginTop: spacing(0.5) }]}
+                          onPress={() => handleViewProviderDetails(salon.id, 'salon')}
+                        >
+                          <Text style={[styles.viewDetailsLinkText, { fontSize: normalizeFontSize(12) }]}>
+                            Voir les détails →
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     );
                   })}
 
@@ -409,12 +487,28 @@ export const ServiceDetailsScreen: React.FC = () => {
       {/* Bottom Action Button */}
       {!loading && totalProviders > 0 && (
         <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
+          {!selectedProvider && (
+            <Text style={[styles.selectProviderHint, { fontSize: normalizeFontSize(12), textAlign: 'center', marginBottom: spacing(1) }]}>
+              Sélectionnez un prestataire pour réserver
+            </Text>
+          )}
           <TouchableOpacity
-            style={[styles.bookButton, { paddingVertical: spacing(2), borderRadius: spacing(2) }]}
+            style={[
+              styles.bookButton,
+              { paddingVertical: spacing(2), borderRadius: spacing(2) },
+              !selectedProvider && styles.bookButtonDisabled,
+            ]}
             onPress={handleBookNow}
+            disabled={!selectedProvider}
           >
-            <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(14) }]}>
-              Réserver maintenant
+            <Text style={[
+              styles.bookButtonText,
+              { fontSize: normalizeFontSize(14) },
+              !selectedProvider && styles.bookButtonTextDisabled,
+            ]}>
+              {selectedProvider
+                ? `Réserver chez ${selectedProvider.name}`
+                : 'Sélectionnez un prestataire'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -528,6 +622,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
+  providerCardSelected: {
+    borderColor: '#2D2D2D',
+    borderWidth: 2,
+    backgroundColor: '#F8F8F8',
+  },
   providerCardContent: {
     flexDirection: 'row',
   },
@@ -585,6 +684,29 @@ const styles = StyleSheet.create({
   salonBadgeText: {
     color: '#1976D2',
     fontWeight: '600',
+  },
+  selectedBadge: {
+    backgroundColor: '#2D2D2D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedBadgeText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  selectedLabel: {
+    backgroundColor: '#2D2D2D',
+  },
+  selectedLabelText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  viewDetailsLink: {
+    alignSelf: 'flex-start',
+  },
+  viewDetailsLinkText: {
+    color: '#666',
+    textDecorationLine: 'underline',
   },
   viewAllProvidersButton: {
     backgroundColor: '#FFFFFF',
@@ -664,9 +786,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  bookButtonDisabled: {
+    backgroundColor: '#E0E0E0',
+    opacity: 0.6,
+  },
   bookButtonText: {
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  bookButtonTextDisabled: {
+    color: '#999',
+  },
+  selectProviderHint: {
+    color: '#FF6B6B',
+    fontWeight: '600',
   },
   placeholderText: {
     color: '#999',

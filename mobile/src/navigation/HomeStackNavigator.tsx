@@ -62,6 +62,7 @@ export type HomeStackParamList = {
     providerId?: string;
     providerType?: 'therapist' | 'salon';
     providerName?: string;
+    providerPrice?: number;
   };
   Chat: {
     providerId: string;
