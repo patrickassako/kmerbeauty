@@ -6,10 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useI18n } from '../../i18n/I18nContext';
+import { useService } from '../../hooks/useServices';
+import { useTherapists } from '../../hooks/useTherapists';
+import { useSalons } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -21,17 +28,44 @@ type ServiceDetailsNavigationProp = NativeStackNavigationProp<HomeStackParamList
 export const ServiceDetailsScreen: React.FC = () => {
   const route = useRoute<ServiceDetailsRouteProp>();
   const navigation = useNavigation<ServiceDetailsNavigationProp>();
-  const { service } = route.params;
+  const { service: serviceParam } = route.params;
 
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
+  const { language } = useI18n();
   const [expandedSection, setExpandedSection] = useState<string | null>('whatsIncluded');
   const [countryCode] = useState<CountryCode>('CM');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Charger les détails du service
+  const { service: serviceData, loading: loadingService } = useService(serviceParam.id);
+
+  // Charger les prestataires pour ce service
+  const { therapists, loading: loadingTherapists, refetch: refetchTherapists } = useTherapists({ serviceId: serviceParam.id });
+  const { salons, loading: loadingSalons, refetch: refetchSalons } = useSalons({ serviceId: serviceParam.id });
+
+  const loading = loadingService || loadingTherapists || loadingSalons;
+  const service = serviceData || serviceParam;
+  const totalProviders = therapists.length + salons.length;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTherapists(), refetchSalons()]);
+    setRefreshing(false);
+  };
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  // Mock data for components/steps
+  const handleProviderPress = (provider: any) => {
+    navigation.navigate('ProviderDetails', { provider });
+  };
+
+  const handleViewProviders = () => {
+    navigation.navigate('ServiceProviders', { service });
+  };
+
+  // Mock data for components/steps (peut être enrichi depuis la BDD plus tard)
   const components = service.components || [
     'Consultation et analyse des besoins',
     'Préparation et nettoyage',
@@ -49,31 +83,25 @@ export const ServiceDetailsScreen: React.FC = () => {
       date: '1 semaine',
       comment: 'Service excellent ! Très professionnel et résultats incroyables.',
     },
-    {
-      id: 2,
-      author: 'Marie K.',
-      rating: 5,
-      date: '2 semaines',
-      comment: 'Je recommande vivement ce service. Rapport qualité-prix imbattable.',
-    },
-    {
-      id: 3,
-      author: 'Jean-Paul D.',
-      rating: 4,
-      date: '3 semaines',
-      comment: 'Très satisfait du résultat. Personnel accueillant.',
-    },
   ];
 
   return (
     <View style={styles.container}>
       {/* Header Image Gallery */}
       <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
-        <View style={styles.headerImagePlaceholder}>
-          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-            Service Photos Gallery
-          </Text>
-        </View>
+        {service.images && service.images.length > 0 && service.images[0] ? (
+          <Image
+            source={{ uri: service.images[0] }}
+            style={styles.headerImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.headerImagePlaceholder}>
+            <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+              Service Photos
+            </Text>
+          </View>
+        )}
 
         {/* Back Button */}
         <TouchableOpacity
@@ -100,135 +128,162 @@ export const ServiceDetailsScreen: React.FC = () => {
           paddingHorizontal: isTablet ? containerPaddingHorizontal : 0,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
-          {/* Name */}
-          <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
-            {service.name}
-          </Text>
-
-          {/* Category */}
-          <View style={[styles.categoryRow, { marginBottom: spacing(1) }]}>
-            <View style={[styles.categoryBadge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-              <Text style={[styles.categoryText, { fontSize: normalizeFontSize(12) }]}>
-                {service.category}
+          {loading ? (
+            <View style={[styles.loadingContainer, { paddingVertical: spacing(10) }]}>
+              <ActivityIndicator size="large" color="#2D2D2D" />
+              <Text style={[styles.loadingText, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
+                Chargement...
               </Text>
             </View>
-          </View>
-
-          {/* Price & Duration */}
-          <View style={[styles.priceRow, { marginBottom: spacing(2) }]}>
-            <Text style={[styles.price, { fontSize: normalizeFontSize(24) }]}>
-              {formatCurrency(service.price, countryCode)}
-            </Text>
-            <Text style={[styles.duration, { fontSize: normalizeFontSize(14) }]}>
-              ⏰ {service.duration} min
-            </Text>
-          </View>
-
-          {/* Description */}
-          <Text style={[styles.description, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
-            {service.description}
-          </Text>
-
-          {/* Provider or Salon Info */}
-          {(service.provider || service.salon) && (
-            <View style={[styles.providerSection, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
-              <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
-                {service.provider ? 'Offert par' : 'Disponible chez'}
+          ) : (
+            <>
+              {/* Name */}
+              <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
+                {language === 'fr' ? service.name_fr : service.name_en}
               </Text>
-              <View style={styles.providerInfo}>
-                <Text style={[styles.providerName, { fontSize: normalizeFontSize(16) }]}>
-                  {service.provider?.name || service.salon?.name}
-                </Text>
-                {(service.provider?.rating || service.salon?.rating) && (
-                  <Text style={[styles.providerRating, { fontSize: normalizeFontSize(14) }]}>
-                    ⭐ {service.provider?.rating || service.salon?.rating}
+
+              {/* Category */}
+              <View style={[styles.categoryRow, { marginBottom: spacing(1) }]}>
+                <View style={[styles.categoryBadge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                  <Text style={[styles.categoryText, { fontSize: normalizeFontSize(12) }]}>
+                    {service.category}
                   </Text>
-                )}
+                </View>
               </View>
-            </View>
-          )}
 
-          {/* What's Included Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
-            onPress={() => toggleSection('whatsIncluded')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
-                Ce qui est inclus
-              </Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'whatsIncluded' ? '▲' : '▼'}
-              </Text>
-            </View>
-
-            {expandedSection === 'whatsIncluded' && (
-              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                {components.map((item, index) => (
-                  <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
-                    <Text style={[styles.checkmark, { fontSize: normalizeFontSize(14) }]}>✓</Text>
-                    <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                      {item}
-                    </Text>
-                  </View>
-                ))}
+              {/* Price & Duration */}
+              <View style={[styles.priceRow, { marginBottom: spacing(2) }]}>
+                <Text style={[styles.price, { fontSize: normalizeFontSize(24) }]}>
+                  À partir de {formatCurrency(service.base_price, countryCode)}
+                </Text>
+                <Text style={[styles.duration, { fontSize: normalizeFontSize(14) }]}>
+                  ⏰ {service.duration} min
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
 
-          {/* Ideal For Section */}
-          {service.idealFor && (
-            <View style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18), marginBottom: spacing(2) }]}>
-                Idéal pour
-              </Text>
-              <Text style={[styles.idealForText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                {service.idealFor}
-              </Text>
-            </View>
-          )}
+              {/* Description */}
+              {(service.description_fr || service.description_en) && (
+                <Text style={[styles.description, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
+                  {language === 'fr' ? service.description_fr : service.description_en}
+                </Text>
+              )}
 
-          {/* Reviews Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1, borderBottomWidth: 1 }]}
-            onPress={() => toggleSection('reviews')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
-                Avis ({reviews.length})
-              </Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'reviews' ? '▲' : '▼'}
-              </Text>
-            </View>
+              {/* Provider Count Info */}
+              <TouchableOpacity
+                style={[styles.providerSection, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}
+                onPress={handleViewProviders}
+              >
+                <Text style={[styles.providerLabel, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
+                  DISPONIBLE CHEZ
+                </Text>
+                <View style={styles.providerInfo}>
+                  <Text style={[styles.providerName, { fontSize: normalizeFontSize(16) }]}>
+                    {totalProviders} prestataire{totalProviders > 1 ? 's' : ''}
+                  </Text>
+                  <Text style={[styles.viewButton, { fontSize: normalizeFontSize(14) }]}>
+                    Voir →
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-            {expandedSection === 'reviews' && (
-              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                {reviews.map((review) => (
-                  <View key={review.id} style={[styles.reviewCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
-                    <View style={[styles.reviewHeader, { marginBottom: spacing(1) }]}>
-                      <View>
-                        <Text style={[styles.reviewAuthor, { fontSize: normalizeFontSize(14) }]}>
-                          {review.author}
-                        </Text>
-                        <Text style={[styles.reviewDate, { fontSize: normalizeFontSize(12) }]}>
-                          il y a {review.date}
+              {/* Purpose Section */}
+              {(service.purpose_fr || service.purpose_en) && (
+                <View style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}>
+                  <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18), marginBottom: spacing(2) }]}>
+                    Objectif
+                  </Text>
+                  <Text style={[styles.purposeText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                    {language === 'fr' ? service.purpose_fr : service.purpose_en}
+                  </Text>
+                </View>
+              )}
+
+              {/* What's Included Section */}
+              <TouchableOpacity
+                style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
+                onPress={() => toggleSection('whatsIncluded')}
+              >
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
+                    Ce qui est inclus
+                  </Text>
+                  <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                    {expandedSection === 'whatsIncluded' ? '▲' : '▼'}
+                  </Text>
+                </View>
+
+                {expandedSection === 'whatsIncluded' && (
+                  <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                    {components.map((item, index) => (
+                      <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
+                        <Text style={[styles.checkmark, { fontSize: normalizeFontSize(14) }]}>✓</Text>
+                        <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                          {item}
                         </Text>
                       </View>
-                      <Text style={[styles.reviewRating, { fontSize: normalizeFontSize(14) }]}>
-                        {'⭐'.repeat(review.rating)}
-                      </Text>
-                    </View>
-                    <Text style={[styles.reviewComment, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                      {review.comment}
-                    </Text>
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
-          </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              {/* Ideal For Section */}
+              {(service.ideal_for_fr || service.ideal_for_en) && (
+                <View style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}>
+                  <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18), marginBottom: spacing(2) }]}>
+                    Idéal pour
+                  </Text>
+                  <Text style={[styles.idealForText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                    {language === 'fr' ? service.ideal_for_fr : service.ideal_for_en}
+                  </Text>
+                </View>
+              )}
+
+              {/* Reviews Section */}
+              <TouchableOpacity
+                style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1, borderBottomWidth: 1 }]}
+                onPress={() => toggleSection('reviews')}
+              >
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
+                    Avis ({reviews.length})
+                  </Text>
+                  <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                    {expandedSection === 'reviews' ? '▲' : '▼'}
+                  </Text>
+                </View>
+
+                {expandedSection === 'reviews' && (
+                  <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                    {reviews.map((review) => (
+                      <View key={review.id} style={[styles.reviewCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
+                        <View style={[styles.reviewHeader, { marginBottom: spacing(1) }]}>
+                          <View>
+                            <Text style={[styles.reviewAuthor, { fontSize: normalizeFontSize(14) }]}>
+                              {review.author}
+                            </Text>
+                            <Text style={[styles.reviewDate, { fontSize: normalizeFontSize(12) }]}>
+                              il y a {review.date}
+                            </Text>
+                          </View>
+                          <Text style={[styles.reviewRating, { fontSize: normalizeFontSize(14) }]}>
+                            {'⭐'.repeat(review.rating)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.reviewComment, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                          {review.comment}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -236,9 +291,11 @@ export const ServiceDetailsScreen: React.FC = () => {
       <View style={[styles.bottomButtons, { padding: spacing(2.5), paddingHorizontal: isTablet ? containerPaddingHorizontal + spacing(2.5) : spacing(2.5) }]}>
         <TouchableOpacity
           style={[styles.bookButton, { paddingVertical: spacing(2), borderRadius: spacing(3) }]}
-          onPress={() => { /* TODO: Navigate to booking */ }}
+          onPress={handleViewProviders}
         >
-          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(16) }]}>Réserver ce service</Text>
+          <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(16) }]}>
+            Voir les prestataires ({totalProviders})
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -253,6 +310,10 @@ const styles = StyleSheet.create({
   headerImageContainer: {
     position: 'relative',
     backgroundColor: '#F5F5F5',
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
   },
   headerImagePlaceholder: {
     flex: 1,
@@ -284,6 +345,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentInner: {},
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#666',
+  },
   name: {
     fontWeight: '700',
     color: '#2D2D2D',
@@ -335,8 +403,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2D2D2D',
   },
-  providerRating: {
-    color: '#666',
+  viewButton: {
+    color: '#FF6B6B',
     fontWeight: '600',
   },
   section: {
@@ -367,6 +435,9 @@ const styles = StyleSheet.create({
   },
   listItemText: {
     flex: 1,
+    color: '#666',
+  },
+  purposeText: {
     color: '#666',
   },
   idealForText: {
