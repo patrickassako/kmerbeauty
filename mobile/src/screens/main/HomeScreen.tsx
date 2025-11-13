@@ -19,6 +19,7 @@ import { useSalons } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, ServiceWithProviders, PackageWithProviders } from '../../navigation/HomeStackNavigator';
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
+import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -37,6 +38,7 @@ export const HomeScreen: React.FC = () => {
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -109,6 +111,10 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('PackageProviders', { package: pkg });
   };
 
+  const handleSearch = (filters: SearchFilters) => {
+    navigation.navigate('SearchResults', { filters });
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -145,13 +151,26 @@ export const HomeScreen: React.FC = () => {
 
       {/* Search Bar */}
       <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
-        <View style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}>
+        <TouchableOpacity
+          style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}
+          onPress={() => setSearchModalVisible(true)}
+        >
           <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
-        </View>
-        <TouchableOpacity style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}
+          onPress={() => setSearchModalVisible(true)}
+        >
           <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearchModal
+        visible={searchModalVisible}
+        onClose={() => setSearchModalVisible(false)}
+        onApply={handleSearch}
+      />
 
       {/* Toggle Home/Institute */}
       <View style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>

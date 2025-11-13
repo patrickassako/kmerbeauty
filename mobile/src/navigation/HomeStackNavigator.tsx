@@ -5,7 +5,9 @@ import { ProviderDetailsScreen } from '../screens/main/ProviderDetailsScreen';
 import { SalonDetailsScreen } from '../screens/main/SalonDetailsScreen';
 import { ServiceDetailsScreen } from '../screens/main/ServiceDetailsScreen';
 import { ServiceProvidersScreen } from '../screens/main/ServiceProvidersScreen';
+import { SearchResultsScreen } from '../screens/main/SearchResultsScreen';
 import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
+import type { SearchFilters } from '../components/AdvancedSearchModal';
 
 // Type simplifié pour la navigation (avec les données essentielles)
 export type ServiceWithProviders = Service & {
@@ -41,6 +43,9 @@ export type PackageWithProviders = ServicePackage & {
 
 export type HomeStackParamList = {
   HomeMain: undefined;
+  SearchResults: {
+    filters: SearchFilters;
+  };
   ServiceProviders: {
     service: ServiceWithProviders;
     sortBy?: 'distance' | 'price';
@@ -91,6 +96,7 @@ export const HomeStackNavigator: React.FC = () => {
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
       <Stack.Screen name="ServiceProviders" component={ServiceProvidersScreen} />
       <Stack.Screen name="PackageProviders" component={PackageProvidersScreen} />
       <Stack.Screen name="ProviderDetails" component={ProviderDetailsScreen} />
