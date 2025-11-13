@@ -12,6 +12,8 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useI18n } from '../i18n/I18nContext';
 
 export interface SearchFilters {
+  searchText?: string;
+  category?: string;
   city?: string;
   quarter?: string;
   maxDistance?: number;
@@ -35,6 +37,8 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
 
+  const [searchText, setSearchText] = useState(initialFilters?.searchText || '');
+  const [category, setCategory] = useState(initialFilters?.category || '');
   const [city, setCity] = useState(initialFilters?.city || '');
   const [quarter, setQuarter] = useState(initialFilters?.quarter || '');
   const [maxDistance, setMaxDistance] = useState(initialFilters?.maxDistance?.toString() || '');
@@ -47,6 +51,17 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 
   const cities = ['Douala', 'Yaoundé', 'Bafoussam', 'Garoua', 'Bamenda'];
   const quarters = ['Akwa', 'Bonanjo', 'Bali', 'Bonapriso', 'Deido', 'Logpom', 'New Bell'];
+
+  const categories: Array<{ value: string; label: { fr: string; en: string }; icon: string }> = [
+    { value: 'WELLNESS_MASSAGE', label: { fr: 'Massage & Bien-être', en: 'Massage & Wellness' }, icon: '💆' },
+    { value: 'FACIAL_CARE', label: { fr: 'Soins du visage', en: 'Facial Care' }, icon: '🧖' },
+    { value: 'HAIR_CARE', label: { fr: 'Coiffure', en: 'Hair Care' }, icon: '💇' },
+    { value: 'NAIL_CARE', label: { fr: 'Soins des ongles', en: 'Nail Care' }, icon: '💅' },
+    { value: 'BODY_CARE', label: { fr: 'Soins du corps', en: 'Body Care' }, icon: '🧴' },
+    { value: 'MAKEUP', label: { fr: 'Maquillage', en: 'Makeup' }, icon: '💄' },
+    { value: 'AESTHETIC', label: { fr: 'Esthétique', en: 'Aesthetic' }, icon: '✨' },
+    { value: 'OTHER', label: { fr: 'Autres', en: 'Other' }, icon: '🌟' },
+  ];
 
   const providerTypes: Array<{ value: 'all' | 'therapist' | 'salon'; label: string }> = [
     { value: 'all', label: language === 'fr' ? 'Tous' : 'All' },
@@ -63,6 +78,8 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 
   const handleApply = () => {
     const filters: SearchFilters = {
+      searchText: searchText || undefined,
+      category: category || undefined,
       city: city || undefined,
       quarter: quarter || undefined,
       maxDistance: maxDistance ? parseFloat(maxDistance) : undefined,
@@ -74,6 +91,8 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
   };
 
   const handleReset = () => {
+    setSearchText('');
+    setCategory('');
     setCity('');
     setQuarter('');
     setMaxDistance('');
@@ -100,6 +119,53 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
             contentContainerStyle={{ paddingHorizontal: spacing(2.5), paddingBottom: spacing(3) }}
             showsVerticalScrollIndicator={false}
           >
+            {/* Recherche Texte */}
+            <View style={[styles.filterSection, { marginBottom: spacing(3) }]}>
+              <Text style={[styles.filterLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                {language === 'fr' ? 'Rechercher un service' : 'Search for a service'}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { paddingHorizontal: spacing(2), paddingVertical: spacing(1.5), borderRadius: spacing(1.5), fontSize: normalizeFontSize(14) },
+                ]}
+                placeholder={language === 'fr' ? 'Ex: Massage, Coiffure...' : 'E.g: Massage, Hair...'}
+                value={searchText}
+                onChangeText={setSearchText}
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Catégorie */}
+            <View style={[styles.filterSection, { marginBottom: spacing(3) }]}>
+              <Text style={[styles.filterLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                {language === 'fr' ? 'Catégorie' : 'Category'}
+              </Text>
+              <View style={styles.chipContainer}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={[
+                      styles.chip,
+                      category === cat.value && styles.chipSelected,
+                      { paddingHorizontal: spacing(2), paddingVertical: spacing(1), borderRadius: spacing(2.5), marginRight: spacing(1), marginBottom: spacing(1) },
+                    ]}
+                    onPress={() => setCategory(category === cat.value ? '' : cat.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        category === cat.value && styles.chipTextSelected,
+                        { fontSize: normalizeFontSize(12) },
+                      ]}
+                    >
+                      {cat.icon} {cat.label[language]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             {/* Ville */}
             <View style={[styles.filterSection, { marginBottom: spacing(3) }]}>
               <Text style={[styles.filterLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>

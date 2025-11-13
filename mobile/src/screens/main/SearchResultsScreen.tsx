@@ -64,6 +64,14 @@ export const SearchResultsScreen: React.FC = () => {
     if (filters.providerType === 'all' || filters.providerType === 'therapist') {
       const therapistProviders = therapists
         .filter((therapist) => {
+          // Filtrer par texte de recherche si spécifié
+          if (filters.searchText) {
+            const searchLower = filters.searchText.toLowerCase();
+            const fullName = `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.toLowerCase();
+            if (!fullName.includes(searchLower)) {
+              return false;
+            }
+          }
           // Filtrer par quartier si spécifié
           if (filters.quarter && therapist.region !== filters.quarter) {
             return false;
@@ -90,6 +98,14 @@ export const SearchResultsScreen: React.FC = () => {
     if (filters.providerType === 'all' || filters.providerType === 'salon') {
       const salonProviders = salons
         .filter((salon) => {
+          // Filtrer par texte de recherche si spécifié
+          if (filters.searchText) {
+            const searchLower = filters.searchText.toLowerCase();
+            const salonName = (language === 'fr' ? salon.name_fr : salon.name_en || salon.name_fr || salon.name_en || '').toLowerCase();
+            if (!salonName.includes(searchLower)) {
+              return false;
+            }
+          }
           // Filtrer par quartier si spécifié
           if (filters.quarter && salon.quarter !== filters.quarter) {
             return false;
@@ -170,6 +186,20 @@ export const SearchResultsScreen: React.FC = () => {
         style={[styles.filterChips, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}
         showsHorizontalScrollIndicator={false}
       >
+        {filters.searchText && (
+          <View style={[styles.filterChip, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), marginRight: spacing(1) }]}>
+            <Text style={[styles.filterChipText, { fontSize: normalizeFontSize(11) }]}>
+              🔍 {filters.searchText}
+            </Text>
+          </View>
+        )}
+        {filters.category && (
+          <View style={[styles.filterChip, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), marginRight: spacing(1) }]}>
+            <Text style={[styles.filterChipText, { fontSize: normalizeFontSize(11) }]}>
+              📂 {filters.category}
+            </Text>
+          </View>
+        )}
         {filters.city && (
           <View style={[styles.filterChip, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), marginRight: spacing(1) }]}>
             <Text style={[styles.filterChipText, { fontSize: normalizeFontSize(11) }]}>
