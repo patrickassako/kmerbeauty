@@ -39,16 +39,22 @@ export class TherapistsService {
     }
 
     // Filter by service if provided
-    if (serviceId) {
+    if (serviceId && data && data.length > 0) {
       const therapistIds = data.map((t) => t.id);
       const { data: therapistServices } = await supabase
         .from('therapist_services')
         .select('therapist_id')
         .eq('service_id', serviceId)
+        .eq('is_active', true)
         .in('therapist_id', therapistIds);
 
-      const filteredIds = therapistServices.map((ts) => ts.therapist_id);
-      return data.filter((t) => filteredIds.includes(t.id));
+      if (therapistServices && therapistServices.length > 0) {
+        const filteredIds = therapistServices.map((ts) => ts.therapist_id);
+        return data.filter((t) => filteredIds.includes(t.id));
+      }
+
+      // Si aucun thérapeute n'offre ce service, retourner un tableau vide
+      return [];
     }
 
     return data;

@@ -33,16 +33,22 @@ export class SalonsService {
     }
 
     // Filter by service if provided
-    if (serviceId) {
+    if (serviceId && data && data.length > 0) {
       const salonIds = data.map((s) => s.id);
       const { data: salonServices } = await supabase
         .from('salon_services')
         .select('salon_id')
         .eq('service_id', serviceId)
+        .eq('is_active', true)
         .in('salon_id', salonIds);
 
-      const filteredIds = salonServices.map((ss) => ss.salon_id);
-      return data.filter((s) => filteredIds.includes(s.id));
+      if (salonServices && salonServices.length > 0) {
+        const filteredIds = salonServices.map((ss) => ss.salon_id);
+        return data.filter((s) => filteredIds.includes(s.id));
+      }
+
+      // Si aucun salon n'offre ce service, retourner un tableau vide
+      return [];
     }
 
     return data;
