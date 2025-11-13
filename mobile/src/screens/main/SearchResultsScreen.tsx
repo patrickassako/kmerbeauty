@@ -15,6 +15,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useTherapists } from '../../hooks/useTherapists';
 import { useSalons } from '../../hooks/useSalons';
+import { useCategories } from '../../hooks/useCategories';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import { SearchFilters } from '../../components/AdvancedSearchModal';
@@ -29,8 +30,15 @@ export const SearchResultsScreen: React.FC = () => {
 
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const { language } = useI18n();
+  const { categories } = useCategories();
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Trouver le nom de la catégorie sélectionnée
+  const selectedCategory = categories.find(cat => cat.category === filters.category);
+  const categoryDisplayName = selectedCategory
+    ? (language === 'fr' ? selectedCategory.name_fr : selectedCategory.name_en)
+    : filters.category;
 
   // Charger les thérapeutes et salons selon les filtres
   const {
@@ -196,7 +204,7 @@ export const SearchResultsScreen: React.FC = () => {
         {filters.category && (
           <View style={[styles.filterChip, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), marginRight: spacing(1) }]}>
             <Text style={[styles.filterChipText, { fontSize: normalizeFontSize(11) }]}>
-              📂 {filters.category}
+              📂 {categoryDisplayName}
             </Text>
           </View>
         )}

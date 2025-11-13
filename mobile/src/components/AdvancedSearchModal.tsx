@@ -57,13 +57,14 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
 
   // Icônes pour les catégories
   const categoryIcons: Record<string, string> = {
+    'HAIRDRESSING': '💇',
+    'EYE_CARE': '👁️',
     'WELLNESS_MASSAGE': '💆',
-    'FACIAL_CARE': '🧖',
-    'HAIR_CARE': '💇',
+    'FACIAL': '🧖',
     'NAIL_CARE': '💅',
-    'BODY_CARE': '🧴',
     'MAKEUP': '💄',
-    'AESTHETIC': '✨',
+    'WAXING': '✨',
+    'BARBER': '💈',
     'OTHER': '🌟',
   };
 
