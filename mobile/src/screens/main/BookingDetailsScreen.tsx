@@ -47,14 +47,15 @@ export const BookingDetailsScreen: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
+    const upperStatus = status.toUpperCase();
+    switch (upperStatus) {
+      case 'CONFIRMED':
         return '#4CAF50';
-      case 'pending':
+      case 'PENDING':
         return '#FF9800';
-      case 'completed':
+      case 'COMPLETED':
         return '#2196F3';
-      case 'cancelled':
+      case 'CANCELLED':
         return '#F44336';
       default:
         return '#999';
@@ -62,32 +63,44 @@ export const BookingDetailsScreen: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
+    const upperStatus = status.toUpperCase();
     const labels = {
-      pending: language === 'fr' ? 'En attente' : 'Pending',
-      confirmed: language === 'fr' ? 'Confirmée' : 'Confirmed',
-      completed: language === 'fr' ? 'Terminée' : 'Completed',
-      cancelled: language === 'fr' ? 'Annulée' : 'Cancelled',
+      PENDING: language === 'fr' ? 'En attente' : 'Pending',
+      CONFIRMED: language === 'fr' ? 'Confirmée' : 'Confirmed',
+      COMPLETED: language === 'fr' ? 'Terminée' : 'Completed',
+      CANCELLED: language === 'fr' ? 'Annulée' : 'Cancelled',
     };
-    return labels[status as keyof typeof labels] || status;
+    return labels[upperStatus as keyof typeof labels] || status;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return {
+      date: date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      time: date.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
   };
 
   const getProviderName = () => {
     if (!booking?.provider) return '';
-    if (booking.provider_type === 'therapist') {
+    if (booking.therapist_id) {
       return `${booking.provider.user?.first_name || ''} ${booking.provider.user?.last_name || ''}`.trim() || 'Thérapeute';
-    } else {
+    } else if (booking.salon_id) {
       return (language === 'fr' ? booking.provider.name_fr : booking.provider.name_en) || booking.provider.name_fr || 'Institut';
     }
+    return '';
+  };
+
+  const getProviderType = () => {
+    return booking?.therapist_id ? 'therapist' : 'salon';
   };
 
   if (loading) {
@@ -148,28 +161,38 @@ export const BookingDetailsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Service Card */}
+        {/* Services Card */}
         <View style={[styles.serviceCard, { borderRadius: spacing(2), marginBottom: spacing(3), overflow: 'hidden' }]}>
-          {booking.service?.images && booking.service.images.length > 0 && booking.service.images[0] ? (
-            <View style={[styles.serviceImageContainer, { height: spacing(25) }]}>
-              <Image
-                source={{ uri: booking.service.images[0] }}
-                style={styles.serviceImage}
-                resizeMode="cover"
-              />
-            </View>
-          ) : null}
-
           <View style={{ padding: spacing(2) }}>
-            <Text style={[styles.label, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5) }]}>
-              {language === 'fr' ? 'Service' : 'Service'}
+            <Text style={[styles.label, { fontSize: normalizeFontSize(12), marginBottom: spacing(1.5) }]}>
+              {language === 'fr' ? 'Services' : 'Services'}
             </Text>
-            <Text style={[styles.serviceName, { fontSize: normalizeFontSize(20), marginBottom: spacing(1) }]}>
-              {language === 'fr' ? booking.service?.name_fr : booking.service?.name_en}
-            </Text>
-            <Text style={[styles.duration, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
-              ⏰ {booking.service?.duration} min
-            </Text>
+            {booking.items && booking.items.length > 0 ? (
+              booking.items.map((item, index) => (
+                <View key={item.id || index} style={[styles.itemRow, { marginBottom: spacing(1.5) }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.itemName, { fontSize: normalizeFontSize(16) }]}>
+                      {item.service_name}
+                    </Text>
+                    <Text style={[styles.itemDuration, { fontSize: normalizeFontSize(12), marginTop: spacing(0.5) }]}>
+                      ⏰ {item.duration} min • {formatCurrency(item.price, countryCode)}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={[styles.value, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Aucun service' : 'No services'}
+              </Text>
+            )}
+            <View style={[styles.totalDuration, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+              <Text style={[styles.label, { fontSize: normalizeFontSize(12) }]}>
+                {language === 'fr' ? 'Durée totale' : 'Total duration'}
+              </Text>
+              <Text style={[styles.value, { fontSize: normalizeFontSize(16), fontWeight: '700', marginTop: spacing(0.5) }]}>
+                ⏰ {booking.duration} min
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -182,7 +205,7 @@ export const BookingDetailsScreen: React.FC = () => {
             <Text style={[styles.value, { fontSize: normalizeFontSize(16), flex: 1 }]}>
               {getProviderName()}
             </Text>
-            {booking.provider_type === 'salon' && (
+            {getProviderType() === 'salon' && (
               <View style={[styles.typeBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
                 <Text style={[styles.typeBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
               </View>
@@ -201,12 +224,29 @@ export const BookingDetailsScreen: React.FC = () => {
             {language === 'fr' ? 'Date et heure' : 'Date & Time'}
           </Text>
           <Text style={[styles.value, { fontSize: normalizeFontSize(16), marginBottom: spacing(1) }]}>
-            📅 {formatDate(booking.scheduled_date)}
+            📅 {formatDateTime(booking.scheduled_at).date}
           </Text>
           <Text style={[styles.value, { fontSize: normalizeFontSize(16) }]}>
-            🕐 {booking.scheduled_time}
+            🕐 {formatDateTime(booking.scheduled_at).time}
           </Text>
         </View>
+
+        {/* Location Card */}
+        {booking.street && (
+          <View style={[styles.infoCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
+            <Text style={[styles.label, { fontSize: normalizeFontSize(12), marginBottom: spacing(1) }]}>
+              {language === 'fr' ? 'Adresse' : 'Address'}
+            </Text>
+            <Text style={[styles.value, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+              📍 {booking.street}
+            </Text>
+            {booking.city && (
+              <Text style={[styles.value, { fontSize: normalizeFontSize(14), marginTop: spacing(0.5) }]}>
+                {booking.city}, {booking.region}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Notes */}
         {booking.notes && (
@@ -223,11 +263,39 @@ export const BookingDetailsScreen: React.FC = () => {
         {/* Price */}
         <View style={[styles.priceCard, { padding: spacing(2), borderRadius: spacing(2), marginBottom: spacing(3) }]}>
           <View style={styles.priceRow}>
-            <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(14) }]}>
-              {language === 'fr' ? 'Prix' : 'Price'}
+            <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(12) }]}>
+              {language === 'fr' ? 'Sous-total' : 'Subtotal'}
+            </Text>
+            <Text style={[styles.value, { fontSize: normalizeFontSize(16) }]}>
+              {formatCurrency(booking.subtotal || 0, countryCode)}
+            </Text>
+          </View>
+          {booking.travel_fee && booking.travel_fee > 0 ? (
+            <View style={[styles.priceRow, { marginTop: spacing(0.5) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(12) }]}>
+                {language === 'fr' ? 'Frais de déplacement' : 'Travel fee'}
+              </Text>
+              <Text style={[styles.value, { fontSize: normalizeFontSize(16) }]}>
+                {formatCurrency(booking.travel_fee, countryCode)}
+              </Text>
+            </View>
+          ) : null}
+          {booking.tip && booking.tip > 0 ? (
+            <View style={[styles.priceRow, { marginTop: spacing(0.5) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(12) }]}>
+                {language === 'fr' ? 'Pourboire' : 'Tip'}
+              </Text>
+              <Text style={[styles.value, { fontSize: normalizeFontSize(16) }]}>
+                {formatCurrency(booking.tip, countryCode)}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.priceRow, { marginTop: spacing(1.5), paddingTop: spacing(1.5), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+            <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(14), fontWeight: '700' }]}>
+              {language === 'fr' ? 'Total' : 'Total'}
             </Text>
             <Text style={[styles.priceValue, { fontSize: normalizeFontSize(24) }]}>
-              {formatCurrency(booking.price || 0, countryCode)}
+              {formatCurrency(booking.total || 0, countryCode)}
             </Text>
           </View>
         </View>
@@ -319,6 +387,18 @@ const styles = StyleSheet.create({
   duration: {
     color: '#666',
   },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  itemName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  itemDuration: {
+    color: '#666',
+  },
+  totalDuration: {},
   infoCard: {
     backgroundColor: '#F5F5F5',
     borderWidth: 1,
