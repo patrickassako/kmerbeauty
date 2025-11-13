@@ -5,11 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
+import { useTherapists } from '../../hooks/useTherapists';
+import { useSalons } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -25,21 +29,77 @@ export const ServiceProvidersScreen: React.FC = () => {
   const { language } = useI18n();
   const [countryCode] = useState<CountryCode>('CM');
   const [sortBy, setSortBy] = useState<'distance' | 'price'>(initialSortBy || 'distance');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Charger les thérapeutes et salons qui offrent ce service
+  const {
+    therapists,
+    loading: loadingTherapists,
+    error: errorTherapists,
+    refetch: refetchTherapists,
+  } = useTherapists({ serviceId: service.id });
+
+  const {
+    salons,
+    loading: loadingSalons,
+    error: errorSalons,
+    refetch: refetchSalons,
+  } = useSalons({ serviceId: service.id });
+
+  const loading = loadingTherapists || loadingSalons;
+  const error = errorTherapists || errorSalons;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTherapists(), refetchSalons()]);
+    setRefreshing(false);
+  };
+
+  // Convertir therapists et salons en format provider unifié
+  const providers = useMemo(() => {
+    const therapistProviders = therapists.map((therapist) => ({
+      type: 'therapist' as const,
+      id: therapist.id,
+      name: `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute',
+      rating: therapist.rating,
+      review_count: therapist.review_count,
+      price: service.base_price, // TODO: Get actual price from therapist_services
+      duration: service.duration,
+      distance: 0, // TODO: Calculate distance based on user location
+      city: therapist.city,
+      region: therapist.region,
+    }));
+
+    const salonProviders = salons.map((salon) => ({
+      type: 'salon' as const,
+      id: salon.id,
+      name: language === 'fr' ? salon.name_fr : salon.name_en,
+      rating: salon.rating,
+      review_count: salon.review_count,
+      price: service.base_price, // TODO: Get actual price from salon_services
+      duration: service.duration,
+      distance: 0, // TODO: Calculate distance based on user location
+      city: salon.city,
+      region: salon.region,
+    }));
+
+    return [...therapistProviders, ...salonProviders];
+  }, [therapists, salons, service, language]);
 
   // Trier les prestataires selon le critère sélectionné
   const sortedProviders = useMemo(() => {
-    const providers = [...service.providers];
+    const providersCopy = [...providers];
 
     if (sortBy === 'distance') {
-      return providers.sort((a, b) => {
+      return providersCopy.sort((a, b) => {
         const distA = a.distance || 999;
         const distB = b.distance || 999;
         return distA - distB;
       });
     } else {
-      return providers.sort((a, b) => a.price - b.price);
+      return providersCopy.sort((a, b) => a.price - b.price);
     }
-  }, [service.providers, sortBy]);
+  }, [providers, sortBy]);
 
   const handleProviderPress = (provider: typeof service.providers[0]) => {
     navigation.navigate('ProviderDetails', {
@@ -70,7 +130,10 @@ export const ServiceProvidersScreen: React.FC = () => {
             {language === 'fr' ? service.name_fr : service.name_en}
           </Text>
           <Text style={[styles.headerSubtitle, { fontSize: normalizeFontSize(12) }]}>
-            {service.providers.length} prestataire{service.providers.length > 1 ? 's' : ''} disponible{service.providers.length > 1 ? 's' : ''}
+            {loading
+              ? 'Chargement...'
+              : `${providers.length} prestataire${providers.length > 1 ? 's' : ''} disponible${providers.length > 1 ? 's' : ''}`
+            }
           </Text>
         </View>
 
@@ -144,8 +207,48 @@ export const ServiceProvidersScreen: React.FC = () => {
           paddingBottom: spacing(10),
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {sortedProviders.map((provider) => (
+        {/* Loading State */}
+        {loading && !refreshing && (
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#000" />
+            <Text style={{ marginTop: spacing(2), fontSize: normalizeFontSize(14), color: '#666' }}>
+              {language === 'fr' ? 'Chargement des prestataires...' : 'Loading providers...'}
+            </Text>
+          </View>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <Text style={{ fontSize: normalizeFontSize(14), color: '#ff0000', textAlign: 'center' }}>
+              {language === 'fr'
+                ? 'Erreur lors du chargement. Tirez pour actualiser.'
+                : 'Error loading data. Pull to refresh.'}
+            </Text>
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && sortedProviders.length === 0 && (
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <Text style={{ fontSize: normalizeFontSize(16), marginBottom: spacing(1), fontWeight: '600' }}>
+              {language === 'fr' ? 'Aucun prestataire trouvé' : 'No providers found'}
+            </Text>
+            <Text style={{ fontSize: normalizeFontSize(14), color: '#666', textAlign: 'center' }}>
+              {language === 'fr'
+                ? 'Aucun prestataire n\'offre ce service pour le moment.'
+                : 'No provider offers this service at the moment.'}
+            </Text>
+          </View>
+        )}
+
+        {/* Providers Cards */}
+        {!loading && sortedProviders.length > 0 &&
+        sortedProviders.map((provider) => (
           <TouchableOpacity
             key={provider.id}
             style={[styles.providerCard, { borderRadius: spacing(2), padding: spacing(2), marginBottom: spacing(2) }]}

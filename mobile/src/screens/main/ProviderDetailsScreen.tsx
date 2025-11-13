@@ -7,10 +7,15 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useI18n } from '../../i18n/I18nContext';
+import { useTherapist, useTherapistServices } from '../../hooks/useTherapists';
+import { useSalon, useSalonServices } from '../../hooks/useSalons';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -25,26 +30,58 @@ export const ProviderDetailsScreen: React.FC = () => {
   const { provider } = route.params;
 
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
+  const { language } = useI18n();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [countryCode] = useState<CountryCode>('CM');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const isTherapist = provider.type === 'therapist';
+
+  // Charger les détails du thérapeute ou salon
+  const { therapist, loading: loadingTherapist } = useTherapist(isTherapist ? provider.id : undefined);
+  const { salon, loading: loadingSalon } = useSalon(!isTherapist ? provider.id : undefined);
+
+  // Charger les services
+  const { services: therapistServices, loading: loadingTherapistServices } = useTherapistServices(
+    isTherapist ? provider.id : undefined
+  );
+  const { services: salonServices, loading: loadingSalonServices } = useSalonServices(
+    !isTherapist ? provider.id : undefined
+  );
+
+  const loading = (isTherapist ? loadingTherapist || loadingTherapistServices : loadingSalon || loadingSalonServices);
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const education = [
-    'Diploma in Esthetics from Paris Cosmetology School',
-    'Certified in Advanced Facial Techniques',
-    'Licensed Massage Therapist with specialization in Swedish and Deep Tissue Massage',
-  ];
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // Les hooks se rafraîchiront automatiquement
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
-  const portfolio = [
-    { id: 1, type: 'image' },
-    { id: 2, type: 'image' },
-    { id: 3, type: 'image' },
-    { id: 4, type: 'image' },
-  ];
+  // Utiliser les données réelles du provider
+  const providerData = isTherapist ? therapist : salon;
+  const education = therapist?.education || [];
+  const portfolio = providerData?.portfolio_images || [];
 
+  // Obtenir le nom du provider
+  const providerName = isTherapist
+    ? `${therapist?.user?.first_name || ''} ${therapist?.user?.last_name || ''}`.trim() || provider?.name
+    : (language === 'fr' ? salon?.name_fr : salon?.name_en) || provider?.name;
+
+  // Obtenir la bio/description
+  const providerBio = isTherapist
+    ? (language === 'fr' ? therapist?.bio_fr : therapist?.bio_en)
+    : (language === 'fr' ? salon?.description_fr : salon?.description_en);
+
+  // Obtenir le nom du salon pour un thérapeute
+  const salonName = isTherapist
+    ? (therapist?.salon ? (language === 'fr' ? therapist.salon.name_fr : therapist.salon.name_en) : 'Independent')
+    : undefined;
+
+  // Mock reviews pour l'instant (TODO: implémenter l'API des reviews)
   const reviews = [
     {
       id: 1,
@@ -53,46 +90,16 @@ export const ProviderDetailsScreen: React.FC = () => {
       date: '2 weeks ago',
       comment: 'Excellent service! Very professional and the results were amazing.',
     },
-    {
-      id: 2,
-      author: 'Sophie K.',
-      rating: 5,
-      date: '1 month ago',
-      comment: 'Best massage I\'ve ever had. Will definitely come back!',
-    },
-    {
-      id: 3,
-      author: 'Jean P.',
-      rating: 4,
-      date: '2 months ago',
-      comment: 'Great experience overall. Highly recommend.',
-    },
   ];
 
-  // Services/Packages offered by this provider
-  const services = provider.services || [
-    {
-      id: 1,
-      name: 'Deep Tissue Massage',
-      price: 25000,
-      duration: 60,
-      description: 'Relaxing deep tissue massage',
-    },
-    {
-      id: 2,
-      name: 'Swedish Massage',
-      price: 20000,
-      duration: 45,
-      description: 'Classic Swedish massage technique',
-    },
-    {
-      id: 3,
-      name: 'Hot Stone Therapy',
-      price: 30000,
-      duration: 90,
-      description: 'Therapeutic hot stone massage',
-    },
-  ];
+  // Services offerts par ce prestataire avec les bonnes données
+  const services = (isTherapist ? therapistServices : salonServices).map((item) => ({
+    id: item.service_id,
+    name: language === 'fr' ? item.service.name_fr : item.service.name_en,
+    description: language === 'fr' ? item.service.description_fr : item.service.description_en,
+    duration: item.service.duration,
+    price: item.price || item.service.base_price,
+  }));
 
   return (
     <View style={styles.container}>
@@ -129,195 +136,245 @@ export const ProviderDetailsScreen: React.FC = () => {
           paddingHorizontal: isTablet ? containerPaddingHorizontal : 0,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
-          {/* Name */}
-          <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
-            {provider?.name || 'Provider Name'}
-          </Text>
+          {loading ? (
+            <View style={[styles.loadingContainer, { paddingVertical: spacing(10) }]}>
+              <ActivityIndicator size="large" color="#2D2D2D" />
+              <Text style={[styles.loadingText, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
+                Chargement...
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Name */}
+              <Text style={[styles.name, { fontSize: normalizeFontSize(28), marginBottom: spacing(1) }]}>
+                {providerName || 'Provider Name'}
+              </Text>
 
-          {/* Salon & Rating */}
-          <View style={[styles.infoRow, { marginBottom: spacing(0.5) }]}>
-            <Text style={[styles.salon, { fontSize: normalizeFontSize(14) }]}>
-              ✦ {provider?.salon || provider?.salonName || 'Independent'}
-            </Text>
-            <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>
-              ⭐ ({provider?.reviews || provider?.reviewCount || '0'})
-            </Text>
-          </View>
-
-          {/* Licensed & Experience */}
-          <View style={[styles.badgesRow, { marginBottom: spacing(2) }]}>
-            {(provider?.isLicensed || provider?.licensed) && (
-              <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1) }]}>
-                <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
+              {/* Salon & Rating */}
+              <View style={[styles.infoRow, { marginBottom: spacing(0.5) }]}>
+                {isTherapist && salonName && (
+                  <Text style={[styles.salon, { fontSize: normalizeFontSize(14) }]}>
+                    ✦ {salonName}
+                  </Text>
+                )}
+                <Text style={[styles.rating, { fontSize: normalizeFontSize(14) }]}>
+                  ⭐ {providerData?.rating || provider?.rating || '5.0'} ({providerData?.review_count || provider?.reviewCount || '0'})
+                </Text>
               </View>
-            )}
-            <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-              <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>
-                📅 {provider?.experience || provider?.yearsExperience || '5'} {provider?.experience ? 'years' : 'Years Experience'}
-              </Text>
-            </View>
-          </View>
 
-          {/* Bio */}
-          <Text style={[styles.bio, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
-            {provider?.bio || provider?.description || 'Professional beauty service provider with extensive experience in various treatments and techniques.'}
-          </Text>
-
-          {/* Education Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
-            onPress={() => toggleSection('education')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Education</Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'education' ? '▲' : '▼'}
-              </Text>
-            </View>
-
-            {expandedSection === 'education' && (
-              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                {education.map((item, index) => (
-                  <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
-                    <Text style={[styles.bullet, { fontSize: normalizeFontSize(14) }]}>✦</Text>
-                    <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                      {item}
+              {/* Licensed & Experience */}
+              <View style={[styles.badgesRow, { marginBottom: spacing(2) }]}>
+                {providerData?.is_licensed && (
+                  <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1) }]}>
+                    <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
+                  </View>
+                )}
+                {providerData?.years_experience && (
+                  <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                    <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>
+                      📅 {providerData.years_experience} Years Experience
                     </Text>
                   </View>
-                ))}
+                )}
               </View>
-            )}
-          </TouchableOpacity>
+
+              {/* Bio */}
+              {providerBio && (
+                <Text style={[styles.bio, { fontSize: normalizeFontSize(14), marginBottom: spacing(3), lineHeight: normalizeFontSize(20) }]}>
+                  {providerBio}
+                </Text>
+              )}
+            </>
+          )}
+
+          {/* Education Section - only for therapists with education */}
+          {!loading && isTherapist && education.length > 0 && (
+            <TouchableOpacity
+              style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
+              onPress={() => toggleSection('education')}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Education</Text>
+                <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                  {expandedSection === 'education' ? '▲' : '▼'}
+                </Text>
+              </View>
+
+              {expandedSection === 'education' && (
+                <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                  {education.map((item, index) => (
+                    <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
+                      <Text style={[styles.bullet, { fontSize: normalizeFontSize(14) }]}>✦</Text>
+                      <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                        {item}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* Services/Packages Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
-            onPress={() => toggleSection('services')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
-                Services ({services.length})
-              </Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'services' ? '▲' : '▼'}
-              </Text>
-            </View>
-
-            {expandedSection === 'services' && (
-              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                {services.map((serviceItem) => (
-                  <TouchableOpacity
-                    key={serviceItem.id}
-                    style={[styles.serviceCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}
-                    onPress={() => {
-                      // Navigate to booking with this service
-                    }}
-                  >
-                    <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
-                      <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
-                        {serviceItem.name}
-                      </Text>
-                      <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
-                        {formatCurrency(serviceItem.price, countryCode)}
-                      </Text>
-                    </View>
-                    <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
-                      {serviceItem.description}
-                    </Text>
-                    <View style={styles.serviceCardFooter}>
-                      <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
-                        ⏰ {serviceItem.duration} min
-                      </Text>
-                      <TouchableOpacity
-                        style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
-                      >
-                        <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
-                          Réserver
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+          {!loading && (
+            <TouchableOpacity
+              style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
+              onPress={() => toggleSection('services')}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>
+                  Services ({services.length})
+                </Text>
+                <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                  {expandedSection === 'services' ? '▲' : '▼'}
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
+
+              {expandedSection === 'services' && (
+                <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                  {services.length === 0 ? (
+                    <Text style={[styles.emptyText, { fontSize: normalizeFontSize(14), color: '#999', textAlign: 'center', paddingVertical: spacing(2) }]}>
+                      Aucun service disponible
+                    </Text>
+                  ) : (
+                    services.map((serviceItem) => (
+                      <TouchableOpacity
+                        key={serviceItem.id}
+                        style={[styles.serviceCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}
+                        onPress={() => {
+                          // Navigate to booking with this service
+                        }}
+                      >
+                        <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
+                          <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
+                            {serviceItem.name}
+                          </Text>
+                          <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
+                            {formatCurrency(serviceItem.price, countryCode)}
+                          </Text>
+                        </View>
+                        {serviceItem.description && (
+                          <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
+                            {serviceItem.description}
+                          </Text>
+                        )}
+                        <View style={styles.serviceCardFooter}>
+                          <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
+                            ⏰ {serviceItem.duration} min
+                          </Text>
+                          <TouchableOpacity
+                            style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
+                          >
+                            <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
+                              Réserver
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* Portfolio Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
-            onPress={() => toggleSection('portfolio')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Portfolio</Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'portfolio' ? '▲' : '▼'}
-              </Text>
-            </View>
-
-            {expandedSection === 'portfolio' && (
-              <View style={[styles.portfolioGrid, { marginTop: spacing(2), gap: spacing(1.5) }]}>
-                {portfolio.map((item) => (
-                  <View
-                    key={item.id}
-                    style={[
-                      styles.portfolioItem,
-                      {
-                        width: (SCREEN_WIDTH - spacing(5) - spacing(1.5)) / 2,
-                        height: spacing(20),
-                        borderRadius: spacing(1.5),
-                      },
-                    ]}
-                  >
-                    <View style={styles.portfolioPlaceholder}>
-                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>
-                        Portfolio {item.id}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
+          {!loading && portfolio.length > 0 && (
+            <TouchableOpacity
+              style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1 }]}
+              onPress={() => toggleSection('portfolio')}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Portfolio</Text>
+                <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                  {expandedSection === 'portfolio' ? '▲' : '▼'}
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
+
+              {expandedSection === 'portfolio' && (
+                <View style={[styles.portfolioGrid, { marginTop: spacing(2), gap: spacing(1.5) }]}>
+                  {portfolio.map((imageUrl, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.portfolioItem,
+                        {
+                          width: (SCREEN_WIDTH - spacing(5) - spacing(1.5)) / 2,
+                          height: spacing(20),
+                          borderRadius: spacing(1.5),
+                        },
+                      ]}
+                    >
+                      {imageUrl ? (
+                        <Image
+                          source={{ uri: imageUrl }}
+                          style={styles.portfolioImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.portfolioPlaceholder}>
+                          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>
+                            Image {index + 1}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* Review Section */}
-          <TouchableOpacity
-            style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1, borderBottomWidth: 1 }]}
-            onPress={() => toggleSection('reviews')}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Review</Text>
-              <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
-                {expandedSection === 'reviews' ? '▲' : '▼'}
-              </Text>
-            </View>
+          {!loading && (
+            <TouchableOpacity
+              style={[styles.section, { paddingVertical: spacing(2), borderTopWidth: 1, borderBottomWidth: 1 }]}
+              onPress={() => toggleSection('reviews')}
+            >
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18) }]}>Review</Text>
+                <Text style={[styles.expandIcon, { fontSize: normalizeFontSize(20) }]}>
+                  {expandedSection === 'reviews' ? '▲' : '▼'}
+                </Text>
+              </View>
 
-            {expandedSection === 'reviews' && (
-              <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                {reviews.map((review) => (
-                  <View key={review.id} style={[styles.reviewCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
-                    <View style={[styles.reviewHeader, { marginBottom: spacing(1) }]}>
-                      <View>
-                        <Text style={[styles.reviewAuthor, { fontSize: normalizeFontSize(14) }]}>
-                          {review.author}
-                        </Text>
-                        <Text style={[styles.reviewDate, { fontSize: normalizeFontSize(12) }]}>
-                          {review.date}
+              {expandedSection === 'reviews' && (
+                <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
+                  {reviews.length === 0 ? (
+                    <Text style={[styles.emptyText, { fontSize: normalizeFontSize(14), color: '#999', textAlign: 'center', paddingVertical: spacing(2) }]}>
+                      Aucun avis disponible
+                    </Text>
+                  ) : (
+                    reviews.map((review) => (
+                      <View key={review.id} style={[styles.reviewCard, { marginBottom: spacing(2), padding: spacing(2), borderRadius: spacing(1.5) }]}>
+                        <View style={[styles.reviewHeader, { marginBottom: spacing(1) }]}>
+                          <View>
+                            <Text style={[styles.reviewAuthor, { fontSize: normalizeFontSize(14) }]}>
+                              {review.author}
+                            </Text>
+                            <Text style={[styles.reviewDate, { fontSize: normalizeFontSize(12) }]}>
+                              {review.date}
+                            </Text>
+                          </View>
+                          <Text style={[styles.reviewRating, { fontSize: normalizeFontSize(14) }]}>
+                            {'⭐'.repeat(review.rating)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.reviewComment, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
+                          {review.comment}
                         </Text>
                       </View>
-                      <Text style={[styles.reviewRating, { fontSize: normalizeFontSize(14) }]}>
-                        {'⭐'.repeat(review.rating)}
-                      </Text>
-                    </View>
-                    <Text style={[styles.reviewComment, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>
-                      {review.comment}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
@@ -452,11 +509,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     overflow: 'hidden',
   },
+  portfolioImage: {
+    width: '100%',
+    height: '100%',
+  },
   portfolioPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#E0E0E0',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#666',
+  },
+  emptyText: {
+    color: '#999',
   },
   reviewCard: {
     backgroundColor: '#F5F5F5',

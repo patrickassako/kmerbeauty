@@ -5,12 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useServices } from '../../hooks/useServices';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, ServiceWithProviders, PackageWithProviders } from '../../navigation/HomeStackNavigator';
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
@@ -23,133 +26,33 @@ export const HomeScreen: React.FC = () => {
   const { language, setLanguage, t } = useI18n();
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
 
+  // Charger les services depuis l'API
+  const { services, loading: servicesLoading, error: servicesError, refetch } = useServices();
+
   const [countryCode] = useState<CountryCode>('CM');
+  const [refreshing, setRefreshing] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
   };
 
-  // Mock data - À remplacer par des appels API
-  const upcomingBookings: Booking[] = [
-    // Mock booking
-  ];
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
-  const nearbyServices: ServiceWithProviders[] = [
-    {
-      id: 'svc1',
-      name_fr: 'Coiffure Complète',
-      name_en: 'Full Hair Styling',
-      description_fr: 'Service complet de coiffure professionnelle',
-      description_en: 'Complete professional hairstyling service',
-      category: 'HAIRDRESSING',
-      duration: 90,
-      base_price: 15000,
-      priority: 10,
-      created_at: '',
-      updated_at: '',
-      providers: [
-        {
-          type: 'therapist',
-          id: 'th1',
-          name: 'Marie Coiffure',
-          rating: 4.8,
-          review_count: 120,
-          price: 15000,
-          duration: 90,
-          distance: 0.5,
-          city: 'Douala',
-          region: 'Littoral',
-        },
-        {
-          type: 'salon',
-          id: 's1',
-          name: 'Beau Monde Salon',
-          rating: 4.9,
-          review_count: 340,
-          price: 18000,
-          duration: 90,
-          distance: 0.8,
-          city: 'Douala',
-          region: 'Littoral',
-        },
-      ],
-    },
-    {
-      id: 'svc2',
-      name_fr: 'Maquillage Professionnel',
-      name_en: 'Professional Makeup',
-      description_fr: 'Maquillage complet par des experts',
-      description_en: 'Complete makeup by experts',
-      category: 'MAKEUP',
-      duration: 120,
-      base_price: 25000,
-      priority: 9,
-      created_at: '',
-      updated_at: '',
-      providers: [
-        {
-          type: 'therapist',
-          id: 'th2',
-          name: 'Bella Beauty',
-          rating: 4.9,
-          review_count: 230,
-          price: 25000,
-          duration: 120,
-          distance: 1.2,
-          city: 'Douala',
-          region: 'Littoral',
-        },
-      ],
-    },
-  ];
+  // Convertir les services API en format ServiceWithProviders pour la compatibilité
+  const nearbyServices: ServiceWithProviders[] = services.slice(0, 5).map(service => ({
+    ...service,
+    priority: 10,
+    providers: [], // Les providers seront chargés quand on clique sur un service
+  }));
 
-  const servicePackages: PackageWithProviders[] = [
-    {
-      id: 'pkg1',
-      name_fr: 'Package Mariée Complète',
-      name_en: 'Complete Bridal Package',
-      description_fr: 'Coiffure, maquillage et manucure pour votre jour spécial',
-      description_en: 'Hair, makeup and manicure for your special day',
-      category: 'MAKEUP',
-      base_price: 65000,
-      base_duration: 240,
-      priority: 10,
-      is_active: true,
-      created_at: '',
-      updated_at: '',
-      services: [],
-      providers: [
-        {
-          type: 'salon',
-          id: 's1',
-          name: 'Beau Monde Salon',
-          rating: 4.9,
-          review_count: 340,
-          price: 65000,
-          duration: 240,
-          city: 'Douala',
-          region: 'Littoral',
-        },
-      ],
-    },
-  ];
-
-  const giftCards: GiftCard[] = [
-    {
-      id: 'gc1',
-      code: 'GIFT2025',
-      value: 35000,
-      title_fr: 'CARTE CADEAU 1',
-      title_en: 'GIFT CARD 1',
-      description_fr: 'Valable pour tous les services',
-      description_en: 'Valid for all services',
-      valid_from: '',
-      valid_until: '2025-12-31',
-      status: 'ACTIVE',
-      created_at: '',
-      updated_at: '',
-    },
-  ];
+  // Mock data pour les bookings et packages (à implémenter plus tard)
+  const upcomingBookings: Booking[] = [];
+  const servicePackages: PackageWithProviders[] = [];
+  const giftCards: GiftCard[] = [];
 
   const handleServicePress = (service: ServiceWithProviders) => {
     navigation.navigate('ServiceProviders', { service });
@@ -210,7 +113,31 @@ export const HomeScreen: React.FC = () => {
           paddingHorizontal: containerPaddingHorizontal,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
+        {/* Loading State */}
+        {servicesLoading && !refreshing && (
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#000" />
+            <Text style={{ marginTop: spacing(2), fontSize: normalizeFontSize(14), color: '#666' }}>
+              {language === 'fr' ? 'Chargement des services...' : 'Loading services...'}
+            </Text>
+          </View>
+        )}
+
+        {/* Error State */}
+        {servicesError && (
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <Text style={{ fontSize: normalizeFontSize(14), color: '#ff0000', textAlign: 'center' }}>
+              {language === 'fr'
+                ? 'Erreur lors du chargement des services. Tirez pour actualiser.'
+                : 'Error loading services. Pull to refresh.'}
+            </Text>
+          </View>
+        )}
+
         {/* Upcoming Bookings */}
         <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
           <View style={styles.sectionHeader}>
