@@ -56,8 +56,8 @@ export const AppNavigator: React.FC = () => {
 
   // If user is authenticated, show main app
   if (isAuthenticated) {
-    // Check if user is a contractor
-    const isContractor = user?.role === 'CONTRACTOR';
+    // Check if user is a contractor/provider
+    const isContractor = user?.role === 'PROVIDER' || user?.role === 'CONTRACTOR';
 
     return (
       <NavigationContainer>
