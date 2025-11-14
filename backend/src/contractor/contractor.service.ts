@@ -516,10 +516,7 @@ export class ContractorService implements OnModuleInit {
       .from('contractor_services')
       .select(`
         *,
-        service:services(
-          *,
-          category:categories(*)
-        )
+        service:services(*)
       `)
       .eq('contractor_id', contractorId)
       .order('created_at', { ascending: false });
@@ -635,7 +632,7 @@ export class ContractorService implements OnModuleInit {
       .select(`
         *,
         user:users(id, full_name, email, phone, profile_picture),
-        service:services(name, category:categories(name))
+        service:services(id, name_fr, name_en, category)
       `)
       .eq('contractor_id', contractorId)
       .eq('status', 'CONFIRMED')
