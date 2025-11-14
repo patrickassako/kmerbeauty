@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
   CreateContractorProfileDto,
@@ -13,8 +13,39 @@ import {
 } from './dto/contractor.dto';
 
 @Injectable()
-export class ContractorService {
+export class ContractorService implements OnModuleInit {
   constructor(private supabaseService: SupabaseService) {}
+
+  async onModuleInit() {
+    // Create contractor-files bucket if it doesn't exist
+    await this.ensureBucketExists();
+  }
+
+  private async ensureBucketExists() {
+    try {
+      const supabase = this.supabaseService.getClient();
+
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(b => b.name === 'contractor-files');
+
+      if (!bucketExists) {
+        // Create bucket
+        const { data, error } = await supabase.storage.createBucket('contractor-files', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+        });
+
+        if (error) {
+          console.error('Failed to create contractor-files bucket:', error);
+        } else {
+          console.log('✅ Created contractor-files bucket');
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring bucket exists:', error);
+    }
+  }
 
   // =====================================================
   // CONTRACTOR PROFILE
