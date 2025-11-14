@@ -253,6 +253,8 @@ export const ContractorProfileEditScreen = () => {
         profileData.user_id = user.id;
       }
 
+      const isNewProfile = !profile.id;
+
       if (profile.id) {
         await contractorApi.updateProfile(user?.id || '', profileData);
       } else {
@@ -261,10 +263,25 @@ export const ContractorProfileEditScreen = () => {
 
       Alert.alert(
         language === 'fr' ? 'Succès' : 'Success',
-        language === 'fr' ? 'Profil enregistré avec succès' : 'Profile saved successfully'
+        language === 'fr'
+          ? 'Profil enregistré avec succès. Votre compte est en attente de validation par un administrateur. Ajoutez maintenant les services que vous proposez.'
+          : 'Profile saved successfully. Your account is pending admin validation. Now add the services you provide.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (isNewProfile) {
+                // Navigate to services screen for new profiles
+                navigation.replace('ContractorServices');
+              } else {
+                navigation.goBack();
+              }
+            },
+          },
+        ]
       );
 
-      navigation.goBack();
+      // Don't auto-navigate - let user click OK first
     } catch (error: any) {
       console.error('Error saving profile:', error);
       Alert.alert(

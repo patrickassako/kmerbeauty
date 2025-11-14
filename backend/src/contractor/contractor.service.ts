@@ -57,9 +57,16 @@ export class ContractorService implements OnModuleInit {
     console.log('🆕 Creating new contractor profile');
     console.log('📦 DTO received:', JSON.stringify(dto, null, 2));
 
+    // Force is_active to false for new profiles (requires admin validation)
+    const profileData = {
+      ...dto,
+      is_active: false,
+      is_verified: false,
+    };
+
     const { data, error } = await supabase
       .from('contractor_profiles')
-      .insert(dto)
+      .insert(profileData)
       .select()
       .single();
 

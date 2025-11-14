@@ -30,6 +30,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ContractorDashboard" component={ContractorDashboardScreen} />
     <HomeStack.Screen name="ContractorEarnings" component={ContractorEarningsScreen} />
     <HomeStack.Screen name="ContractorProfileEdit" component={ContractorProfileEditScreen} />
+    <HomeStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
   </HomeStack.Navigator>
 );
 
