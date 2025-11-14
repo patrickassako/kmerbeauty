@@ -116,7 +116,7 @@ export class ContractorService {
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    file: any,
     userId: string,
     fileType: string,
   ) {

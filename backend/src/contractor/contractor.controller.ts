@@ -76,7 +76,7 @@ export class ContractorController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('userId') userId: string,
     @Body('fileType') fileType: string,
   ) {
