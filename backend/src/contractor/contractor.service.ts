@@ -83,9 +83,9 @@ export class ContractorService implements OnModuleInit {
       .update({ role: 'CONTRACTOR' })
       .eq('id', dto.user_id);
 
-    // Sync to therapists table
-    await this.syncToTherapists(data);
-    console.log('✅ Synced to therapists table');
+    // Sync to therapists table is now handled by PostgreSQL trigger
+    // with SECURITY DEFINER to bypass RLS policies
+    console.log('✅ Sync to therapists will be handled by trigger');
 
     return data;
   }
@@ -142,9 +142,9 @@ export class ContractorService implements OnModuleInit {
 
     console.log('✅ Profile updated successfully');
 
-    // Sync to therapists table
-    await this.syncToTherapists(data);
-    console.log('✅ Synced to therapists table');
+    // Sync to therapists table is now handled by PostgreSQL trigger
+    // with SECURITY DEFINER to bypass RLS policies
+    console.log('✅ Sync to therapists will be handled by trigger');
 
     return data;
   }
