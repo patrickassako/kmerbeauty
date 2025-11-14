@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { API_URL } from '../config/api';
+import { API_URL } from '../config/constants';
 import {
   ContractorDashboardScreen,
   ContractorProposalsScreen,
