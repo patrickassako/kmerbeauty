@@ -76,6 +76,10 @@ export class ContractorService implements OnModuleInit {
       .update({ role: 'CONTRACTOR' })
       .eq('id', dto.user_id);
 
+    // Sync to therapists table
+    await this.syncToTherapists(data);
+    console.log('✅ Synced to therapists table');
+
     return data;
   }
 
@@ -130,7 +134,104 @@ export class ContractorService implements OnModuleInit {
     }
 
     console.log('✅ Profile updated successfully');
+
+    // Sync to therapists table
+    await this.syncToTherapists(data);
+    console.log('✅ Synced to therapists table');
+
     return data;
+  }
+
+  private async syncToTherapists(contractorProfile: any) {
+    const supabase = this.supabaseService.getClient();
+
+    try {
+      // Extract location from first service zone if available
+      let latitude = 0;
+      let longitude = 0;
+      let city = 'Unknown';
+      let region = 'Unknown';
+
+      if (contractorProfile.service_zones && Array.isArray(contractorProfile.service_zones)) {
+        const firstZone = contractorProfile.service_zones[0];
+        if (typeof firstZone === 'string') {
+          // If it's just a string (neighborhood name), use it as city
+          city = firstZone;
+          region = firstZone;
+        } else if (firstZone?.location) {
+          // If it's an object with location data
+          latitude = firstZone.location.lat || 0;
+          longitude = firstZone.location.lng || 0;
+          city = firstZone.location.address || 'Unknown';
+          region = firstZone.location.address || 'Unknown';
+        }
+      }
+
+      // Calculate experience (years) from bio length (rough estimate)
+      const experience = contractorProfile.professional_experience
+        ? Math.max(1, Math.floor(contractorProfile.professional_experience.length / 100))
+        : 1;
+
+      // Check if therapist already exists
+      const { data: existingTherapist } = await supabase
+        .from('therapists')
+        .select('id')
+        .eq('user_id', contractorProfile.user_id)
+        .single();
+
+      const therapistData = {
+        user_id: contractorProfile.user_id,
+        bio_fr: contractorProfile.professional_experience || '',
+        bio_en: contractorProfile.professional_experience || '',
+        experience: experience,
+        is_licensed: contractorProfile.qualifications_proof?.length > 0 || false,
+        license_number: contractorProfile.siret_number || null,
+        is_mobile: true,
+        travel_radius: 20,
+        travel_fee: 0,
+        latitude: latitude,
+        longitude: longitude,
+        city: city,
+        region: region,
+        portfolio_images: contractorProfile.portfolio_images || [],
+        profile_image: contractorProfile.profile_picture || null,
+        is_active: contractorProfile.is_active ?? true,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingTherapist) {
+        // Update existing therapist
+        const { error } = await supabase
+          .from('therapists')
+          .update(therapistData)
+          .eq('user_id', contractorProfile.user_id);
+
+        if (error) {
+          console.error('❌ Error updating therapist:', error);
+          throw error;
+        }
+      } else {
+        // Create new therapist with location geometry
+        const { error } = await supabase
+          .from('therapists')
+          .insert({
+            ...therapistData,
+            location: `POINT(${longitude} ${latitude})`,
+            created_at: new Date().toISOString(),
+          });
+
+        if (error) {
+          console.error('❌ Error creating therapist:', error);
+          throw error;
+        }
+      }
+
+      console.log('✅ Therapist record synced for user:', contractorProfile.user_id);
+    } catch (error) {
+      console.error('❌ Error syncing to therapists table:', error);
+      // Don't throw - we don't want to fail the contractor profile operation
+      // if therapist sync fails
+    }
   }
 
   async listContractors(filters?: {
