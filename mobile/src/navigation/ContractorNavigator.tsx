@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ContractorDashboardScreen,
   ContractorProposalsScreen,
@@ -13,7 +14,8 @@ import {
   AppointmentDetailsScreen,
   ProposalDetailsScreen,
 } from '../screens/contractor';
-import { ChatScreen, ConversationsScreen } from '../screens/main';
+import { ChatScreen } from '../screens/main/ChatScreen';
+import { ConversationsScreen } from '../screens/main/ConversationsScreen';
 
 // Stack navigators for each tab
 const HomeStack = createNativeStackNavigator();
@@ -66,18 +68,47 @@ const MoreStackNavigator = () => (
 );
 
 // More Screen (placeholder)
-const ContractorMoreScreen = ({ navigation }: any) => (
-  <View style={styles.container}>
-    <Text style={styles.title}>More</Text>
-    <View style={styles.menuList}>
-      <MenuButton title="Profile" onPress={() => navigation.navigate('ContractorProfile')} />
-      <MenuButton title="My Schedule" onPress={() => navigation.navigate('ContractorAvailability')} />
-      <MenuButton title="My Services" onPress={() => navigation.navigate('ContractorServices')} />
-      <MenuButton title="Settings" onPress={() => {}} />
-      <MenuButton title="Logout" onPress={() => {}} />
+const ContractorMoreScreen = ({ navigation }: any) => {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Sign out error:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>More</Text>
+      <View style={styles.menuList}>
+        <MenuButton title="Profile" onPress={() => navigation.navigate('ContractorProfile')} />
+        <MenuButton title="My Schedule" onPress={() => navigation.navigate('ContractorAvailability')} />
+        <MenuButton title="My Services" onPress={() => navigation.navigate('ContractorServices')} />
+        <MenuButton title="Settings" onPress={() => {}} />
+        <MenuButton title="Logout" onPress={handleSignOut} />
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const MenuButton = ({ title, onPress }: { title: string; onPress: () => void }) => (
   <Text style={styles.menuButton} onPress={onPress}>
