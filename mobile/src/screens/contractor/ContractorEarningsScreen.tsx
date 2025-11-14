@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useI18n } from '../../hooks/useI18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi } from '../../services/api';
 
@@ -38,7 +37,6 @@ interface Earning {
 
 export const ContractorEarningsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { t } = useI18n();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useI18n } from '../../hooks/useI18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi, Booking } from '../../services/api';
 
@@ -19,7 +18,6 @@ const DAYS = ['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const ContractorAppointmentsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { t } = useI18n();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 

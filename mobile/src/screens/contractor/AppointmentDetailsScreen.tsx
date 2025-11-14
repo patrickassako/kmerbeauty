@@ -11,12 +11,10 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useI18n } from '../../hooks/useI18n';
 import { bookingApi, Booking } from '../../services/api';
 
 export const AppointmentDetailsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { t } = useI18n();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 

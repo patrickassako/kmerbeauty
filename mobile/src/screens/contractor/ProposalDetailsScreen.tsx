@@ -11,12 +11,10 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useI18n } from '../../hooks/useI18n';
 import { proposalApi, Proposal } from '../../services/api';
 
 export const ProposalDetailsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { t } = useI18n();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
