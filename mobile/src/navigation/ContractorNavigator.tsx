@@ -10,6 +10,8 @@ import {
   ContractorServicesScreen,
   ContractorAppointmentsScreen,
   ContractorEarningsScreen,
+  AppointmentDetailsScreen,
+  ProposalDetailsScreen,
 } from '../screens/contractor';
 import { ChatScreen, ConversationsScreen } from '../screens/main';
 
@@ -33,6 +35,7 @@ const HomeStackNavigator = () => (
 const ProposalStackNavigator = () => (
   <ProposalStack.Navigator screenOptions={{ headerShown: false }}>
     <ProposalStack.Screen name="ContractorProposalsList" component={ContractorProposalsScreen} />
+    <ProposalStack.Screen name="ProposalDetails" component={ProposalDetailsScreen} />
   </ProposalStack.Navigator>
 );
 
@@ -48,6 +51,7 @@ const ChatStackNavigator = () => (
 const CalendarStackNavigator = () => (
   <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
     <CalendarStack.Screen name="ContractorAppointmentsList" component={ContractorAppointmentsScreen} />
+    <CalendarStack.Screen name="AppointmentDetails" component={AppointmentDetailsScreen} />
   </CalendarStack.Navigator>
 );
 
