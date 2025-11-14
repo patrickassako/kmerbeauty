@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { API_URL } from '../config/api';
 import {
   ContractorDashboardScreen,
   ContractorProposalsScreen,
@@ -120,7 +121,7 @@ const MenuButton = ({ title, onPress }: { title: string; onPress: () => void }) 
 // Bottom Tab Navigator
 const Tab = createBottomTabNavigator();
 
-export const ContractorNavigator = () => {
+const ContractorTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -173,6 +174,57 @@ export const ContractorNavigator = () => {
   );
 };
 
+// Wrapper to check if contractor has services
+export const ContractorNavigator = () => {
+  const { user } = useAuth();
+  const [hasServices, setHasServices] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkServices();
+  }, [user]);
+
+  const checkServices = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/contractors/has-services/${user.id}`);
+      const data = await response.json();
+      setHasServices(data.hasServices);
+    } catch (error) {
+      console.error('Error checking services:', error);
+      // On error, assume they have services to not block access
+      setHasServices(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Callback to refresh services check after adding a service
+  const onServiceAdded = () => {
+    setHasServices(true);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2D2D2D" />
+      </View>
+    );
+  }
+
+  // If contractor has no services, show services screen
+  if (hasServices === false) {
+    return <ContractorServicesScreen onServiceAdded={onServiceAdded} />;
+  }
+
+  // Otherwise, show the normal tab navigator
+  return <ContractorTabNavigator />;
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -195,5 +247,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
 });

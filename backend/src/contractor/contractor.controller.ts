@@ -47,6 +47,12 @@ export class ContractorController {
     return this.contractorService.getProfileById(contractorId);
   }
 
+  @Get('has-services/:userId')
+  async hasServices(@Param('userId') userId: string) {
+    const hasServices = await this.contractorService.hasServices(userId);
+    return { hasServices };
+  }
+
   @Put('profile/:userId')
   async updateProfile(
     @Param('userId') userId: string,

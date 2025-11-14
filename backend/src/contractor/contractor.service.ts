@@ -106,6 +106,34 @@ export class ContractorService implements OnModuleInit {
     return data;
   }
 
+  async hasServices(userId: string): Promise<boolean> {
+    const supabase = this.supabaseService.getClient();
+
+    // First, get the therapist_id from therapists table using user_id
+    const { data: therapist, error: therapistError } = await supabase
+      .from('therapists')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (therapistError || !therapist) {
+      return false;
+    }
+
+    // Then check if this therapist has any services in therapist_services
+    const { data: services, error: servicesError } = await supabase
+      .from('therapist_services')
+      .select('id')
+      .eq('therapist_id', therapist.id)
+      .limit(1);
+
+    if (servicesError) {
+      return false;
+    }
+
+    return services && services.length > 0;
+  }
+
   async getProfileById(contractorId: string) {
     const supabase = this.supabaseService.getClient();
 
@@ -496,9 +524,27 @@ export class ContractorService implements OnModuleInit {
   async addService(dto: CreateContractorServiceDto) {
     const supabase = this.supabaseService.getClient();
 
+    // Get therapist_id from contractor_id (which is actually user_id)
+    const { data: therapist, error: therapistError } = await supabase
+      .from('therapists')
+      .select('id')
+      .eq('user_id', dto.contractor_id)
+      .single();
+
+    if (therapistError || !therapist) {
+      throw new Error('Therapist profile not found. Please complete your profile first.');
+    }
+
+    // Insert into therapist_services instead of contractor_services
     const { data, error } = await supabase
-      .from('contractor_services')
-      .insert(dto)
+      .from('therapist_services')
+      .insert({
+        therapist_id: therapist.id,
+        service_id: dto.service_id,
+        price: dto.price,
+        duration: dto.duration,
+        is_active: true,
+      })
       .select(`
         *,
         service:services(*)
@@ -512,24 +558,36 @@ export class ContractorService implements OnModuleInit {
   async getServices(contractorId: string) {
     const supabase = this.supabaseService.getClient();
 
+    // Get therapist_id from contractor_id (which is actually user_id)
+    const { data: therapist, error: therapistError } = await supabase
+      .from('therapists')
+      .select('id')
+      .eq('user_id', contractorId)
+      .single();
+
+    if (therapistError || !therapist) {
+      // Return empty array if therapist not found instead of throwing error
+      return [];
+    }
+
     const { data, error } = await supabase
-      .from('contractor_services')
+      .from('therapist_services')
       .select(`
         *,
         service:services(*)
       `)
-      .eq('contractor_id', contractorId)
-      .order('created_at', { ascending: false });
+      .eq('therapist_id', therapist.id)
+      .eq('is_active', true);
 
     if (error) throw new Error(error.message);
-    return data;
+    return data || [];
   }
 
   async updateService(serviceId: string, dto: UpdateContractorServiceDto) {
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase
-      .from('contractor_services')
+      .from('therapist_services')
       .update(dto)
       .eq('id', serviceId)
       .select(`
@@ -546,7 +604,7 @@ export class ContractorService implements OnModuleInit {
     const supabase = this.supabaseService.getClient();
 
     const { error } = await supabase
-      .from('contractor_services')
+      .from('therapist_services')
       .delete()
       .eq('id', serviceId);
 

@@ -24,7 +24,11 @@ import {
   type Category,
 } from '../../services/api';
 
-export const ContractorServicesScreen = () => {
+interface ContractorServicesScreenProps {
+  onServiceAdded?: () => void;
+}
+
+export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> = ({ onServiceAdded }) => {
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
   const { user } = useAuth();
@@ -94,6 +98,11 @@ export const ContractorServicesScreen = () => {
       setShowAddServiceModal(false);
       setNewService({ service_id: '', price: '', duration: '', description: '' });
       loadData();
+
+      // Call the callback if provided (for first-time service addition)
+      if (onServiceAdded) {
+        onServiceAdded();
+      }
     } catch (error) {
       console.error('Error adding service:', error);
       Alert.alert('Error', 'Failed to add service');
