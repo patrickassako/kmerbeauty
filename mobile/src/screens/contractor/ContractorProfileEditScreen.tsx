@@ -55,8 +55,13 @@ export const ContractorProfileEditScreen = () => {
 
   // New state for images
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [idCard, setIdCard] = useState<string | null>(null);
+  const [idCardFront, setIdCardFront] = useState<string | null>(null);
+  const [idCardBack, setIdCardBack] = useState<string | null>(null);
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
+
+  // New state for trusted zones
+  const [trustedZones, setTrustedZones] = useState<string[]>([]);
+  const [newZone, setNewZone] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -89,8 +94,15 @@ export const ContractorProfileEditScreen = () => {
       if (existingProfile) {
         setProfile(existingProfile);
         setProfilePicture(existingProfile.profile_picture || null);
-        setIdCard(existingProfile.id_card_url || null);
+        // Handle ID card (could be object with front/back or just string)
+        if (typeof existingProfile.id_card_url === 'object') {
+          setIdCardFront(existingProfile.id_card_url?.front || null);
+          setIdCardBack(existingProfile.id_card_url?.back || null);
+        } else {
+          setIdCardFront(existingProfile.id_card_url || null);
+        }
         setPortfolioImages(existingProfile.portfolio_images || []);
+        setTrustedZones(existingProfile.service_zones || []);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -99,7 +111,7 @@ export const ContractorProfileEditScreen = () => {
     }
   };
 
-  const pickImage = async (type: 'profile' | 'id' | 'portfolio') => {
+  const pickImage = async (type: 'profile' | 'id_front' | 'id_back' | 'portfolio') => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images',
@@ -114,9 +126,14 @@ export const ContractorProfileEditScreen = () => {
         if (type === 'profile') {
           setProfilePicture(imageUri);
           setProfile({ ...profile, profile_picture: imageUri });
-        } else if (type === 'id') {
-          setIdCard(imageUri);
-          setProfile({ ...profile, id_card_url: imageUri });
+        } else if (type === 'id_front') {
+          setIdCardFront(imageUri);
+          const updatedIdCard = { front: imageUri, back: idCardBack };
+          setProfile({ ...profile, id_card_url: updatedIdCard as any });
+        } else if (type === 'id_back') {
+          setIdCardBack(imageUri);
+          const updatedIdCard = { front: idCardFront, back: imageUri };
+          setProfile({ ...profile, id_card_url: updatedIdCard as any });
         } else if (type === 'portfolio') {
           const newImages = result.assets.map(asset => asset.uri);
           const updatedPortfolio = [...portfolioImages, ...newImages].slice(0, 6); // Max 6 images
@@ -134,6 +151,21 @@ export const ContractorProfileEditScreen = () => {
     const updated = portfolioImages.filter((_, i) => i !== index);
     setPortfolioImages(updated);
     setProfile({ ...profile, portfolio_images: updated });
+  };
+
+  const addTrustedZone = () => {
+    if (newZone.trim()) {
+      const updated = [...trustedZones, newZone.trim()];
+      setTrustedZones(updated);
+      setProfile({ ...profile, service_zones: updated });
+      setNewZone('');
+    }
+  };
+
+  const removeTrustedZone = (index: number) => {
+    const updated = trustedZones.filter((_, i) => i !== index);
+    setTrustedZones(updated);
+    setProfile({ ...profile, service_zones: updated });
   };
 
   const saveProfile = async () => {
@@ -157,10 +189,52 @@ export const ContractorProfileEditScreen = () => {
 
       setSaving(true);
 
-      const profileData = {
-        ...profile,
-        profile_completed: true,
-      };
+      // Upload images if they are local URIs
+      const profileData = { ...profile };
+
+      // Upload profile picture
+      if (profilePicture && profilePicture.startsWith('file://')) {
+        const result = await contractorApi.uploadFile(profilePicture, user?.id || '', 'profile');
+        profileData.profile_picture = result.url;
+      } else if (profilePicture) {
+        profileData.profile_picture = profilePicture;
+      }
+
+      // Upload ID card front and back
+      const idCardUrls: any = {};
+      if (idCardFront && idCardFront.startsWith('file://')) {
+        const result = await contractorApi.uploadFile(idCardFront, user?.id || '', 'id_front');
+        idCardUrls.front = result.url;
+      } else if (idCardFront) {
+        idCardUrls.front = idCardFront;
+      }
+
+      if (idCardBack && idCardBack.startsWith('file://')) {
+        const result = await contractorApi.uploadFile(idCardBack, user?.id || '', 'id_back');
+        idCardUrls.back = result.url;
+      } else if (idCardBack) {
+        idCardUrls.back = idCardBack;
+      }
+
+      if (idCardUrls.front || idCardUrls.back) {
+        profileData.id_card_url = idCardUrls as any;
+      }
+
+      // Upload portfolio images
+      const uploadedPortfolio: string[] = [];
+      for (const img of portfolioImages) {
+        if (img.startsWith('file://')) {
+          const result = await contractorApi.uploadFile(img, user?.id || '', 'portfolio');
+          uploadedPortfolio.push(result.url);
+        } else {
+          uploadedPortfolio.push(img);
+        }
+      }
+      if (uploadedPortfolio.length > 0) {
+        profileData.portfolio_images = uploadedPortfolio;
+      }
+
+      profileData.profile_completed = true;
 
       if (profile.id) {
         await contractorApi.updateProfile(user?.id || '', profileData);
@@ -174,9 +248,12 @@ export const ContractorProfileEditScreen = () => {
       );
 
       navigation.goBack();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile');
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to save profile'
+      );
     } finally {
       setSaving(false);
     }
@@ -320,23 +397,20 @@ export const ContractorProfileEditScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* SIRET / Registre du commerce */}
-          <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-            {profile.legal_status === 'salon'
-              ? (language === 'fr' ? 'Registre du commerce' : 'Business Registration')
-              : 'SIRET'}
-          </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-            placeholder={profile.legal_status === 'salon' ? 'Business registration number' : 'SIRET number'}
-            placeholderTextColor="#999"
-            value={profile.siret_number}
-            onChangeText={(text) => setProfile({ ...profile, siret_number: text })}
-          />
-
-          {/* Business Name (for salon) */}
+          {/* SIRET / Registre du commerce (for salon only) */}
           {profile.legal_status === 'salon' && (
             <>
+              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
+                {language === 'fr' ? 'Registre du commerce' : 'Business Registration'}
+              </Text>
+              <TextInput
+                style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
+                placeholder={language === 'fr' ? 'Numéro registre du commerce' : 'Business registration number'}
+                placeholderTextColor="#999"
+                value={profile.siret_number}
+                onChangeText={(text) => setProfile({ ...profile, siret_number: text })}
+              />
+
               <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
                 {language === 'fr' ? 'Nom de l\'entreprise' : 'Business Name'}
               </Text>
@@ -393,30 +467,82 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Trusted Zones */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Zones de confiance' : 'Trusted Zones'}
+            {language === 'fr' ? 'Zones de confiance (Quartiers)' : 'Trusted Zones (Neighborhoods)'}
           </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-            placeholder={language === 'fr' ? 'Ex: Douala, Akwa, Bonanjo...' : 'E.g: Douala, Akwa, Bonanjo...'}
-            placeholderTextColor="#999"
-            multiline
-          />
 
-          {/* ID Card */}
+          {/* Add Zone Input */}
+          <View style={[styles.addZoneContainer, { marginTop: spacing(1) }]}>
+            <TextInput
+              style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), flex: 1 }]}
+              placeholder={language === 'fr' ? 'Nom du quartier...' : 'Neighborhood name...'}
+              placeholderTextColor="#999"
+              value={newZone}
+              onChangeText={setNewZone}
+            />
+            <TouchableOpacity
+              style={[styles.addZoneButton, { padding: spacing(1.5) }]}
+              onPress={addTrustedZone}
+            >
+              <Text style={[styles.addZoneButtonText, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Ajouter' : 'Add'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* List of Zones */}
+          <View style={[styles.zonesList, { marginTop: spacing(1.5) }]}>
+            {trustedZones.map((zone, index) => (
+              <View key={index} style={[styles.zoneChip, { padding: spacing(1), marginBottom: spacing(1) }]}>
+                <Text style={[styles.zoneText, { fontSize: normalizeFontSize(14) }]}>{zone}</Text>
+                <TouchableOpacity onPress={() => removeTrustedZone(index)}>
+                  <Text style={[styles.zoneRemove, { fontSize: normalizeFontSize(16) }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            {trustedZones.length === 0 && (
+              <Text style={[styles.emptyText, { fontSize: normalizeFontSize(12), color: '#999' }]}>
+                {language === 'fr' ? 'Aucun quartier ajouté' : 'No neighborhoods added'}
+              </Text>
+            )}
+          </View>
+
+          {/* ID Card Recto/Verso */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
             {profile.legal_status === 'salon'
               ? (language === 'fr' ? 'Carte d\'identité du responsable' : 'Manager\'s ID Card')
               : (language === 'fr' ? 'Carte d\'identité' : 'ID Card')}
           </Text>
+
+          {/* ID Card Front */}
+          <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
+            {language === 'fr' ? 'Recto' : 'Front'}
+          </Text>
           <TouchableOpacity
             style={[styles.imageUpload, { padding: spacing(3) }]}
-            onPress={() => pickImage('id')}
+            onPress={() => pickImage('id_front')}
           >
-            {idCard ? (
-              <Image source={{ uri: idCard }} style={styles.uploadedImage} />
+            {idCardFront ? (
+              <Image source={{ uri: idCardFront }} style={styles.uploadedImage} />
             ) : (
               <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-                {language === 'fr' ? 'Appuyez pour télécharger' : 'Tap to upload'}
+                {language === 'fr' ? 'Appuyez pour télécharger le recto' : 'Tap to upload front'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* ID Card Back */}
+          <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
+            {language === 'fr' ? 'Verso' : 'Back'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.imageUpload, { padding: spacing(3) }]}
+            onPress={() => pickImage('id_back')}
+          >
+            {idCardBack ? (
+              <Image source={{ uri: idCardBack }} style={styles.uploadedImage} />
+            ) : (
+              <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
+                {language === 'fr' ? 'Appuyez pour télécharger le verso' : 'Tap to upload back'}
               </Text>
             )}
           </TouchableOpacity>
@@ -726,5 +852,49 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFF',
     fontWeight: '600',
+  },
+  addZoneContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  zoneInput: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+  },
+  addZoneButton: {
+    backgroundColor: '#2D2D2D',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  addZoneButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  zonesList: {
+    gap: 8,
+  },
+  zoneChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+  },
+  zoneText: {
+    color: '#2D2D2D',
+  },
+  zoneRemove: {
+    color: '#FF4444',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  emptyText: {
+    fontStyle: 'italic',
+    color: '#999',
   },
 });

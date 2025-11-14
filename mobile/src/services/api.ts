@@ -858,6 +858,30 @@ export const contractorApi = {
     return response.data;
   },
 
+  uploadFile: async (fileUri: string, userId: string, fileType: string): Promise<{ url: string }> => {
+    const formData = new FormData();
+
+    // Convert file URI to blob for React Native
+    const filename = fileUri.split('/').pop() || 'file';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('file', {
+      uri: fileUri,
+      name: filename,
+      type,
+    } as any);
+    formData.append('userId', userId);
+    formData.append('fileType', fileType);
+
+    const response = await api.post('/contractors/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Availability
   setAvailability: async (data: Partial<ContractorAvailability>): Promise<ContractorAvailability> => {
     const response = await api.post('/contractors/availability', data);

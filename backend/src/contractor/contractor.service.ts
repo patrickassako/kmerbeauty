@@ -115,6 +115,43 @@ export class ContractorService {
     return data;
   }
 
+  async uploadFile(
+    file: Express.Multer.File,
+    userId: string,
+    fileType: string,
+  ) {
+    const supabase = this.supabaseService.getClient();
+
+    // Generate a unique filename
+    const timestamp = Date.now();
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${userId}/${fileType}_${timestamp}.${fileExt}`;
+
+    // Determine the bucket based on file type
+    const bucket = 'contractor-files';
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (error) throw new Error(`Upload failed: ${error.message}`);
+
+    // Get public URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+    return {
+      url: publicUrl,
+      fileName: fileName,
+      fileType: fileType,
+    };
+  }
+
   // =====================================================
   // AVAILABILITY
   // =====================================================

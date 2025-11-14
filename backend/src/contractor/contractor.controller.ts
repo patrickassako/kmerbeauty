@@ -7,7 +7,11 @@ import {
   Body,
   Param,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ContractorService } from './contractor.service';
 import {
   CreateContractorProfileDto,
@@ -67,6 +71,28 @@ export class ContractorController {
     }
 
     return this.contractorService.listContractors(filters);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('userId') userId: string,
+    @Body('fileType') fileType: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    if (!fileType) {
+      throw new BadRequestException('File type is required');
+    }
+
+    return this.contractorService.uploadFile(file, userId, fileType);
   }
 
   // =====================================================
