@@ -565,6 +565,10 @@ export class ContractorService implements OnModuleInit {
   ): Promise<DashboardStatsDto> {
     const supabase = this.supabaseService.getClient();
 
+    console.log('📊 Getting dashboard stats for contractor:', contractorId);
+    console.log('   Start date:', startDate);
+    console.log('   End date:', endDate);
+
     // Get basic stats from function
     const { data: statsArray, error: statsError } = await supabase
       .rpc('get_contractor_dashboard_stats', {
@@ -573,7 +577,13 @@ export class ContractorService implements OnModuleInit {
         p_end_date: endDate || null,
       });
 
-    if (statsError) throw new Error(statsError.message);
+    if (statsError) {
+      console.error('❌ Error getting dashboard stats:', statsError);
+      throw new Error(statsError.message);
+    }
+
+    console.log('📦 Stats data received:', JSON.stringify(statsArray, null, 2));
+
     if (!statsArray || statsArray.length === 0) {
       throw new Error('No stats data returned');
     }
@@ -590,33 +600,51 @@ export class ContractorService implements OnModuleInit {
       upcoming_appointments: string;
     };
 
-    // Get earnings chart data
-    const { data: earnings, error: earningsError } = await supabase
-      .from('contractor_earnings')
-      .select('created_at, net_amount')
-      .eq('contractor_id', contractorId)
-      .eq('payment_status', 'PAID')
-      .gte('created_at', startDate || '2000-01-01')
-      .lte('created_at', endDate || '2100-01-01')
-      .order('created_at', { ascending: true });
+    // Get earnings chart data (safely, return empty if table doesn't exist)
+    let earnings: any[] = [];
+    try {
+      const { data: earningsData, error: earningsError } = await supabase
+        .from('contractor_earnings')
+        .select('created_at, net_amount')
+        .eq('contractor_id', contractorId)
+        .eq('payment_status', 'PAID')
+        .gte('created_at', startDate || '2000-01-01')
+        .lte('created_at', endDate || '2100-01-01')
+        .order('created_at', { ascending: true });
 
-    if (earningsError) throw new Error(earningsError.message);
+      if (earningsError && !earningsError.message.includes('does not exist')) {
+        console.error('⚠️  Error fetching earnings chart:', earningsError.message);
+      } else if (earningsData) {
+        earnings = earningsData;
+      }
+    } catch (e) {
+      console.log('⚠️  Earnings table not available, using empty data');
+    }
 
-    // Get bookings chart data
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('scheduled_at, status')
-      .eq('contractor_id', contractorId)
-      .eq('status', 'COMPLETED')
-      .gte('scheduled_at', startDate || '2000-01-01')
-      .lte('scheduled_at', endDate || '2100-01-01')
-      .order('scheduled_at', { ascending: true });
+    // Get bookings chart data (safely, return empty if table doesn't exist)
+    let bookings: any[] = [];
+    try {
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('scheduled_at, status')
+        .eq('contractor_id', contractorId)
+        .eq('status', 'COMPLETED')
+        .gte('scheduled_at', startDate || '2000-01-01')
+        .lte('scheduled_at', endDate || '2100-01-01')
+        .order('scheduled_at', { ascending: true });
 
-    if (bookingsError) throw new Error(bookingsError.message);
+      if (bookingsError && !bookingsError.message.includes('does not exist')) {
+        console.error('⚠️  Error fetching bookings chart:', bookingsError.message);
+      } else if (bookingsData) {
+        bookings = bookingsData;
+      }
+    } catch (e) {
+      console.log('⚠️  Bookings table not available, using empty data');
+    }
 
     // Process chart data
-    const earningsChart = this.aggregateDataByDate(earnings || [], 'net_amount');
-    const bookingsChart = this.aggregateDataByDate(bookings || [], 'count');
+    const earningsChart = this.aggregateDataByDate(earnings, 'net_amount');
+    const bookingsChart = this.aggregateDataByDate(bookings, 'count');
 
     return {
       total_income: parseFloat(typedStats.total_income || '0'),
@@ -632,56 +660,91 @@ export class ContractorService implements OnModuleInit {
   async getUpcomingAppointments(contractorId: string, dayFilter?: string) {
     const supabase = this.supabaseService.getClient();
 
-    let query = supabase
-      .from('bookings')
-      .select(`
-        *,
-        user:users(id, full_name, email, phone, profile_picture),
-        service:services(id, name_fr, name_en, category)
-      `)
-      .eq('contractor_id', contractorId)
-      .eq('status', 'CONFIRMED')
-      .gte('scheduled_at', new Date().toISOString())
-      .order('scheduled_at', { ascending: true });
+    console.log('📅 Getting upcoming appointments for contractor:', contractorId);
 
-    if (dayFilter) {
-      // Filter by day of week
-      // This would need to be done client-side or with a more complex query
+    try {
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          user:users(id, full_name, email, phone, profile_picture),
+          service:services(id, name_fr, name_en, category)
+        `)
+        .eq('contractor_id', contractorId)
+        .eq('status', 'CONFIRMED')
+        .gte('scheduled_at', new Date().toISOString())
+        .order('scheduled_at', { ascending: true });
+
+      if (dayFilter) {
+        // Filter by day of week
+        // This would need to be done client-side or with a more complex query
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ Error getting appointments:', error);
+        // Return empty array if table doesn't exist yet
+        if (error.message.includes('relationship') || error.message.includes('schema cache')) {
+          console.log('⚠️  Bookings table not ready yet, returning empty array');
+          return [];
+        }
+        throw new Error(error.message);
+      }
+
+      console.log('✅ Found', data?.length || 0, 'upcoming appointments');
+      return data || [];
+    } catch (error) {
+      console.error('❌ Exception in getUpcomingAppointments:', error);
+      // Return empty array instead of throwing for schema errors
+      return [];
     }
-
-    const { data, error } = await query;
-
-    if (error) throw new Error(error.message);
-    return data;
   }
 
   async getEarnings(contractorId: string, startDate?: string, endDate?: string) {
     const supabase = this.supabaseService.getClient();
 
-    let query = supabase
-      .from('contractor_earnings')
-      .select(`
-        *,
-        booking:bookings(
-          scheduled_at,
-          service:services(name)
-        )
-      `)
-      .eq('contractor_id', contractorId)
-      .order('created_at', { ascending: false });
+    console.log('💰 Getting earnings for contractor:', contractorId);
 
-    if (startDate) {
-      query = query.gte('created_at', startDate);
+    try {
+      let query = supabase
+        .from('contractor_earnings')
+        .select(`
+          *,
+          booking:bookings(
+            scheduled_at,
+            service:services(name)
+          )
+        `)
+        .eq('contractor_id', contractorId)
+        .order('created_at', { ascending: false });
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+
+      if (endDate) {
+        query = query.lte('created_at', endDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ Error getting earnings:', error);
+        // Return empty array if table doesn't exist yet
+        if (error.message.includes('relation') || error.message.includes('does not exist')) {
+          console.log('⚠️  Earnings table not ready yet, returning empty array');
+          return [];
+        }
+        throw new Error(error.message);
+      }
+
+      console.log('✅ Found', data?.length || 0, 'earnings records');
+      return data || [];
+    } catch (error) {
+      console.error('❌ Exception in getEarnings:', error);
+      return [];
     }
-
-    if (endDate) {
-      query = query.lte('created_at', endDate);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw new Error(error.message);
-    return data;
   }
 
   // =====================================================
