@@ -102,14 +102,16 @@ export const AppointmentDetailsScreen = () => {
         {/* Header Image Gallery */}
         <View style={[styles.imageGallery, { height: spacing(30) }]}>
           {/* Main Image */}
-          <Image
-            source={
-              appointment.service?.image
-                ? { uri: appointment.service.image }
-                : require('../../../assets/placeholder.png')
-            }
-            style={styles.mainImage}
-          />
+          {appointment.service?.image ? (
+            <Image
+              source={{ uri: appointment.service.image }}
+              style={styles.mainImage}
+            />
+          ) : (
+            <View style={[styles.mainImage, styles.placeholderImage]}>
+              <Text style={{ fontSize: normalizeFontSize(40), color: '#999' }}>📷</Text>
+            </View>
+          )}
 
           {/* Close Button */}
           <TouchableOpacity
@@ -125,14 +127,16 @@ export const AppointmentDetailsScreen = () => {
           {/* Thumbnail Strip */}
           <View style={[styles.thumbnailStrip, { bottom: spacing(2), left: spacing(2), gap: spacing(1) }]}>
             <View style={[styles.thumbnail, { width: spacing(8), height: spacing(8) }]}>
-              <Image
-                source={
-                  appointment.service?.image
-                    ? { uri: appointment.service.image }
-                    : require('../../../assets/placeholder.png')
-                }
-                style={{ width: '100%', height: '100%', borderRadius: spacing(1) }}
-              />
+              {appointment.service?.image ? (
+                <Image
+                  source={{ uri: appointment.service.image }}
+                  style={{ width: '100%', height: '100%', borderRadius: spacing(1) }}
+                />
+              ) : (
+                <View style={[styles.placeholderImage, { width: '100%', height: '100%', borderRadius: spacing(1) }]}>
+                  <Text style={{ fontSize: normalizeFontSize(20), color: '#999' }}>📷</Text>
+                </View>
+              )}
             </View>
             <View style={[styles.thumbnail, { width: spacing(8), height: spacing(8) }]}>
               <View style={styles.moreThumbnail}>
@@ -334,6 +338,11 @@ const styles = StyleSheet.create({
   mainImage: {
     width: '100%',
     height: '100%',
+  },
+  placeholderImage: {
+    backgroundColor: '#DDD',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closeButton: {
     position: 'absolute',
