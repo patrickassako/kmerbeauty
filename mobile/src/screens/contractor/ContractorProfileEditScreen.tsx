@@ -9,37 +9,78 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { contractorApi, type ContractorProfile } from '../../services/api';
+import { contractorApi, categoriesApi, type ContractorProfile } from '../../services/api';
+
+interface Category {
+  category: string;
+  name_fr: string;
+  name_en: string;
+}
 
 export const ContractorProfileEditScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
   const [profile, setProfile] = useState<Partial<ContractorProfile>>({
     user_id: user?.id,
     business_name: '',
     siret_number: '',
-    legal_status: '',
+    legal_status: 'independant', // 'independant' or 'salon'
     professional_experience: '',
     types_of_services: [],
     languages_spoken: ['fr'],
     available_transportation: [],
+    service_zones: [],
     confidentiality_accepted: false,
     terms_accepted: false,
+    profile_picture: null,
+    id_card_url: null,
+    insurance_url: null,
+    training_certificates: [],
+    portfolio_images: [],
   });
+
+  // New state for images
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [idCard, setIdCard] = useState<string | null>(null);
+  const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
 
   useEffect(() => {
     loadProfile();
+    loadCategories();
+    requestPermissions();
   }, []);
+
+  const requestPermissions = async () => {
+    try {
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+      await ImagePicker.requestCameraPermissionsAsync();
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const cats = await categoriesApi.getAll();
+      setCategories(cats);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -47,6 +88,9 @@ export const ContractorProfileEditScreen = () => {
       const existingProfile = await contractorApi.getProfileByUserId(user?.id || '');
       if (existingProfile) {
         setProfile(existingProfile);
+        setProfilePicture(existingProfile.profile_picture || null);
+        setIdCard(existingProfile.id_card_url || null);
+        setPortfolioImages(existingProfile.portfolio_images || []);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -55,13 +99,67 @@ export const ContractorProfileEditScreen = () => {
     }
   };
 
+  const pickImage = async (type: 'profile' | 'id' | 'portfolio') => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        allowsEditing: type !== 'portfolio',
+        quality: 0.8,
+        allowsMultipleSelection: type === 'portfolio',
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const imageUri = result.assets[0].uri;
+
+        if (type === 'profile') {
+          setProfilePicture(imageUri);
+          setProfile({ ...profile, profile_picture: imageUri });
+        } else if (type === 'id') {
+          setIdCard(imageUri);
+          setProfile({ ...profile, id_card_url: imageUri });
+        } else if (type === 'portfolio') {
+          const newImages = result.assets.map(asset => asset.uri);
+          const updatedPortfolio = [...portfolioImages, ...newImages].slice(0, 6); // Max 6 images
+          setPortfolioImages(updatedPortfolio);
+          setProfile({ ...profile, portfolio_images: updatedPortfolio });
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const removePortfolioImage = (index: number) => {
+    const updated = portfolioImages.filter((_, i) => i !== index);
+    setPortfolioImages(updated);
+    setProfile({ ...profile, portfolio_images: updated });
+  };
+
   const saveProfile = async () => {
     try {
+      // Validation
+      if (!profile.legal_status) {
+        Alert.alert(
+          language === 'fr' ? 'Erreur' : 'Error',
+          language === 'fr' ? 'Veuillez sélectionner votre statut légal' : 'Please select your legal status'
+        );
+        return;
+      }
+
+      if (!profile.confidentiality_accepted || !profile.terms_accepted) {
+        Alert.alert(
+          language === 'fr' ? 'Erreur' : 'Error',
+          language === 'fr' ? 'Veuillez accepter les conditions' : 'Please accept the terms'
+        );
+        return;
+      }
+
       setSaving(true);
 
       const profileData = {
         ...profile,
-        profile_completed: true, // Mark as completed when saving
+        profile_completed: true,
       };
 
       if (profile.id) {
@@ -84,11 +182,11 @@ export const ContractorProfileEditScreen = () => {
     }
   };
 
-  const toggleServiceType = (serviceType: string) => {
+  const toggleCategory = (categoryId: string) => {
     const current = profile.types_of_services || [];
-    const updated = current.includes(serviceType)
-      ? current.filter((t) => t !== serviceType)
-      : [...current, serviceType];
+    const updated = current.includes(categoryId)
+      ? current.filter((t) => t !== categoryId)
+      : [...current, categoryId];
     setProfile({ ...profile, types_of_services: updated });
   };
 
@@ -116,13 +214,6 @@ export const ContractorProfileEditScreen = () => {
     );
   }
 
-  const serviceTypes = [
-    { label: 'Hairdressing', value: 'hairdressing' },
-    { label: 'Beauty', value: 'beauty' },
-    { label: 'Massage', value: 'massage' },
-    { label: 'Nail Care', value: 'nails' },
-  ];
-
   const languages = [
     { label: 'English', value: 'en' },
     { label: 'Français', value: 'fr' },
@@ -131,9 +222,9 @@ export const ContractorProfileEditScreen = () => {
   ];
 
   const transportOptions = [
-    { label: 'Car', value: 'car' },
-    { label: 'Bike', value: 'bike' },
-    { label: 'Public Transport', value: 'public_transport' },
+    { label: language === 'fr' ? 'Voiture' : 'Car', value: 'car' },
+    { label: language === 'fr' ? 'Vélo' : 'Bike', value: 'bike' },
+    { label: language === 'fr' ? 'Transport public' : 'Public Transport', value: 'public_transport' },
   ];
 
   return (
@@ -143,7 +234,9 @@ export const ContractorProfileEditScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={{ fontSize: normalizeFontSize(24) }}>←</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { fontSize: normalizeFontSize(18) }]}>Edit Profile</Text>
+        <Text style={[styles.title, { fontSize: normalizeFontSize(18) }]}>
+          {language === 'fr' ? 'Modifier le profil' : 'Edit Profile'}
+        </Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={{ fontSize: normalizeFontSize(18) }}>✕</Text>
         </TouchableOpacity>
@@ -153,35 +246,34 @@ export const ContractorProfileEditScreen = () => {
         <View style={{ padding: spacing(2.5) }}>
           {/* Full Name (from user) */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Full Name
+            {language === 'fr' ? 'Nom complet' : 'Full Name'}
           </Text>
           <Text style={[styles.infoText, { fontSize: normalizeFontSize(14), padding: spacing(1.5) }]}>
-            {user?.full_name || 'Not set'}
+            {user?.firstName && user?.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : 'Not set'}
           </Text>
-
-          {/* Date of Birth */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Date of Birth
-          </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#999"
-          />
 
           {/* Profile Picture */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Profile Picture
+            {language === 'fr' ? 'Photo de profil' : 'Profile Picture'}
           </Text>
-          <View style={[styles.imageUpload, { padding: spacing(3) }]}>
-            <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-              Tap to upload profile picture
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.imageUpload, { padding: spacing(3) }]}
+            onPress={() => pickImage('profile')}
+          >
+            {profilePicture ? (
+              <Image source={{ uri: profilePicture }} style={styles.uploadedImage} />
+            ) : (
+              <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
+                {language === 'fr' ? 'Appuyez pour télécharger' : 'Tap to upload'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
           {/* Contact Information */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Contact Information
+            {language === 'fr' ? 'Informations de contact' : 'Contact Information'}
           </Text>
 
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
@@ -192,7 +284,7 @@ export const ContractorProfileEditScreen = () => {
           </Text>
 
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
-            Phone
+            {language === 'fr' ? 'Téléphone' : 'Phone'}
           </Text>
           <Text style={[styles.infoText, { fontSize: normalizeFontSize(14), padding: spacing(1.5) }]}>
             {user?.phone || 'Not set'}
@@ -200,258 +292,241 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Legal Status */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Legal Status
+            {language === 'fr' ? 'Statut légal' : 'Legal Status'}
           </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) }]}
-            value={profile.legal_status}
-            onChangeText={(text) => setProfile({ ...profile, legal_status: text })}
-            placeholder="Auto-entrepreneur, SARL, etc."
-            placeholderTextColor="#999"
-          />
+          <View style={[styles.radioGroup, { marginTop: spacing(1) }]}>
+            <TouchableOpacity
+              style={[styles.radioOption, { padding: spacing(1.5) }]}
+              onPress={() => setProfile({ ...profile, legal_status: 'independant' })}
+            >
+              <View style={styles.radio}>
+                {profile.legal_status === 'independant' && <View style={styles.radioSelected} />}
+              </View>
+              <Text style={[styles.radioLabel, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Prestataire libre' : 'Independent Provider'}
+              </Text>
+            </TouchableOpacity>
 
-          {/* SIRET Number */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            SIRET Number
-          </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) }]}
-            value={profile.siret_number}
-            onChangeText={(text) => setProfile({ ...profile, siret_number: text })}
-            placeholder="Enter SIRET number"
-            placeholderTextColor="#999"
-          />
-
-          {/* Business Name */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Business Name
-          </Text>
-          <TextInput
-            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) }]}
-            value={profile.business_name}
-            onChangeText={(text) => setProfile({ ...profile, business_name: text })}
-            placeholder="Enter business name"
-            placeholderTextColor="#999"
-          />
-
-          {/* Qualifications Proof */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Qualifications Proof
-          </Text>
-          <View style={[styles.uploadSection, { padding: spacing(2), marginTop: spacing(1) }]}>
-            <Text style={{ fontSize: normalizeFontSize(13), color: '#666' }}>
-              Upload certificates and diplomas
-            </Text>
+            <TouchableOpacity
+              style={[styles.radioOption, { padding: spacing(1.5) }]}
+              onPress={() => setProfile({ ...profile, legal_status: 'salon' })}
+            >
+              <View style={styles.radio}>
+                {profile.legal_status === 'salon' && <View style={styles.radioSelected} />}
+              </View>
+              <Text style={[styles.radioLabel, { fontSize: normalizeFontSize(14) }]}>
+                Salon
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Professional Experience */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Professional Experience
+          {/* SIRET / Registre du commerce */}
+          <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
+            {profile.legal_status === 'salon'
+              ? (language === 'fr' ? 'Registre du commerce' : 'Business Registration')
+              : 'SIRET'}
           </Text>
           <TextInput
-            style={[
-              styles.input,
-              styles.textArea,
-              { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) },
-            ]}
-            value={profile.professional_experience}
-            onChangeText={(text) => setProfile({ ...profile, professional_experience: text })}
-            placeholder="Describe your experience"
+            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
+            placeholder={profile.legal_status === 'salon' ? 'Business registration number' : 'SIRET number'}
+            placeholderTextColor="#999"
+            value={profile.siret_number}
+            onChangeText={(text) => setProfile({ ...profile, siret_number: text })}
+          />
+
+          {/* Business Name (for salon) */}
+          {profile.legal_status === 'salon' && (
+            <>
+              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
+                {language === 'fr' ? 'Nom de l\'entreprise' : 'Business Name'}
+              </Text>
+              <TextInput
+                style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
+                placeholder={language === 'fr' ? 'Nom du salon' : 'Salon name'}
+                placeholderTextColor="#999"
+                value={profile.business_name}
+                onChangeText={(text) => setProfile({ ...profile, business_name: text })}
+              />
+            </>
+          )}
+
+          {/* Professional Experience */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {language === 'fr' ? 'Expérience professionnelle' : 'Professional Experience'}
+          </Text>
+          <TextInput
+            style={[styles.textArea, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
+            placeholder={language === 'fr' ? 'Décrivez votre expérience...' : 'Describe your experience...'}
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
+            maxLength={500}
+            value={profile.professional_experience}
+            onChangeText={(text) => setProfile({ ...profile, professional_experience: text })}
           />
           <Text style={[styles.charCount, { fontSize: normalizeFontSize(12) }]}>
             {profile.professional_experience?.length || 0}/500
           </Text>
 
-          {/* Type of services provided */}
+          {/* Type of Services */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Type of services provided
+            {language === 'fr' ? 'Types de services proposés' : 'Type of Services Provided'}
           </Text>
-          {serviceTypes.map((type) => (
-            <TouchableOpacity
-              key={type.value}
-              style={[styles.checkboxRow, { marginTop: spacing(1.5) }]}
-              onPress={() => toggleServiceType(type.value)}
-            >
-              <View style={styles.checkbox}>
-                {profile.types_of_services?.includes(type.value) && (
-                  <Text style={{ fontSize: normalizeFontSize(14) }}>✓</Text>
-                )}
-              </View>
-              <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View style={{ marginTop: spacing(1) }}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.category}
+                style={[styles.checkbox, { paddingVertical: spacing(1.5) }]}
+                onPress={() => toggleCategory(cat.category)}
+              >
+                <View style={styles.checkboxBox}>
+                  {profile.types_of_services?.includes(cat.category) && (
+                    <Text style={styles.checkboxTick}>✓</Text>
+                  )}
+                </View>
+                <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {language === 'fr' ? cat.name_fr : cat.name_en}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-          {/* Service Descriptions */}
+          {/* Trusted Zones */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Service Descriptions
+            {language === 'fr' ? 'Zones de confiance' : 'Trusted Zones'}
           </Text>
           <TextInput
-            style={[
-              styles.input,
-              styles.textArea,
-              { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) },
-            ]}
-            placeholder="Describe the services you provide..."
+            style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
+            placeholder={language === 'fr' ? 'Ex: Douala, Akwa, Bonanjo...' : 'E.g: Douala, Akwa, Bonanjo...'}
             placeholderTextColor="#999"
             multiline
-            numberOfLines={4}
           />
 
-          {/* Trusted zones */}
+          {/* ID Card */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Trusted zones
+            {profile.legal_status === 'salon'
+              ? (language === 'fr' ? 'Carte d\'identité du responsable' : 'Manager\'s ID Card')
+              : (language === 'fr' ? 'Carte d\'identité' : 'ID Card')}
           </Text>
-          <Text style={[styles.sectionDescription, { fontSize: normalizeFontSize(13), marginTop: spacing(0.5) }]}>
-            Set your service area
+          <TouchableOpacity
+            style={[styles.imageUpload, { padding: spacing(3) }]}
+            onPress={() => pickImage('id')}
+          >
+            {idCard ? (
+              <Image source={{ uri: idCard }} style={styles.uploadedImage} />
+            ) : (
+              <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
+                {language === 'fr' ? 'Appuyez pour télécharger' : 'Tap to upload'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Training Certificates (Optional) */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {language === 'fr' ? 'Certificats de formation (Optionnel)' : 'Training Certificates (Optional)'}
           </Text>
-          <View style={[styles.mapPlaceholder, { height: spacing(25), marginTop: spacing(1) }]}>
+          <TouchableOpacity style={[styles.imageUpload, { padding: spacing(3) }]}>
             <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-              Map view (Coming soon)
+              {language === 'fr' ? 'Appuyez pour télécharger' : 'Tap to upload'}
             </Text>
-          </View>
-
-          {/* Identification Card */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Identification Card
-          </Text>
-          <View style={[styles.uploadSection, { padding: spacing(2), marginTop: spacing(1) }]}>
-            <Text style={{ fontSize: normalizeFontSize(13), color: '#666' }}>
-              Upload ID card
-            </Text>
-          </View>
-
-          {/* Professional Liability Insurance */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Professional Liability Insurance
-          </Text>
-          <View style={[styles.uploadSection, { padding: spacing(2), marginTop: spacing(1) }]}>
-            <Text style={{ fontSize: normalizeFontSize(13), color: '#666' }}>
-              Upload insurance document
-            </Text>
-          </View>
-
-          {/* Training certificates */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            Training certificates
-          </Text>
-          <View style={[styles.uploadSection, { padding: spacing(2), marginTop: spacing(1) }]}>
-            <Text style={{ fontSize: normalizeFontSize(13), color: '#666' }}>
-              Upload training certificates
-            </Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Portfolio */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
             Portfolio
           </Text>
-          <Text style={[styles.sectionDescription, { fontSize: normalizeFontSize(13), marginTop: spacing(0.5) }]}>
-            Add your previous works
-          </Text>
-          <View style={[styles.portfolioGrid, { marginTop: spacing(1) }]}>
-            {[1, 2, 3, 4].map((i) => (
-              <View
-                key={i}
-                style={[styles.portfolioItem, { width: spacing(12), height: spacing(12) }]}
-              >
-                <Text style={{ fontSize: normalizeFontSize(24) }}>+</Text>
+          <View style={styles.portfolioGrid}>
+            {portfolioImages.map((img, index) => (
+              <View key={index} style={[styles.portfolioItem, { width: spacing(12), height: spacing(12) }]}>
+                <Image source={{ uri: img }} style={styles.portfolioImage} />
+                <TouchableOpacity
+                  style={styles.portfolioRemove}
+                  onPress={() => removePortfolioImage(index)}
+                >
+                  <Text style={styles.portfolioRemoveText}>✕</Text>
+                </TouchableOpacity>
               </View>
+            ))}
+            {portfolioImages.length < 6 && (
+              <TouchableOpacity
+                style={[styles.portfolioItem, styles.portfolioAdd, { width: spacing(12), height: spacing(12) }]}
+                onPress={() => pickImage('portfolio')}
+              >
+                <Text style={{ fontSize: normalizeFontSize(24), color: '#666' }}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Languages */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {language === 'fr' ? 'Langues parlées' : 'Languages Spoken'}
+          </Text>
+          <View style={{ marginTop: spacing(1) }}>
+            {languages.map((lang) => (
+              <TouchableOpacity
+                key={lang.value}
+                style={[styles.checkbox, { paddingVertical: spacing(1.5) }]}
+                onPress={() => toggleLanguage(lang.value)}
+              >
+                <View style={styles.checkboxBox}>
+                  {profile.languages_spoken?.includes(lang.value) && (
+                    <Text style={styles.checkboxTick}>✓</Text>
+                  )}
+                </View>
+                <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {lang.label}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* Confidentiality Agreement */}
-          <View style={[styles.agreementSection, { padding: spacing(2), marginTop: spacing(3) }]}>
-            <Text style={[styles.agreementTitle, { fontSize: normalizeFontSize(14) }]}>
-              Confidentiality Agreement
-            </Text>
-            <Text style={[styles.agreementText, { fontSize: normalizeFontSize(12), marginTop: spacing(1) }]}>
-              I agree to maintain confidentiality regarding client information and services provided.
-            </Text>
-            <TouchableOpacity
-              style={[styles.checkboxRow, { marginTop: spacing(1.5) }]}
-              onPress={() =>
-                setProfile({ ...profile, confidentiality_accepted: !profile.confidentiality_accepted })
-              }
-            >
-              <View style={styles.checkbox}>
-                {profile.confidentiality_accepted && <Text style={{ fontSize: normalizeFontSize(14) }}>✓</Text>}
-              </View>
-              <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(13) }]}>
-                I agree to the terms and conditions
-              </Text>
-            </TouchableOpacity>
+          {/* Transportation */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {language === 'fr' ? 'Moyens de transport disponibles' : 'Available Transportation'}
+          </Text>
+          <View style={{ marginTop: spacing(1) }}>
+            {transportOptions.map((trans) => (
+              <TouchableOpacity
+                key={trans.value}
+                style={[styles.checkbox, { paddingVertical: spacing(1.5) }]}
+                onPress={() => toggleTransportation(trans.value)}
+              >
+                <View style={styles.checkboxBox}>
+                  {profile.available_transportation?.includes(trans.value) && (
+                    <Text style={styles.checkboxTick}>✓</Text>
+                  )}
+                </View>
+                <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {trans.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Acceptance of Terms and Conditions */}
-          <View style={[styles.agreementSection, { padding: spacing(2), marginTop: spacing(2) }]}>
-            <Text style={[styles.agreementTitle, { fontSize: normalizeFontSize(14) }]}>
-              Acceptance of Terms and Conditions
+          {/* Legal Agreements */}
+          <View style={[styles.switchRow, { marginTop: spacing(3) }]}>
+            <Text style={[styles.switchLabel, { fontSize: normalizeFontSize(14), flex: 1 }]}>
+              {language === 'fr' ? 'Accord de confidentialité' : 'Confidentiality Agreement'}
             </Text>
-            <Text style={[styles.agreementText, { fontSize: normalizeFontSize(12), marginTop: spacing(1) }]}>
-              I accept the terms and conditions of use
-            </Text>
-            <TouchableOpacity
-              style={[styles.checkboxRow, { marginTop: spacing(1.5) }]}
-              onPress={() => setProfile({ ...profile, terms_accepted: !profile.terms_accepted })}
-            >
-              <View style={styles.checkbox}>
-                {profile.terms_accepted && <Text style={{ fontSize: normalizeFontSize(14) }}>✓</Text>}
-              </View>
-              <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(13) }]}>
-                I accept the terms
-              </Text>
-            </TouchableOpacity>
+            <Switch
+              value={profile.confidentiality_accepted}
+              onValueChange={(value) => setProfile({ ...profile, confidentiality_accepted: value })}
+            />
           </View>
 
-          {/* Language System */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Language System
-          </Text>
-          {languages.map((lang) => (
-            <TouchableOpacity
-              key={lang.value}
-              style={[styles.checkboxRow, { marginTop: spacing(1.5) }]}
-              onPress={() => toggleLanguage(lang.value)}
-            >
-              <View style={[styles.radio, profile.languages_spoken?.includes(lang.value) && styles.radioSelected]}>
-                {profile.languages_spoken?.includes(lang.value) && (
-                  <View style={styles.radioDot} />
-                )}
-              </View>
-              <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
-                {lang.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-
-          {/* Available Transportation */}
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            Available Transportation
-          </Text>
-          {transportOptions.map((transport) => (
-            <TouchableOpacity
-              key={transport.value}
-              style={[styles.checkboxRow, { marginTop: spacing(1.5) }]}
-              onPress={() => toggleTransportation(transport.value)}
-            >
-              <View style={[styles.radio, profile.available_transportation?.includes(transport.value) && styles.radioSelected]}>
-                {profile.available_transportation?.includes(transport.value) && (
-                  <View style={styles.radioDot} />
-                )}
-              </View>
-              <Text style={[styles.checkboxLabel, { fontSize: normalizeFontSize(14) }]}>
-                {transport.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View style={[styles.switchRow, { marginTop: spacing(1.5) }]}>
+            <Text style={[styles.switchLabel, { fontSize: normalizeFontSize(14), flex: 1 }]}>
+              {language === 'fr' ? 'Conditions générales' : 'Terms and Conditions'}
+            </Text>
+            <Switch
+              value={profile.terms_accepted}
+              onValueChange={(value) => setProfile({ ...profile, terms_accepted: value })}
+            />
+          </View>
 
           {/* Save Button */}
           <TouchableOpacity
-            style={[styles.saveButton, { padding: spacing(2), marginTop: spacing(4), marginBottom: spacing(10) }]}
+            style={[styles.saveButton, { padding: spacing(2), marginTop: spacing(4), marginBottom: spacing(4) }]}
             onPress={saveProfile}
             disabled={saving}
           >
@@ -459,7 +534,7 @@ export const ContractorProfileEditScreen = () => {
               <ActivityIndicator color="#FFF" />
             ) : (
               <Text style={[styles.saveButtonText, { fontSize: normalizeFontSize(16) }]}>
-                {language === 'fr' ? 'Enregistrer' : 'Save Profile'}
+                {language === 'fr' ? 'Enregistrer' : 'Save'}
               </Text>
             )}
           </TouchableOpacity>
@@ -483,6 +558,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   title: {
     fontWeight: 'bold',
@@ -491,127 +568,155 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#2D2D2D',
   },
-  sectionDescription: {
-    color: '#666',
-  },
   label: {
-    fontWeight: '600',
     color: '#666',
   },
   infoText: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
-    color: '#666',
+    color: '#2D2D2D',
   },
   input: {
     backgroundColor: '#FFF',
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginTop: 8,
   },
   textArea: {
-    height: 100,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginTop: 8,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
   charCount: {
-    color: '#999',
     textAlign: 'right',
-    marginTop: 5,
+    color: '#999',
+    marginTop: 4,
   },
   imageUpload: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
+    backgroundColor: '#FFF',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 8,
     marginTop: 8,
-  },
-  uploadSection: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 100,
   },
-  checkboxRow: {
+  uploadedImage: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+  },
+  radioGroup: {
+    gap: 8,
+  },
+  radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: '#2D2D2D',
-    borderRadius: 4,
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxLabel: {
-    flex: 1,
-    color: '#2D2D2D',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
   },
   radio: {
     width: 20,
     height: 20,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
     borderRadius: 10,
-    marginRight: 10,
-    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#2D2D2D',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   radioSelected: {
-    borderColor: '#2D2D2D',
-  },
-  radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: '#2D2D2D',
   },
-  mapPlaceholder: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    justifyContent: 'center',
+  radioLabel: {
+    color: '#2D2D2D',
+  },
+  checkbox: {
+    flexDirection: 'row',
     alignItems: 'center',
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#2D2D2D',
+    borderRadius: 4,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxTick: {
+    fontSize: 14,
+    color: '#2D2D2D',
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    color: '#2D2D2D',
   },
   portfolioGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
+    marginTop: 8,
   },
   portfolioItem: {
-    backgroundColor: '#F0F0F0',
+    position: 'relative',
     borderRadius: 8,
-    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  portfolioImage: {
+    width: '100%',
+    height: '100%',
+  },
+  portfolioRemove: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portfolioRemoveText: {
+    color: '#FFF',
+    fontSize: 16,
+  },
+  portfolioAdd: {
+    backgroundColor: '#FFF',
+    borderWidth: 2,
     borderColor: '#E0E0E0',
     borderStyle: 'dashed',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  agreementSection: {
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#FFF',
+    padding: 16,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  agreementTitle: {
-    fontWeight: '600',
+  switchLabel: {
     color: '#2D2D2D',
-  },
-  agreementText: {
-    color: '#666',
-    lineHeight: 18,
   },
   saveButton: {
     backgroundColor: '#2D2D2D',
