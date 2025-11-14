@@ -52,7 +52,14 @@ export class ContractorController {
     @Param('userId') userId: string,
     @Body() updateDto: UpdateContractorProfileDto,
   ) {
-    return this.contractorService.updateProfile(userId, updateDto);
+    try {
+      console.log('📥 Received update request for user:', userId);
+      console.log('📦 Request body:', JSON.stringify(updateDto, null, 2));
+      return await this.contractorService.updateProfile(userId, updateDto);
+    } catch (error) {
+      console.error('❌ Controller error:', error);
+      throw error;
+    }
   }
 
   @Get()

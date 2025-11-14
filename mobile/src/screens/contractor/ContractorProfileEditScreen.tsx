@@ -102,7 +102,19 @@ export const ContractorProfileEditScreen = () => {
           setIdCardFront(existingProfile.id_card_url || null);
         }
         setPortfolioImages(existingProfile.portfolio_images || []);
-        setTrustedZones(existingProfile.service_zones || []);
+
+        // Handle service_zones (could be array of strings or array of objects)
+        if (existingProfile.service_zones) {
+          if (typeof existingProfile.service_zones[0] === 'string') {
+            setTrustedZones(existingProfile.service_zones as string[]);
+          } else {
+            // Extract neighborhood names from location objects
+            const zones = (existingProfile.service_zones as any[]).map(
+              (zone: any) => zone?.location?.address || zone
+            );
+            setTrustedZones(zones);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -235,6 +247,11 @@ export const ContractorProfileEditScreen = () => {
       }
 
       profileData.profile_completed = true;
+
+      // Ensure user_id is set
+      if (!profileData.user_id && user?.id) {
+        profileData.user_id = user.id;
+      }
 
       if (profile.id) {
         await contractorApi.updateProfile(user?.id || '', profileData);

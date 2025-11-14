@@ -54,13 +54,21 @@ export class ContractorService implements OnModuleInit {
   async createProfile(dto: CreateContractorProfileDto) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🆕 Creating new contractor profile');
+    console.log('📦 DTO received:', JSON.stringify(dto, null, 2));
+
     const { data, error } = await supabase
       .from('contractor_profiles')
       .insert(dto)
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('❌ Error creating profile:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Profile created successfully:', data.id);
 
     // Also update user role
     await supabase
@@ -106,6 +114,9 @@ export class ContractorService implements OnModuleInit {
   async updateProfile(userId: string, dto: UpdateContractorProfileDto) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🔄 Updating profile for user:', userId);
+    console.log('📦 Profile data:', JSON.stringify(dto, null, 2));
+
     const { data, error } = await supabase
       .from('contractor_profiles')
       .update(dto)
@@ -113,7 +124,12 @@ export class ContractorService implements OnModuleInit {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('❌ Error updating profile:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Profile updated successfully');
     return data;
   }
 

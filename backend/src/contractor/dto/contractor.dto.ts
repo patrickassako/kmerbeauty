@@ -7,6 +7,11 @@ export interface ServiceZone {
   radius: number; // in kilometers
 }
 
+export interface IdCardUrls {
+  front?: string;
+  back?: string;
+}
+
 export class CreateContractorProfileDto {
   user_id: string;
   business_name?: string;
@@ -15,7 +20,7 @@ export class CreateContractorProfileDto {
   qualifications_proof?: string[];
   professional_experience?: string;
   types_of_services?: string[];
-  id_card_url?: string;
+  id_card_url?: string | IdCardUrls;  // Support both string and object
   insurance_url?: string;
   training_certificates?: string[];
   portfolio_images?: string[];
@@ -23,7 +28,7 @@ export class CreateContractorProfileDto {
   terms_accepted?: boolean;
   languages_spoken?: string[];
   available_transportation?: string[];
-  service_zones?: ServiceZone[];
+  service_zones?: ServiceZone[] | string[];  // Support both formats
 }
 
 export class UpdateContractorProfileDto {
@@ -33,7 +38,7 @@ export class UpdateContractorProfileDto {
   qualifications_proof?: string[];
   professional_experience?: string;
   types_of_services?: string[];
-  id_card_url?: string;
+  id_card_url?: string | IdCardUrls;  // Support both string and object
   insurance_url?: string;
   training_certificates?: string[];
   portfolio_images?: string[];
@@ -41,7 +46,7 @@ export class UpdateContractorProfileDto {
   terms_accepted?: boolean;
   languages_spoken?: string[];
   available_transportation?: string[];
-  service_zones?: ServiceZone[];
+  service_zones?: ServiceZone[] | string[];  // Support both formats
   profile_completed?: boolean;
 }
 

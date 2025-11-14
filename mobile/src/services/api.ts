@@ -712,6 +712,11 @@ export interface ServiceZone {
   radius: number;
 }
 
+export interface IdCardUrls {
+  front?: string;
+  back?: string;
+}
+
 export interface ContractorProfile {
   id: string;
   user_id: string;
@@ -721,7 +726,7 @@ export interface ContractorProfile {
   qualifications_proof?: string[];
   professional_experience?: string;
   types_of_services?: string[];
-  id_card_url?: string;
+  id_card_url?: string | IdCardUrls;  // Support both string and object
   insurance_url?: string;
   training_certificates?: string[];
   portfolio_images?: string[];
@@ -729,7 +734,7 @@ export interface ContractorProfile {
   terms_accepted?: boolean;
   languages_spoken?: string[];
   available_transportation?: string[];
-  service_zones?: ServiceZone[];
+  service_zones?: ServiceZone[] | string[];  // Support both neighborhood names and location objects
   total_bookings?: number;
   total_revenue?: number;
   average_rating?: number;
