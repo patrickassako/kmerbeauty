@@ -1,0 +1,163 @@
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, Text, StyleSheet } from 'react-native';
+import {
+  ContractorDashboardScreen,
+  ContractorProposalsScreen,
+  ContractorProfileEditScreen,
+  ContractorAvailabilityScreen,
+  ContractorServicesScreen,
+  ContractorAppointmentsScreen,
+  ContractorEarningsScreen,
+} from '../screens/contractor';
+import { ChatScreen, ConversationsScreen } from '../screens/main';
+
+// Stack navigators for each tab
+const HomeStack = createNativeStackNavigator();
+const ProposalStack = createNativeStackNavigator();
+const ChatStack = createNativeStackNavigator();
+const CalendarStack = createNativeStackNavigator();
+const MoreStack = createNativeStackNavigator();
+
+// Home Stack
+const HomeStackNavigator = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="ContractorDashboard" component={ContractorDashboardScreen} />
+    <HomeStack.Screen name="ContractorEarnings" component={ContractorEarningsScreen} />
+    <HomeStack.Screen name="ContractorProfileEdit" component={ContractorProfileEditScreen} />
+  </HomeStack.Navigator>
+);
+
+// Proposal Stack
+const ProposalStackNavigator = () => (
+  <ProposalStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProposalStack.Screen name="ContractorProposalsList" component={ContractorProposalsScreen} />
+  </ProposalStack.Navigator>
+);
+
+// Chat Stack
+const ChatStackNavigator = () => (
+  <ChatStack.Navigator screenOptions={{ headerShown: false }}>
+    <ChatStack.Screen name="ConversationsList" component={ConversationsScreen} />
+    <ChatStack.Screen name="Chat" component={ChatScreen} />
+  </ChatStack.Navigator>
+);
+
+// Calendar Stack
+const CalendarStackNavigator = () => (
+  <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
+    <CalendarStack.Screen name="ContractorAppointmentsList" component={ContractorAppointmentsScreen} />
+  </CalendarStack.Navigator>
+);
+
+// More Stack (Settings, Profile, etc.)
+const MoreStackNavigator = () => (
+  <MoreStack.Navigator screenOptions={{ headerShown: false }}>
+    <MoreStack.Screen name="ContractorMore" component={ContractorMoreScreen} />
+    <MoreStack.Screen name="ContractorAvailability" component={ContractorAvailabilityScreen} />
+    <MoreStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
+    <MoreStack.Screen name="ContractorProfile" component={ContractorProfileEditScreen} />
+  </MoreStack.Navigator>
+);
+
+// More Screen (placeholder)
+const ContractorMoreScreen = ({ navigation }: any) => (
+  <View style={styles.container}>
+    <Text style={styles.title}>More</Text>
+    <View style={styles.menuList}>
+      <MenuButton title="Profile" onPress={() => navigation.navigate('ContractorProfile')} />
+      <MenuButton title="My Schedule" onPress={() => navigation.navigate('ContractorAvailability')} />
+      <MenuButton title="My Services" onPress={() => navigation.navigate('ContractorServices')} />
+      <MenuButton title="Settings" onPress={() => {}} />
+      <MenuButton title="Logout" onPress={() => {}} />
+    </View>
+  </View>
+);
+
+const MenuButton = ({ title, onPress }: { title: string; onPress: () => void }) => (
+  <Text style={styles.menuButton} onPress={onPress}>
+    {title} →
+  </Text>
+);
+
+// Bottom Tab Navigator
+const Tab = createBottomTabNavigator();
+
+export const ContractorNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: '#2D2D2D',
+        tabBarInactiveTintColor: '#999',
+        tabBarStyle: {
+          height: 80,
+          paddingBottom: 10,
+          paddingTop: 10,
+          borderTopWidth: 1,
+          borderTopColor: '#E0E0E0',
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+        },
+        tabBarIcon: ({ focused, color }) => {
+          let iconText = '';
+
+          if (route.name === 'Home') {
+            iconText = '🏠';
+          } else if (route.name === 'Proposal') {
+            iconText = '📋';
+          } else if (route.name === 'Chat') {
+            iconText = '💬';
+          } else if (route.name === 'Calendar') {
+            iconText = '📅';
+          } else if (route.name === 'More') {
+            iconText = '☰';
+          }
+
+          return <Text style={{ fontSize: 24 }}>{iconText}</Text>;
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeStackNavigator} options={{ tabBarLabel: 'HOME' }} />
+      <Tab.Screen
+        name="Proposal"
+        component={ProposalStackNavigator}
+        options={{ tabBarLabel: 'PROPOSAL' }}
+      />
+      <Tab.Screen name="Chat" component={ChatStackNavigator} options={{ tabBarLabel: 'CHAT' }} />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarStackNavigator}
+        options={{ tabBarLabel: 'CALENDAR' }}
+      />
+      <Tab.Screen name="More" component={MoreStackNavigator} options={{ tabBarLabel: 'MORE' }} />
+    </Tab.Navigator>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+    padding: 20,
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  menuList: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 10,
+  },
+  menuButton: {
+    padding: 15,
+    fontSize: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+});

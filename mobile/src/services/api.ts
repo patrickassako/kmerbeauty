@@ -699,5 +699,357 @@ export const chatApi = {
   },
 };
 
+// =====================================================
+// CONTRACTOR API
+// =====================================================
+
+export interface ServiceZone {
+  location: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
+  radius: number;
+}
+
+export interface ContractorProfile {
+  id: string;
+  user_id: string;
+  business_name?: string;
+  siret_number?: string;
+  legal_status?: string;
+  qualifications_proof?: string[];
+  professional_experience?: string;
+  types_of_services?: string[];
+  id_card_url?: string;
+  insurance_url?: string;
+  training_certificates?: string[];
+  portfolio_images?: string[];
+  confidentiality_accepted?: boolean;
+  terms_accepted?: boolean;
+  languages_spoken?: string[];
+  available_transportation?: string[];
+  service_zones?: ServiceZone[];
+  total_bookings?: number;
+  total_revenue?: number;
+  average_rating?: number;
+  profile_completed?: boolean;
+  is_verified?: boolean;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  user?: any;
+}
+
+export interface ContractorAvailability {
+  id: string;
+  contractor_id: string;
+  day_of_week: number;
+  is_working: boolean;
+  start_time?: string;
+  end_time?: string;
+}
+
+export interface ContractorBreak {
+  id: string;
+  contractor_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface ContractorException {
+  id: string;
+  contractor_id: string;
+  exception_date: string;
+  is_available: boolean;
+  start_time?: string;
+  end_time?: string;
+  reason?: string;
+}
+
+export interface ContractorService {
+  id: string;
+  contractor_id: string;
+  service_id: string;
+  price: number;
+  duration: number;
+  description?: string;
+  is_active?: boolean;
+  service?: Service;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DashboardStats {
+  total_income: number;
+  total_proposals: number;
+  completed_bookings: number;
+  total_clients: number;
+  upcoming_appointments: number;
+  earnings_chart?: Array<{ date: string; amount: number }>;
+  bookings_chart?: Array<{ date: string; count: number }>;
+  clients_chart?: Array<{ date: string; count: number }>;
+}
+
+export interface Proposal {
+  id: string;
+  client_id: string;
+  contractor_id: string;
+  service_name: string;
+  description?: string;
+  requested_date?: string;
+  location?: {
+    address: string;
+    lat: number;
+    lng: number;
+  };
+  proposed_price?: number;
+  estimated_duration?: number;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'EXPIRED';
+  contractor_response?: string;
+  responded_at?: string;
+  expires_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  client?: any;
+  contractor?: ContractorProfile;
+}
+
+export const contractorApi = {
+  // Profile
+  createProfile: async (data: Partial<ContractorProfile>): Promise<ContractorProfile> => {
+    const response = await api.post('/contractors/profile', data);
+    return response.data;
+  },
+
+  getProfileByUserId: async (userId: string): Promise<ContractorProfile | null> => {
+    try {
+      const response = await api.get(`/contractors/profile/user/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) return null;
+      throw error;
+    }
+  },
+
+  getProfile: async (contractorId: string): Promise<ContractorProfile> => {
+    const response = await api.get(`/contractors/profile/${contractorId}`);
+    return response.data;
+  },
+
+  updateProfile: async (userId: string, data: Partial<ContractorProfile>): Promise<ContractorProfile> => {
+    const response = await api.put(`/contractors/profile/${userId}`, data);
+    return response.data;
+  },
+
+  listContractors: async (filters?: {
+    types_of_services?: string[];
+    is_verified?: boolean;
+  }): Promise<ContractorProfile[]> => {
+    const params: any = {};
+    if (filters?.types_of_services) {
+      params.types_of_services = filters.types_of_services.join(',');
+    }
+    if (filters?.is_verified !== undefined) {
+      params.is_verified = filters.is_verified.toString();
+    }
+    const response = await api.get('/contractors', { params });
+    return response.data;
+  },
+
+  // Availability
+  setAvailability: async (data: Partial<ContractorAvailability>): Promise<ContractorAvailability> => {
+    const response = await api.post('/contractors/availability', data);
+    return response.data;
+  },
+
+  getAvailability: async (contractorId: string): Promise<ContractorAvailability[]> => {
+    const response = await api.get(`/contractors/${contractorId}/availability`);
+    return response.data;
+  },
+
+  updateAvailability: async (
+    contractorId: string,
+    dayOfWeek: number,
+    data: Partial<ContractorAvailability>
+  ): Promise<ContractorAvailability> => {
+    const response = await api.put(`/contractors/${contractorId}/availability/${dayOfWeek}`, data);
+    return response.data;
+  },
+
+  resetAvailability: async (contractorId: string): Promise<ContractorAvailability[]> => {
+    const response = await api.post(`/contractors/${contractorId}/availability/reset`);
+    return response.data;
+  },
+
+  // Breaks
+  addBreak: async (data: Partial<ContractorBreak>): Promise<ContractorBreak> => {
+    const response = await api.post('/contractors/breaks', data);
+    return response.data;
+  },
+
+  getBreaks: async (contractorId: string): Promise<ContractorBreak[]> => {
+    const response = await api.get(`/contractors/${contractorId}/breaks`);
+    return response.data;
+  },
+
+  deleteBreak: async (breakId: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/contractors/breaks/${breakId}`);
+    return response.data;
+  },
+
+  // Exceptions
+  addException: async (data: Partial<ContractorException>): Promise<ContractorException> => {
+    const response = await api.post('/contractors/exceptions', data);
+    return response.data;
+  },
+
+  getExceptions: async (
+    contractorId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ContractorException[]> => {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const response = await api.get(`/contractors/${contractorId}/exceptions`, { params });
+    return response.data;
+  },
+
+  deleteException: async (exceptionId: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/contractors/exceptions/${exceptionId}`);
+    return response.data;
+  },
+
+  // Services
+  addService: async (data: Partial<ContractorService>): Promise<ContractorService> => {
+    const response = await api.post('/contractors/services', data);
+    return response.data;
+  },
+
+  getServices: async (contractorId: string): Promise<ContractorService[]> => {
+    const response = await api.get(`/contractors/${contractorId}/services`);
+    return response.data;
+  },
+
+  updateService: async (
+    serviceId: string,
+    data: Partial<ContractorService>
+  ): Promise<ContractorService> => {
+    const response = await api.put(`/contractors/services/${serviceId}`, data);
+    return response.data;
+  },
+
+  deleteService: async (serviceId: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/contractors/services/${serviceId}`);
+    return response.data;
+  },
+
+  // Dashboard
+  getDashboard: async (
+    contractorId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<DashboardStats> => {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const response = await api.get(`/contractors/${contractorId}/dashboard`, { params });
+    return response.data;
+  },
+
+  getUpcomingAppointments: async (contractorId: string, day?: string): Promise<Booking[]> => {
+    const params: any = {};
+    if (day) params.day = day;
+    const response = await api.get(`/contractors/${contractorId}/appointments`, { params });
+    return response.data;
+  },
+
+  getEarnings: async (
+    contractorId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any[]> => {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const response = await api.get(`/contractors/${contractorId}/earnings`, { params });
+    return response.data;
+  },
+
+  checkAvailability: async (
+    contractorId: string,
+    dateTime: string,
+    duration: number
+  ): Promise<{ available: boolean }> => {
+    const response = await api.post(`/contractors/${contractorId}/check-availability`, {
+      date_time: dateTime,
+      duration,
+    });
+    return response.data;
+  },
+};
+
+// =====================================================
+// PROPOSAL API
+// =====================================================
+
+export const proposalApi = {
+  create: async (data: Partial<Proposal>): Promise<Proposal> => {
+    const response = await api.post('/proposals', data);
+    return response.data;
+  },
+
+  getById: async (proposalId: string): Promise<Proposal> => {
+    const response = await api.get(`/proposals/${proposalId}`);
+    return response.data;
+  },
+
+  getForClient: async (clientId: string, status?: string): Promise<Proposal[]> => {
+    const params: any = {};
+    if (status) params.status = status;
+    const response = await api.get(`/proposals/client/${clientId}`, { params });
+    return response.data;
+  },
+
+  getForContractor: async (contractorId: string, status?: string): Promise<Proposal[]> => {
+    const params: any = {};
+    if (status) params.status = status;
+    const response = await api.get(`/proposals/contractor/${contractorId}`, { params });
+    return response.data;
+  },
+
+  respond: async (
+    proposalId: string,
+    status: 'ACCEPTED' | 'DECLINED',
+    response?: string,
+    proposedPrice?: number,
+    estimatedDuration?: number
+  ): Promise<Proposal> => {
+    const data: any = { status };
+    if (response) data.contractor_response = response;
+    if (proposedPrice !== undefined) data.proposed_price = proposedPrice;
+    if (estimatedDuration !== undefined) data.estimated_duration = estimatedDuration;
+    const res = await api.patch(`/proposals/${proposalId}/respond`, data);
+    return res.data;
+  },
+
+  update: async (proposalId: string, data: Partial<Proposal>): Promise<Proposal> => {
+    const response = await api.put(`/proposals/${proposalId}`, data);
+    return response.data;
+  },
+
+  cancel: async (proposalId: string, userId: string): Promise<Proposal> => {
+    const response = await api.patch(`/proposals/${proposalId}/cancel`, { user_id: userId });
+    return response.data;
+  },
+
+  expireOld: async (): Promise<Proposal[]> => {
+    const response = await api.post('/proposals/expire-old');
+    return response.data;
+  },
+};
+
 // Export de l'instance axios pour des usages personnalisés
 export default api;

@@ -7,6 +7,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { MainTabNavigator } from './MainTabNavigator';
+import { ContractorNavigator } from './ContractorNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
@@ -20,7 +21,7 @@ export type AuthStackParamList = {
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, loading: authLoading, signUp, signIn } = useAuth();
+  const { isAuthenticated, loading: authLoading, signUp, signIn, user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
@@ -55,9 +56,12 @@ export const AppNavigator: React.FC = () => {
 
   // If user is authenticated, show main app
   if (isAuthenticated) {
+    // Check if user is a contractor
+    const isContractor = user?.role === 'CONTRACTOR';
+
     return (
       <NavigationContainer>
-        <MainTabNavigator />
+        {isContractor ? <ContractorNavigator /> : <MainTabNavigator />}
       </NavigationContainer>
     );
   }

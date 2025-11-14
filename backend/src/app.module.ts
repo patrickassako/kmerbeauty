@@ -12,6 +12,8 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ChatModule } from './chat/chat.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { ContractorModule } from './contractor/contractor.module';
+import { ProposalModule } from './proposal/proposal.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { FavoritesModule } from './favorites/favorites.module';
     ChatModule,
     ReviewsModule,
     FavoritesModule,
+    ContractorModule,
+    ProposalModule,
   ],
   controllers: [AppController],
   providers: [AppService],
