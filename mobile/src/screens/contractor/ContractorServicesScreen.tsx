@@ -21,7 +21,7 @@ import {
   categoriesApi,
   type ContractorService,
   type Service,
-  type Category,
+  type CategoryTranslation as Category,
 } from '../../services/api';
 
 interface ContractorServicesScreenProps {
@@ -65,8 +65,8 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
 
       const [contractorServicesData, allServicesData, categoriesData] = await Promise.all([
         contractorApi.getServices(profile.id),
-        servicesApi.getAllServices(),
-        categoriesApi.getCategories(),
+        servicesApi.getAll(),
+        categoriesApi.getAll(),
       ]);
 
       setContractorServices(contractorServicesData);
