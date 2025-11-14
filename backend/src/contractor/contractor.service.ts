@@ -566,15 +566,20 @@ export class ContractorService implements OnModuleInit {
     const supabase = this.supabaseService.getClient();
 
     // Get basic stats from function
-    const { data: stats, error: statsError } = await supabase
+    const { data: statsArray, error: statsError } = await supabase
       .rpc('get_contractor_dashboard_stats', {
         p_contractor_id: contractorId,
         p_start_date: startDate || null,
         p_end_date: endDate || null,
-      })
-      .single();
+      });
 
     if (statsError) throw new Error(statsError.message);
+    if (!statsArray || statsArray.length === 0) {
+      throw new Error('No stats data returned');
+    }
+
+    // RPC returns a TABLE, so we get the first row
+    const stats = statsArray[0];
 
     // Type the stats response
     const typedStats = stats as {
