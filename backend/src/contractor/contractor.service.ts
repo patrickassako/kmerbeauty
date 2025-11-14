@@ -387,6 +387,15 @@ export class ContractorService {
 
     if (statsError) throw new Error(statsError.message);
 
+    // Type the stats response
+    const typedStats = stats as {
+      total_income: string;
+      total_proposals: string;
+      completed_bookings: string;
+      total_clients: string;
+      upcoming_appointments: string;
+    };
+
     // Get earnings chart data
     const { data: earnings, error: earningsError } = await supabase
       .from('contractor_earnings')
@@ -412,15 +421,15 @@ export class ContractorService {
     if (bookingsError) throw new Error(bookingsError.message);
 
     // Process chart data
-    const earningsChart = this.aggregateDataByDate(earnings, 'net_amount');
-    const bookingsChart = this.aggregateDataByDate(bookings, 'count');
+    const earningsChart = this.aggregateDataByDate(earnings || [], 'net_amount');
+    const bookingsChart = this.aggregateDataByDate(bookings || [], 'count');
 
     return {
-      total_income: parseFloat(stats.total_income || 0),
-      total_proposals: parseInt(stats.total_proposals || 0),
-      completed_bookings: parseInt(stats.completed_bookings || 0),
-      total_clients: parseInt(stats.total_clients || 0),
-      upcoming_appointments: parseInt(stats.upcoming_appointments || 0),
+      total_income: parseFloat(typedStats.total_income || '0'),
+      total_proposals: parseInt(typedStats.total_proposals || '0'),
+      completed_bookings: parseInt(typedStats.completed_bookings || '0'),
+      total_clients: parseInt(typedStats.total_clients || '0'),
+      upcoming_appointments: parseInt(typedStats.upcoming_appointments || '0'),
       earnings_chart: earningsChart,
       bookings_chart: bookingsChart,
     };
@@ -487,9 +496,17 @@ export class ContractorService {
 
   private aggregateDataByDate(
     data: any[],
+    field: 'net_amount',
+  ): Array<{ date: string; amount: number }>;
+  private aggregateDataByDate(
+    data: any[],
+    field: 'count',
+  ): Array<{ date: string; count: number }>;
+  private aggregateDataByDate(
+    data: any[],
     field: 'net_amount' | 'count',
-  ): Array<{ date: string; amount?: number; count?: number }> {
-    const aggregated = {};
+  ): Array<{ date: string; amount: number } | { date: string; count: number }> {
+    const aggregated: Record<string, number> = {};
 
     data.forEach((item) => {
       const dateKey =
@@ -500,7 +517,7 @@ export class ContractorService {
       if (!dateKey) return;
 
       if (!aggregated[dateKey]) {
-        aggregated[dateKey] = field === 'net_amount' ? 0 : 0;
+        aggregated[dateKey] = 0;
       }
 
       if (field === 'net_amount') {
@@ -510,10 +527,13 @@ export class ContractorService {
       }
     });
 
-    return Object.entries(aggregated).map(([date, value]) => ({
-      date,
-      [field === 'net_amount' ? 'amount' : 'count']: value,
-    }));
+    return Object.entries(aggregated).map(([date, value]) => {
+      if (field === 'net_amount') {
+        return { date, amount: value };
+      } else {
+        return { date, count: value };
+      }
+    });
   }
 
   async checkAvailability(
