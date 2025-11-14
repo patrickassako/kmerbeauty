@@ -172,10 +172,15 @@ export const ContractorServicesScreen = () => {
     const grouped: { [key: string]: ContractorService[] } = {};
 
     contractorServices.forEach((contractorService) => {
-      const categoryName =
-        (language === 'fr'
-          ? contractorService.service?.category?.name_fr
-          : contractorService.service?.category?.name_en) || 'Other';
+      // Get category string from service
+      const categoryString = contractorService.service?.category || 'OTHER';
+
+      // Find category details from categories array
+      const category = categories.find((cat) => cat.category === categoryString);
+
+      const categoryName = category
+        ? (language === 'fr' ? category.name_fr : category.name_en)
+        : 'Other';
 
       if (!grouped[categoryName]) {
         grouped[categoryName] = [];
