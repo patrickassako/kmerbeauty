@@ -9,7 +9,7 @@ import {
   Modal,
   TextInput,
   Alert,
-  FlatList,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -40,15 +40,15 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
-  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
-  const [selectedService, setSelectedService] = useState<ContractorService | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [selectedServiceForCustomization, setSelectedServiceForCustomization] = useState<Service | null>(null);
+  const [existingContractorService, setExistingContractorService] = useState<ContractorService | null>(null);
 
-  const [newService, setNewService] = useState({
-    service_id: '',
+  const [customization, setCustomization] = useState({
     price: '',
     duration: '',
-    description: '',
   });
 
   useEffect(() => {
@@ -74,77 +74,101 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
       setCategories(categoriesData);
     } catch (error) {
       console.error('Error loading data:', error);
+      Alert.alert('Error', 'Failed to load services');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddService = async () => {
-    if (!contractorId) return;
-    if (!newService.service_id || !newService.price || !newService.duration) {
-      Alert.alert('Error', 'Please fill all required fields');
+  const isServiceSelected = (serviceId: string): boolean => {
+    return contractorServices.some((cs) => cs.service_id === serviceId);
+  };
+
+  const getContractorService = (serviceId: string): ContractorService | undefined => {
+    return contractorServices.find((cs) => cs.service_id === serviceId);
+  };
+
+  const handleServicePress = (service: Service) => {
+    const existing = getContractorService(service.id);
+
+    if (existing) {
+      // Service already added, open for editing
+      setExistingContractorService(existing);
+      setCustomization({
+        price: existing.price.toString(),
+        duration: existing.duration.toString(),
+      });
+    } else {
+      // New service, show with base price
+      setExistingContractorService(null);
+      setCustomization({
+        price: service.base_price.toString(),
+        duration: service.duration.toString(),
+      });
+    }
+
+    setSelectedServiceForCustomization(service);
+    setShowCustomizeModal(true);
+  };
+
+  const handleSaveCustomization = async () => {
+    if (!contractorId || !selectedServiceForCustomization) return;
+    if (!customization.price || !customization.duration) {
+      Alert.alert('Error', language === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill all fields');
       return;
     }
 
     try {
-      await contractorApi.addService({
-        contractor_id: contractorId,
-        service_id: newService.service_id,
-        price: parseFloat(newService.price),
-        duration: parseInt(newService.duration),
-        description: newService.description,
-      });
+      if (existingContractorService) {
+        // Update existing service
+        await contractorApi.updateService(existingContractorService.id, {
+          price: parseFloat(customization.price),
+          duration: parseInt(customization.duration),
+        });
+      } else {
+        // Add new service
+        await contractorApi.addService({
+          contractor_id: contractorId,
+          service_id: selectedServiceForCustomization.id,
+          price: parseFloat(customization.price),
+          duration: parseInt(customization.duration),
+        });
 
-      setShowAddServiceModal(false);
-      setNewService({ service_id: '', price: '', duration: '', description: '' });
-      loadData();
-
-      // Call the callback if provided (for first-time service addition)
-      if (onServiceAdded) {
-        onServiceAdded();
+        // Call the callback if provided (for first-time service addition)
+        if (onServiceAdded) {
+          onServiceAdded();
+        }
       }
-    } catch (error) {
-      console.error('Error adding service:', error);
-      Alert.alert('Error', 'Failed to add service');
-    }
-  };
 
-  const handleEditService = async () => {
-    if (!selectedService) return;
-    if (!newService.price || !newService.duration) {
-      Alert.alert('Error', 'Please fill all required fields');
-      return;
-    }
-
-    try {
-      await contractorApi.updateService(selectedService.id, {
-        price: parseFloat(newService.price),
-        duration: parseInt(newService.duration),
-        description: newService.description,
-      });
-
-      setShowEditServiceModal(false);
-      setSelectedService(null);
-      setNewService({ service_id: '', price: '', duration: '', description: '' });
+      setShowCustomizeModal(false);
+      setSelectedServiceForCustomization(null);
+      setExistingContractorService(null);
+      setCustomization({ price: '', duration: '' });
       loadData();
     } catch (error) {
-      console.error('Error updating service:', error);
-      Alert.alert('Error', 'Failed to update service');
+      console.error('Error saving service:', error);
+      Alert.alert('Error', language === 'fr' ? 'Échec de la sauvegarde' : 'Failed to save');
     }
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  const handleRemoveService = async () => {
+    if (!existingContractorService) return;
+
     Alert.alert(
-      language === 'fr' ? 'Supprimer' : 'Delete',
-      language === 'fr' ? 'Supprimer ce service?' : 'Delete this service?',
+      language === 'fr' ? 'Supprimer' : 'Remove',
+      language === 'fr' ? 'Supprimer ce service?' : 'Remove this service?',
       [
         { text: language === 'fr' ? 'Annuler' : 'Cancel', style: 'cancel' },
         {
-          text: language === 'fr' ? 'Supprimer' : 'Delete',
+          text: language === 'fr' ? 'Supprimer' : 'Remove',
           style: 'destructive',
           onPress: async () => {
             try {
-              await contractorApi.deleteService(serviceId);
+              await contractorApi.deleteService(existingContractorService.id);
+              setShowCustomizeModal(false);
+              setSelectedServiceForCustomization(null);
+              setExistingContractorService(null);
+              setCustomization({ price: '', duration: '' });
               loadData();
             } catch (error) {
               console.error('Error deleting service:', error);
@@ -155,371 +179,275 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
     );
   };
 
-  const handleToggleActive = async (service: ContractorService) => {
-    try {
-      await contractorApi.updateService(service.id, {
-        is_active: !service.is_active,
-      });
-      loadData();
-    } catch (error) {
-      console.error('Error toggling service:', error);
+  const getFilteredServices = (): Service[] => {
+    let filtered = allServices;
+
+    // Filter by category
+    if (selectedCategory !== 'ALL') {
+      filtered = filtered.filter((service) => service.category === selectedCategory);
     }
-  };
 
-  const openEditModal = (service: ContractorService) => {
-    setSelectedService(service);
-    setNewService({
-      service_id: service.service_id,
-      price: service.price.toString(),
-      duration: service.duration.toString(),
-      description: service.description || '',
-    });
-    setShowEditServiceModal(true);
-  };
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((service) => {
+        const name = language === 'fr' ? service.name_fr : service.name_en;
+        return name.toLowerCase().includes(query);
+      });
+    }
 
-  const getServicesGroupedByCategory = () => {
-    const grouped: { [key: string]: ContractorService[] } = {};
-
-    contractorServices.forEach((contractorService) => {
-      // Get category string from service
-      const categoryString = contractorService.service?.category || 'OTHER';
-
-      // Find category details from categories array
-      const category = categories.find((cat) => cat.category === categoryString);
-
-      const categoryName = category
-        ? (language === 'fr' ? category.name_fr : category.name_en)
-        : 'Other';
-
-      if (!grouped[categoryName]) {
-        grouped[categoryName] = [];
-      }
-
-      grouped[categoryName].push(contractorService);
-    });
-
-    return grouped;
-  };
-
-  const getAvailableServices = () => {
-    const addedServiceIds = contractorServices.map((cs) => cs.service_id);
-    return allServices.filter((service) => !addedServiceIds.includes(service.id));
+    return filtered;
   };
 
   const formatCurrency = (amount: number) => {
-    return `${amount.toLocaleString('fr-FR')} FCFA`;
+    return `$${amount.toLocaleString()}`;
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${mins}m`;
+    }
   };
 
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#2D2D2D" />
+        <ActivityIndicator size="large" color="#FF6B6B" />
       </View>
     );
   }
 
-  const groupedServices = getServicesGroupedByCategory();
+  const filteredServices = getFilteredServices();
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { padding: spacing(2.5), paddingTop: spacing(6) }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: normalizeFontSize(24) }}>←</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { fontSize: normalizeFontSize(18) }]}>
-          Services Provided by Me
+        <Text style={styles.headerTitle}>
+          {language === 'fr' ? 'Mes Services' : 'My Services'}
         </Text>
-        <TouchableOpacity onPress={() => setShowAddServiceModal(true)}>
-          <Text style={[styles.addIcon, { fontSize: normalizeFontSize(24) }]}>+</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {contractorServices.length === 0 ? (
-          <View style={[styles.empty, { padding: spacing(4) }]}>
-            <Text style={[styles.emptyText, { fontSize: normalizeFontSize(16) }]}>
-              {language === 'fr'
-                ? 'Aucun service ajouté. Appuyez sur + pour ajouter.'
-                : 'No services added. Tap + to add.'}
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={language === 'fr' ? 'Rechercher un service...' : 'Search for a service...'}
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Text style={styles.clearIcon}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Category Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoriesScroll}
+        contentContainerStyle={styles.categoriesContent}
+      >
+        <TouchableOpacity
+          style={[styles.categoryChip, selectedCategory === 'ALL' && styles.categoryChipActive]}
+          onPress={() => setSelectedCategory('ALL')}
+        >
+          <Text style={[styles.categoryChipText, selectedCategory === 'ALL' && styles.categoryChipTextActive]}>
+            {language === 'fr' ? 'Tous' : 'All Services'}
+          </Text>
+        </TouchableOpacity>
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category.category}
+            style={[styles.categoryChip, selectedCategory === category.category && styles.categoryChipActive]}
+            onPress={() => setSelectedCategory(category.category)}
+          >
+            <Text
+              style={[
+                styles.categoryChipText,
+                selectedCategory === category.category && styles.categoryChipTextActive,
+              ]}
+            >
+              {language === 'fr' ? category.name_fr : category.name_en}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Services Grid */}
+      <ScrollView style={styles.servicesScroll} contentContainerStyle={styles.servicesContent}>
+        {filteredServices.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              {language === 'fr' ? 'Aucun service trouvé' : 'No services found'}
             </Text>
           </View>
         ) : (
-          Object.entries(groupedServices).map(([categoryName, services]) => (
-            <View key={categoryName} style={[styles.categorySection, { padding: spacing(2.5) }]}>
-              <Text style={[styles.categoryTitle, { fontSize: normalizeFontSize(18) }]}>
-                {categoryName}
-              </Text>
+          filteredServices.map((service) => {
+            const isSelected = isServiceSelected(service.id);
+            const contractorService = getContractorService(service.id);
 
-              {services.map((service) => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={[
-                    styles.serviceCard,
-                    { padding: spacing(2), marginTop: spacing(1.5) },
-                    !service.is_active && styles.serviceCardInactive,
-                  ]}
-                  onPress={() => openEditModal(service)}
-                  onLongPress={() => handleDeleteService(service.id)}
-                >
-                  <View style={styles.serviceHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.serviceName,
-                          { fontSize: normalizeFontSize(16) },
-                          !service.is_active && styles.textInactive,
-                        ]}
-                      >
-                        {language === 'fr' ? service.service?.name_fr : service.service?.name_en}
-                      </Text>
-                      <View style={[styles.serviceInfo, { marginTop: spacing(1) }]}>
-                        <Text
-                          style={[
-                            styles.servicePrice,
-                            { fontSize: normalizeFontSize(14) },
-                            !service.is_active && styles.textInactive,
-                          ]}
-                        >
-                          {formatCurrency(service.price)}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.serviceDuration,
-                            { fontSize: normalizeFontSize(14), marginLeft: spacing(2) },
-                            !service.is_active && styles.textInactive,
-                          ]}
-                        >
-                          ⏱ {service.duration}h
-                        </Text>
-                      </View>
-                      {service.description && (
-                        <Text
-                          style={[
-                            styles.serviceDescription,
-                            { fontSize: normalizeFontSize(12), marginTop: spacing(0.5) },
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {service.description}
-                        </Text>
-                      )}
+            return (
+              <TouchableOpacity
+                key={service.id}
+                style={styles.serviceCard}
+                onPress={() => handleServicePress(service)}
+                activeOpacity={0.7}
+              >
+                {/* Service Image */}
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: service.images?.[0] || 'https://via.placeholder.com/150' }}
+                    style={styles.serviceImage}
+                    resizeMode="cover"
+                  />
+                  {isSelected && (
+                    <View style={styles.checkmarkBadge}>
+                      <Text style={styles.checkmark}>✓</Text>
                     </View>
+                  )}
+                </View>
 
-                    <TouchableOpacity
-                      style={[styles.toggleButton, { padding: spacing(0.5) }]}
-                      onPress={() => handleToggleActive(service)}
-                    >
-                      <Text style={{ fontSize: normalizeFontSize(12) }}>
-                        {service.is_active ? '✅' : '⭕'}
+                {/* Service Info */}
+                <View style={styles.serviceInfo}>
+                  <Text style={styles.serviceName} numberOfLines={2}>
+                    {language === 'fr' ? service.name_fr : service.name_en}
+                  </Text>
+
+                  <View style={styles.serviceDetails}>
+                    <Text style={styles.servicePrice}>
+                      {isSelected && contractorService
+                        ? formatCurrency(contractorService.price)
+                        : formatCurrency(service.base_price)}
+                    </Text>
+                    <View style={styles.serviceMeta}>
+                      <Text style={styles.serviceMetaText}>
+                        ⏱ {isSelected && contractorService
+                          ? formatDuration(contractorService.duration)
+                          : formatDuration(service.duration)}
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))
+
+                  {isSelected && (
+                    <View style={styles.selectedBadge}>
+                      <Text style={styles.selectedBadgeText}>
+                        {language === 'fr' ? 'Activé' : 'Active'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
 
-      {/* Add Service Modal */}
-      <Modal visible={showAddServiceModal} transparent animationType="slide">
+      {/* Customization Modal */}
+      <Modal visible={showCustomizeModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={{ flex: 1, justifyContent: 'center' }}>
-            <View style={[styles.modalContent, { padding: spacing(3), margin: spacing(2) }]}>
-              <Text style={[styles.modalTitle, { fontSize: normalizeFontSize(18) }]}>
-                Add Service
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {existingContractorService
+                  ? (language === 'fr' ? 'Modifier le service' : 'Edit Service')
+                  : (language === 'fr' ? 'Ajouter le service' : 'Add Service')}
               </Text>
-
-              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                Select Service *
-              </Text>
-              <ScrollView
-                style={[styles.serviceList, { maxHeight: 200 }]}
-                nestedScrollEnabled
-              >
-                {getAvailableServices().map((service) => (
-                  <TouchableOpacity
-                    key={service.id}
-                    style={[
-                      styles.serviceOption,
-                      { padding: spacing(1.5) },
-                      newService.service_id === service.id && styles.serviceOptionSelected,
-                    ]}
-                    onPress={() => setNewService({ ...newService, service_id: service.id })}
-                  >
-                    <Text
-                      style={[
-                        styles.serviceOptionText,
-                        { fontSize: normalizeFontSize(14) },
-                        newService.service_id === service.id && styles.serviceOptionTextSelected,
-                      ]}
-                    >
-                      {language === 'fr' ? service.name_fr : service.name_en}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                Price (FCFA) *
-              </Text>
-              <TextInput
-                style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-                value={newService.price}
-                onChangeText={(text) => setNewService({ ...newService, price: text })}
-                placeholder="10000"
-                keyboardType="numeric"
-              />
-
-              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                Duration (hours) *
-              </Text>
-              <TextInput
-                style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-                value={newService.duration}
-                onChangeText={(text) => setNewService({ ...newService, duration: text })}
-                placeholder="2"
-                keyboardType="numeric"
-              />
-
-              <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                Description (optional)
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  { padding: spacing(1.5), fontSize: normalizeFontSize(14) },
-                ]}
-                value={newService.description}
-                onChangeText={(text) => setNewService({ ...newService, description: text })}
-                placeholder="Additional details..."
-                multiline
-                numberOfLines={3}
-              />
-
-              <View style={[styles.modalButtons, { marginTop: spacing(3) }]}>
-                <TouchableOpacity
-                  style={[styles.modalButton, { padding: spacing(1.5), flex: 1, marginRight: spacing(1) }]}
-                  onPress={() => {
-                    setShowAddServiceModal(false);
-                    setNewService({ service_id: '', price: '', duration: '', description: '' });
-                  }}
-                >
-                  <Text style={[styles.modalButtonText, { fontSize: normalizeFontSize(14) }]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.modalButton,
-                    styles.modalButtonPrimary,
-                    { padding: spacing(1.5), flex: 1, marginLeft: spacing(1) },
-                  ]}
-                  onPress={handleAddService}
-                >
-                  <Text
-                    style={[
-                      styles.modalButtonText,
-                      styles.modalButtonTextPrimary,
-                      { fontSize: normalizeFontSize(14) },
-                    ]}
-                  >
-                    Add
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* Edit Service Modal */}
-      <Modal visible={showEditServiceModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { padding: spacing(3), margin: spacing(2) }]}>
-            <Text style={[styles.modalTitle, { fontSize: normalizeFontSize(18) }]}>
-              Edit Service
-            </Text>
-
-            <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-              Service
-            </Text>
-            <Text style={[styles.serviceNameDisplay, { fontSize: normalizeFontSize(16), padding: spacing(1.5) }]}>
-              {selectedService &&
-                (language === 'fr'
-                  ? selectedService.service?.name_fr
-                  : selectedService.service?.name_en)}
-            </Text>
-
-            <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-              Price (FCFA) *
-            </Text>
-            <TextInput
-              style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-              value={newService.price}
-              onChangeText={(text) => setNewService({ ...newService, price: text })}
-              placeholder="10000"
-              keyboardType="numeric"
-            />
-
-            <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-              Duration (hours) *
-            </Text>
-            <TextInput
-              style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-              value={newService.duration}
-              onChangeText={(text) => setNewService({ ...newService, duration: text })}
-              placeholder="2"
-              keyboardType="numeric"
-            />
-
-            <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-              Description (optional)
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                { padding: spacing(1.5), fontSize: normalizeFontSize(14) },
-              ]}
-              value={newService.description}
-              onChangeText={(text) => setNewService({ ...newService, description: text })}
-              placeholder="Additional details..."
-              multiline
-              numberOfLines={3}
-            />
-
-            <View style={[styles.modalButtons, { marginTop: spacing(3) }]}>
-              <TouchableOpacity
-                style={[styles.modalButton, { padding: spacing(1.5), flex: 1, marginRight: spacing(1) }]}
-                onPress={() => {
-                  setShowEditServiceModal(false);
-                  setSelectedService(null);
-                  setNewService({ service_id: '', price: '', duration: '', description: '' });
-                }}
-              >
-                <Text style={[styles.modalButtonText, { fontSize: normalizeFontSize(14) }]}>
-                  Cancel
-                </Text>
+              <TouchableOpacity onPress={() => setShowCustomizeModal(false)}>
+                <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              {selectedServiceForCustomization && (
+                <>
+                  {/* Service Preview */}
+                  <View style={styles.servicePreview}>
+                    <Image
+                      source={{
+                        uri: selectedServiceForCustomization.images?.[0] || 'https://via.placeholder.com/150',
+                      }}
+                      style={styles.servicePreviewImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.servicePreviewInfo}>
+                      <Text style={styles.servicePreviewName}>
+                        {language === 'fr'
+                          ? selectedServiceForCustomization.name_fr
+                          : selectedServiceForCustomization.name_en}
+                      </Text>
+                      <Text style={styles.servicePreviewBase}>
+                        {language === 'fr' ? 'Prix de base: ' : 'Base price: '}
+                        {formatCurrency(selectedServiceForCustomization.base_price)}
+                      </Text>
+                      <Text style={styles.servicePreviewBase}>
+                        {language === 'fr' ? 'Durée de base: ' : 'Base duration: '}
+                        {formatDuration(selectedServiceForCustomization.duration)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Customization Form */}
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>
+                      {language === 'fr' ? 'Votre prix ($)' : 'Your Price ($)'} *
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      value={customization.price}
+                      onChangeText={(text) => setCustomization({ ...customization, price: text })}
+                      placeholder="100"
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>
+                      {language === 'fr' ? 'Durée (minutes)' : 'Duration (minutes)'} *
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      value={customization.duration}
+                      onChangeText={(text) => setCustomization({ ...customization, duration: text })}
+                      placeholder="60"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </>
+              )}
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
+              {existingContractorService && (
+                <TouchableOpacity style={styles.removeButton} onPress={handleRemoveService}>
+                  <Text style={styles.removeButtonText}>
+                    {language === 'fr' ? 'Supprimer' : 'Remove'}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonPrimary,
-                  { padding: spacing(1.5), flex: 1, marginLeft: spacing(1) },
-                ]}
-                onPress={handleEditService}
+                style={[styles.saveButton, existingContractorService && { flex: 1, marginLeft: 12 }]}
+                onPress={handleSaveCustomization}
               >
-                <Text
-                  style={[
-                    styles.modalButtonText,
-                    styles.modalButtonTextPrimary,
-                    { fontSize: normalizeFontSize(14) },
-                  ]}
-                >
-                  Save
+                <Text style={styles.saveButtonText}>
+                  {existingContractorService
+                    ? (language === 'fr' ? 'Enregistrer' : 'Save')
+                    : (language === 'fr' ? 'Ajouter' : 'Add')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -533,7 +461,7 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
   },
   centered: {
     justifyContent: 'center',
@@ -543,144 +471,297 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  title: {
-    fontWeight: 'bold',
-    flex: 1,
-    marginLeft: 15,
-  },
-  addIcon: {
-    fontWeight: 'bold',
-    color: '#2D2D2D',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  empty: {
-    alignItems: 'center',
+  backButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  emptyText: {
-    color: '#999',
-    textAlign: 'center',
-  },
-  categorySection: {
-    backgroundColor: '#FFF',
-    marginBottom: 15,
-  },
-  categoryTitle: {
-    fontWeight: 'bold',
+  backIcon: {
+    fontSize: 24,
     color: '#2D2D2D',
   },
-  serviceCard: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2D2D2D',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F9F9F9',
+    marginHorizontal: 20,
+    marginVertical: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  serviceCardInactive: {
-    opacity: 0.5,
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 10,
   },
-  serviceHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  serviceName: {
-    fontWeight: '600',
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
     color: '#2D2D2D',
   },
+  clearIcon: {
+    fontSize: 18,
+    color: '#999',
+    padding: 5,
+  },
+  categoriesScroll: {
+    maxHeight: 50,
+  },
+  categoriesContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+  },
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F9F9F9',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  categoryChipActive: {
+    backgroundColor: '#2D2D2D',
+    borderColor: '#2D2D2D',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  categoryChipTextActive: {
+    color: '#FFFFFF',
+  },
+  servicesScroll: {
+    flex: 1,
+  },
+  servicesContent: {
+    padding: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  serviceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 180,
+    backgroundColor: '#F0F0F0',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+  },
+  checkmarkBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   serviceInfo: {
+    padding: 12,
+  },
+  serviceName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2D2D2D',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  serviceDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  servicePrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  serviceMeta: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  servicePrice: {
-    fontWeight: 'bold',
-    color: '#FF6B6B',
-  },
-  serviceDuration: {
+  serviceMetaText: {
+    fontSize: 13,
     color: '#666',
+    marginLeft: 4,
   },
-  serviceDescription: {
-    color: '#999',
-    lineHeight: 18,
+  selectedBadge: {
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
-  textInactive: {
-    color: '#999',
-  },
-  toggleButton: {
-    marginLeft: 10,
+  selectedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    maxHeight: '90%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2D2D2D',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#999',
+    padding: 5,
+  },
+  modalBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  servicePreview: {
+    flexDirection: 'row',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  servicePreviewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#E0E0E0',
+  },
+  servicePreviewInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  servicePreviewName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2D2D2D',
+    marginBottom: 4,
+  },
+  servicePreviewBase: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  formGroup: {
+    marginBottom: 20,
   },
   label: {
+    fontSize: 14,
     fontWeight: '600',
+    color: '#2D2D2D',
     marginBottom: 8,
   },
   input: {
     backgroundColor: '#F9F9F9',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  serviceList: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-  },
-  serviceOption: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  serviceOptionSelected: {
-    backgroundColor: '#2D2D2D',
-  },
-  serviceOptionText: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
     color: '#2D2D2D',
   },
-  serviceOptionTextSelected: {
-    color: '#FFF',
-  },
-  serviceNameDisplay: {
-    fontWeight: '600',
-    color: '#2D2D2D',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-  },
-  modalButtons: {
+  modalActions: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 12,
   },
-  modalButton: {
-    borderRadius: 8,
+  removeButton: {
+    flex: 1,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#FF6B6B',
+  },
+  removeButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  saveButton: {
+    flex: 2,
+    backgroundColor: '#2D2D2D',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
   },
-  modalButtonPrimary: {
-    backgroundColor: '#2D2D2D',
-    borderColor: '#2D2D2D',
-  },
-  modalButtonText: {
-    color: '#2D2D2D',
-    fontWeight: '600',
-  },
-  modalButtonTextPrimary: {
-    color: '#FFF',
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
