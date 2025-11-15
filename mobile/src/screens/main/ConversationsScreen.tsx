@@ -11,12 +11,15 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../contexts/AuthContext';
+import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 interface Conversation {
   id: string;
   user: {
     id: string;
-    full_name: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
     profile_picture?: string;
   };
   last_message?: string;
@@ -89,7 +92,7 @@ export const ConversationsScreen = () => {
                     ) : (
                       <View style={styles.avatarPlaceholder}>
                         <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                          {conversation.user.full_name?.charAt(0) || '?'}
+                          {getUserInitials(conversation.user)}
                         </Text>
                       </View>
                     )}
@@ -98,7 +101,7 @@ export const ConversationsScreen = () => {
                   <View style={{ flex: 1, marginLeft: spacing(1.5) }}>
                     <View style={styles.headerRow}>
                       <Text style={[styles.userName, { fontSize: normalizeFontSize(16) }]}>
-                        {conversation.user.full_name}
+                        {getFullName(conversation.user)}
                       </Text>
                       {conversation.last_message_time && (
                         <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>

@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi, Booking } from '../../services/api';
+import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 const DAYS = ['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -176,7 +177,7 @@ export const ContractorAppointmentsScreen = () => {
                       ) : (
                         <View style={styles.placeholderImage}>
                           <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                            {appointment.client?.full_name?.charAt(0) || '?'}
+                            {getUserInitials(appointment.client)}
                           </Text>
                         </View>
                       )}

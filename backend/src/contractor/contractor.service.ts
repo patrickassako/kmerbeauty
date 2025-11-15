@@ -141,7 +141,7 @@ export class ContractorService implements OnModuleInit {
       .from('contractor_profiles')
       .select(`
         *,
-        user:users(id, full_name, email, phone, profile_picture, location)
+        user:users(id, first_name, last_name, email, phone, avatar, city, region)
       `)
       .eq('id', contractorId)
       .single();
@@ -280,7 +280,7 @@ export class ContractorService implements OnModuleInit {
       .from('contractor_profiles')
       .select(`
         *,
-        user:users(id, full_name, email, phone, profile_picture, location)
+        user:users(id, first_name, last_name, email, phone, avatar, city, region)
       `)
       .eq('is_active', true);
 
@@ -748,7 +748,7 @@ export class ContractorService implements OnModuleInit {
         .from('bookings')
         .select(`
           *,
-          user:users(id, full_name, email, phone, profile_picture),
+          user:users(id, first_name, last_name, email, phone, avatar),
           service:services(id, name_fr, name_en, category)
         `)
         .eq('contractor_id', contractorId)

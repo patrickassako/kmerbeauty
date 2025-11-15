@@ -19,7 +19,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const ContractorDashboardScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
-  const { t, language } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
 
@@ -96,24 +96,34 @@ export const ContractorDashboardScreen = () => {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { padding: spacing(2.5) }]}>
-        <Text style={[styles.logo, { fontSize: normalizeFontSize(24) }]}>S</Text>
+        <Text style={[styles.logo, { fontSize: normalizeFontSize(16) }]}>K-B</Text>
         <View style={styles.headerCenter}>
           <Text style={[styles.locationIcon, { fontSize: normalizeFontSize(14) }]}>📍</Text>
           <Text style={[styles.location, { fontSize: normalizeFontSize(14) }]}>
-            Notre-Dame - 754 Paris, France
+            {user?.city && user?.region ? `${user.city}, ${user.region}` : 'Cameroun'}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('ContractorProfile')}>
-          <View style={[styles.avatar, { width: spacing(6), height: spacing(6) }]}>
-            <Text style={{ fontSize: normalizeFontSize(20) }}>👤</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+            style={[styles.languageButton, { marginRight: spacing(2) }]}
+          >
+            <Text style={[styles.languageText, { fontSize: normalizeFontSize(14) }]}>
+              {language === 'fr' ? 'FR' : 'EN'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('ContractorProfile')}>
+            <View style={[styles.avatar, { width: spacing(6), height: spacing(6) }]}>
+              <Text style={{ fontSize: normalizeFontSize(20) }}>👤</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Greeting */}
       <View style={[styles.greetingSection, { padding: spacing(2.5) }]}>
         <Text style={[styles.name, { fontSize: normalizeFontSize(24) }]}>
-          {user?.full_name || 'Claire Smith'}
+          {user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.email || 'Utilisateur'}
         </Text>
         <Text style={[styles.greeting, { fontSize: normalizeFontSize(14) }]}>
           {language === 'fr' ? 'Bonjour!' : 'Good morning!'}
@@ -377,6 +387,22 @@ const styles = StyleSheet.create({
   locationIcon: {},
   location: {
     marginLeft: 5,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageButton: {
+    backgroundColor: '#2D2D2D',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  languageText: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
   avatar: {
     borderRadius: 100,

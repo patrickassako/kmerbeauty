@@ -25,10 +25,10 @@ export class ProposalService {
       .insert(dto)
       .select(`
         *,
-        client:users!proposals_client_id_fkey(id, full_name, email, profile_picture),
+        client:users!proposals_client_id_fkey(id, first_name, last_name, email, avatar),
         contractor:contractor_profiles(
           *,
-          user:users(id, full_name, email, profile_picture)
+          user:users(id, first_name, last_name, email, avatar)
         )
       `)
       .single();
@@ -44,10 +44,10 @@ export class ProposalService {
       .from('proposals')
       .select(`
         *,
-        client:users!proposals_client_id_fkey(id, full_name, email, profile_picture),
+        client:users!proposals_client_id_fkey(id, first_name, last_name, email, avatar),
         contractor:contractor_profiles(
           *,
-          user:users(id, full_name, email, profile_picture)
+          user:users(id, first_name, last_name, email, avatar)
         )
       `)
       .eq('id', proposalId)
@@ -66,7 +66,7 @@ export class ProposalService {
         *,
         contractor:contractor_profiles(
           *,
-          user:users(id, full_name, email, profile_picture)
+          user:users(id, first_name, last_name, email, avatar)
         )
       `)
       .eq('client_id', clientId)
@@ -89,7 +89,7 @@ export class ProposalService {
       .from('proposals')
       .select(`
         *,
-        client:users!proposals_client_id_fkey(id, full_name, email, phone, profile_picture)
+        client:users!proposals_client_id_fkey(id, first_name, last_name, email, phone, avatar)
       `)
       .eq('contractor_id', contractorId)
       .order('created_at', { ascending: false });
@@ -127,10 +127,10 @@ export class ProposalService {
       .eq('id', proposalId)
       .select(`
         *,
-        client:users!proposals_client_id_fkey(id, full_name, email, profile_picture),
+        client:users!proposals_client_id_fkey(id, first_name, last_name, email, avatar),
         contractor:contractor_profiles(
           *,
-          user:users(id, full_name, email, profile_picture)
+          user:users(id, first_name, last_name, email, avatar)
         )
       `)
       .single();

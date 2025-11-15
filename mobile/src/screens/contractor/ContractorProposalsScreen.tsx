@@ -13,6 +13,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { proposalApi, contractorApi, type Proposal } from '../../services/api';
+import { getFullName } from '../../utils/userHelpers';
 
 export const ContractorProposalsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
@@ -156,7 +157,7 @@ export const ContractorProposalsScreen = () => {
                 </View>
                 <View style={styles.clientDetails}>
                   <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                    {proposal.client?.full_name || 'Client'}
+                    {getFullName(proposal.client)}
                   </Text>
                   <View style={styles.rating}>
                     <Text style={[styles.ratingStars, { fontSize: normalizeFontSize(12) }]}>

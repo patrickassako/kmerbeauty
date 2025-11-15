@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { proposalApi, Proposal } from '../../services/api';
+import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 export const ProposalDetailsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
@@ -191,7 +192,7 @@ export const ProposalDetailsScreen = () => {
             </Text>
             <View style={styles.clientBadge}>
               <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                👤 {proposal.client?.full_name || 'Client'}
+                👤 {getFullName(proposal.client)}
               </Text>
               <Text style={{ fontSize: normalizeFontSize(14) }}>⭐ (3.9k+)</Text>
             </View>
@@ -251,14 +252,14 @@ export const ProposalDetailsScreen = () => {
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                      {proposal.client?.full_name?.charAt(0) || '?'}
+                      {getUserInitials(proposal.client)}
                     </Text>
                   </View>
                 )}
               </View>
               <View>
                 <Text style={[styles.clientCardName, { fontSize: normalizeFontSize(16) }]}>
-                  {proposal.client?.full_name || 'Client'} {proposal.client?.is_verified && '✓'}
+                  {getFullName(proposal.client)} {proposal.client?.is_verified && '✓'}
                 </Text>
                 <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>Diamond User</Text>
               </View>

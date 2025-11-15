@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi } from '../../services/api';
+import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 interface Earning {
   id: string;
@@ -26,7 +27,9 @@ interface Earning {
   booking?: {
     id: string;
     client?: {
-      full_name: string;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
     };
     service?: {
       name: string;
@@ -128,7 +131,7 @@ export const ContractorEarningsScreen = () => {
           ]}
         >
           <Text style={{ fontSize: normalizeFontSize(16), color: '#FFF' }}>
-            {user?.full_name?.charAt(0) || 'S'}
+            {getUserInitials(user)}
           </Text>
         </View>
       </View>
@@ -213,7 +216,7 @@ export const ContractorEarningsScreen = () => {
                   <View style={styles.detailItem}>
                     <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(12) }]}>Client</Text>
                     <Text style={[styles.detailValue, { fontSize: normalizeFontSize(13) }]}>
-                      {earning.booking?.client?.full_name || 'Client'}
+                      {getFullName(earning.booking?.client)}
                     </Text>
                   </View>
                   <View style={[styles.detailItem, { alignItems: 'flex-end' }]}>

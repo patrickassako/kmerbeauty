@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { bookingApi, Booking } from '../../services/api';
+import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 export const AppointmentDetailsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
@@ -177,7 +178,7 @@ export const AppointmentDetailsScreen = () => {
             </Text>
             <View style={styles.clientBadge}>
               <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                👤 {appointment.client?.full_name || 'Client'}
+                👤 {getFullName(appointment.client)}
               </Text>
               <Text style={{ fontSize: normalizeFontSize(14) }}>⭐ ({appointment.client_rating || 0}k+)</Text>
             </View>
@@ -237,14 +238,14 @@ export const AppointmentDetailsScreen = () => {
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                      {appointment.client?.full_name?.charAt(0) || '?'}
+                      {getUserInitials(appointment.client)}
                     </Text>
                   </View>
                 )}
               </View>
               <View>
                 <Text style={[styles.clientCardName, { fontSize: normalizeFontSize(16) }]}>
-                  {appointment.client?.full_name || 'Client'} {appointment.client?.is_verified && '✓'}
+                  {getFullName(appointment.client)} {appointment.client?.is_verified && '✓'}
                 </Text>
                 <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>Diamond User</Text>
               </View>
