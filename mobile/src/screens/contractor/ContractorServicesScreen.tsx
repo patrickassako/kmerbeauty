@@ -238,6 +238,15 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Description */}
+      <View style={styles.descriptionContainer}>
+        <Text style={styles.descriptionText}>
+          {language === 'fr'
+            ? 'Ajouter, modifier ou supprimer vos services'
+            : 'Add, edit or remove your services'}
+        </Text>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Text style={styles.searchIcon}>🔍</Text>
@@ -372,7 +381,11 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
+            <ScrollView
+              style={styles.modalBody}
+              contentContainerStyle={styles.modalBodyContent}
+              showsVerticalScrollIndicator={true}
+            >
               {selectedServiceForCustomization && (
                 <>
                   {/* Service Preview */}
@@ -492,6 +505,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#2D2D2D',
+  },
+  descriptionContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F9F9F9',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -657,8 +682,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '85%',
-    paddingBottom: 40,
+    maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -680,8 +704,11 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   modalBody: {
-    flex: 1,
+    maxHeight: 350,
+  },
+  modalBodyContent: {
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   servicePreview: {
     flexDirection: 'row',
@@ -736,7 +763,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 30,
     gap: 12,
+    backgroundColor: '#FFFFFF',
   },
   removeButton: {
     flex: 1,
