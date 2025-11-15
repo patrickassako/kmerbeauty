@@ -200,7 +200,7 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
   };
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString()}`;
+    return `${amount.toLocaleString('fr-FR')} FCFA`;
   };
 
   const formatDuration = (minutes: number) => {
@@ -417,13 +417,13 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
                   {/* Customization Form */}
                   <View style={styles.formGroup}>
                     <Text style={styles.label}>
-                      {language === 'fr' ? 'Votre prix ($)' : 'Your Price ($)'} *
+                      {language === 'fr' ? 'Votre prix (FCFA)' : 'Your Price (FCFA)'} *
                     </Text>
                     <TextInput
                       style={styles.input}
                       value={customization.price}
                       onChangeText={(text) => setCustomization({ ...customization, price: text })}
-                      placeholder="100"
+                      placeholder="25000"
                       keyboardType="numeric"
                     />
                   </View>

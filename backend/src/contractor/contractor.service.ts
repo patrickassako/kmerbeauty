@@ -524,18 +524,29 @@ export class ContractorService implements OnModuleInit {
   async addService(dto: CreateContractorServiceDto) {
     const supabase = this.supabaseService.getClient();
 
-    // Get therapist_id from contractor_id (which is actually user_id)
+    // First, get the contractor_profile to get the user_id
+    const { data: contractorProfile, error: profileError } = await supabase
+      .from('contractor_profiles')
+      .select('user_id')
+      .eq('id', dto.contractor_id)
+      .single();
+
+    if (profileError || !contractorProfile) {
+      throw new Error('Contractor profile not found.');
+    }
+
+    // Then, get therapist_id from the user_id
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('id')
-      .eq('user_id', dto.contractor_id)
+      .eq('user_id', contractorProfile.user_id)
       .single();
 
     if (therapistError || !therapist) {
       throw new Error('Therapist profile not found. Please complete your profile first.');
     }
 
-    // Insert into therapist_services instead of contractor_services
+    // Insert into therapist_services
     const { data, error } = await supabase
       .from('therapist_services')
       .insert({
@@ -558,15 +569,27 @@ export class ContractorService implements OnModuleInit {
   async getServices(contractorId: string) {
     const supabase = this.supabaseService.getClient();
 
-    // Get therapist_id from contractor_id (which is actually user_id)
+    // First, get the contractor_profile to get the user_id
+    const { data: contractorProfile, error: profileError } = await supabase
+      .from('contractor_profiles')
+      .select('user_id')
+      .eq('id', contractorId)
+      .single();
+
+    if (profileError || !contractorProfile) {
+      // Return empty array if contractor profile not found
+      return [];
+    }
+
+    // Then, get therapist_id from the user_id
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('id')
-      .eq('user_id', contractorId)
+      .eq('user_id', contractorProfile.user_id)
       .single();
 
     if (therapistError || !therapist) {
-      // Return empty array if therapist not found instead of throwing error
+      // Return empty array if therapist not found
       return [];
     }
 
