@@ -12,14 +12,14 @@ export class TherapistsService {
       .from('therapists')
       .select(`
         *,
-        user:user_id (
+        user:users!user_id (
           id,
           first_name,
           last_name,
           avatar,
           phone
         ),
-        salon:salon_id (
+        salon:salons!salon_id (
           id,
           name_fr,
           name_en
@@ -83,7 +83,7 @@ export class TherapistsService {
       .from('therapists')
       .select(`
         *,
-        user:user_id (
+        user:users!user_id (
           id,
           first_name,
           last_name,
@@ -91,7 +91,7 @@ export class TherapistsService {
           phone,
           email
         ),
-        salon:salon_id (
+        salon:salons!salon_id (
           id,
           name_fr,
           name_en,
@@ -123,7 +123,7 @@ export class TherapistsService {
       .select(`
         price,
         duration,
-        service:service_id (
+        service:services!service_id (
           id,
           name_fr,
           name_en,
