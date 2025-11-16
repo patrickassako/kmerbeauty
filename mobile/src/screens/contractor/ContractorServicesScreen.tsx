@@ -26,9 +26,13 @@ import {
 
 interface ContractorServicesScreenProps {
   onServiceAdded?: () => void;
+  hideHeader?: boolean;
 }
 
-export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> = ({ onServiceAdded }) => {
+export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> = ({
+  onServiceAdded,
+  hideHeader = false,
+}) => {
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
   const { user } = useAuth();
@@ -228,24 +232,28 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {language === 'fr' ? 'Mes Services' : 'My Services'}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+      {!hideHeader && (
+        <>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Text style={styles.backIcon}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {language === 'fr' ? 'Mes Services' : 'My Services'}
+            </Text>
+            <View style={{ width: 40 }} />
+          </View>
 
-      {/* Description */}
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.descriptionText}>
-          {language === 'fr'
-            ? 'Ajouter, modifier ou supprimer vos services'
-            : 'Add, edit or remove your services'}
-        </Text>
-      </View>
+          {/* Description */}
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.descriptionText}>
+              {language === 'fr'
+                ? 'Ajouter, modifier ou supprimer vos services'
+                : 'Add, edit or remove your services'}
+            </Text>
+          </View>
+        </>
+      )}
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>

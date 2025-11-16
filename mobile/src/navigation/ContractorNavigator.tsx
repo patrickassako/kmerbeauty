@@ -176,7 +176,7 @@ const ContractorTabNavigator = () => {
 
 // Wrapper to check if contractor has services
 export const ContractorNavigator = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [hasServices, setHasServices] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -208,6 +208,36 @@ export const ContractorNavigator = () => {
     setHasServices(true);
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter?',
+      [
+        {
+          text: 'Annuler',
+          style: 'cancel',
+        },
+        {
+          text: 'Déconnexion',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Sign out error:', error);
+              Alert.alert('Erreur', 'Échec de la déconnexion. Veuillez réessayer.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleGoToHome = () => {
+    // Allow them to navigate back to main dashboard
+    setHasServices(true);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -216,9 +246,34 @@ export const ContractorNavigator = () => {
     );
   }
 
-  // If contractor has no services, show services screen
+  // If contractor has no services, show services screen with options
   if (hasServices === false) {
-    return <ContractorServicesScreen onServiceAdded={onServiceAdded} />;
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        {/* Header with navigation options */}
+        <View style={styles.noServicesHeader}>
+          <Text style={styles.noServicesTitle}>Configuration initiale</Text>
+          <Text style={styles.noServicesDescription}>
+            Ajoutez au moins un service pour commencer à recevoir des demandes de clients
+          </Text>
+          <View style={styles.noServicesActions}>
+            <Text
+              style={styles.noServicesActionButton}
+              onPress={handleGoToHome}
+            >
+              Tableau de bord →
+            </Text>
+            <Text
+              style={[styles.noServicesActionButton, styles.logoutButton]}
+              onPress={handleSignOut}
+            >
+              Déconnexion
+            </Text>
+          </View>
+        </View>
+        <ContractorServicesScreen onServiceAdded={onServiceAdded} hideHeader={true} />
+      </View>
+    );
   }
 
   // Otherwise, show the normal tab navigator
@@ -253,5 +308,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  noServicesHeader: {
+    backgroundColor: '#2D2D2D',
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  noServicesTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  noServicesDescription: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 15,
+    lineHeight: 18,
+  },
+  noServicesActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  noServicesActionButton: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  logoutButton: {
+    backgroundColor: '#FF6B6B',
   },
 });
