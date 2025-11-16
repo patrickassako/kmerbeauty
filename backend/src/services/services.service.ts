@@ -63,6 +63,23 @@ export class ServicesService {
       throw new Error(`Failed to fetch service: ${error.message}`);
     }
 
-    return data;
+    // Compter les thérapeutes qui offrent ce service
+    const { count: therapistCount } = await supabase
+      .from('therapist_services')
+      .select('*', { count: 'exact', head: true })
+      .eq('service_id', data.id)
+      .eq('is_active', true);
+
+    // Compter les salons qui offrent ce service
+    const { count: salonCount } = await supabase
+      .from('salon_services')
+      .select('*', { count: 'exact', head: true })
+      .eq('service_id', data.id)
+      .eq('is_active', true);
+
+    return {
+      ...data,
+      provider_count: (therapistCount || 0) + (salonCount || 0),
+    };
   }
 }
