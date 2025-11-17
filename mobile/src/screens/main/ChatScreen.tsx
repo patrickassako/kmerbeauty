@@ -33,7 +33,7 @@ type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Chat'>;
 export const ChatScreen: React.FC = () => {
   const route = useRoute<ChatRouteProp>();
   const navigation = useNavigation<ChatNavigationProp>();
-  const { bookingId, providerId, providerName, providerType, providerImage } = route.params;
+  const { bookingId, chatId, providerId, providerName, providerType, providerImage } = route.params;
 
   const { normalizeFontSize, spacing } = useResponsive();
   const { language } = useI18n();
@@ -103,7 +103,10 @@ export const ChatScreen: React.FC = () => {
       setLoading(true);
       let chatData;
 
-      if (bookingId) {
+      if (chatId) {
+        // Existing chat - just set the ID and load messages
+        chatData = { id: chatId } as Chat;
+      } else if (bookingId) {
         chatData = await chatApi.getOrCreateChatByBooking(bookingId);
       } else {
         if (!user?.id) {

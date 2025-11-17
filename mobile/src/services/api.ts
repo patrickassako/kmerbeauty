@@ -415,6 +415,28 @@ export interface Chat {
   created_at: string;
   updated_at: string;
   unread_count?: number;
+  client?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    avatar?: string;
+  };
+  provider?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    avatar?: string;
+  };
+  other_user?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    avatar?: string;
+  };
+  other_user_type?: 'client' | 'provider';
 }
 
 export interface SendMessageDto {

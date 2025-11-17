@@ -232,7 +232,11 @@ export class ChatService {
 
     const { data, error } = await supabase
       .from('chats')
-      .select('*')
+      .select(`
+        *,
+        client:users!chats_client_id_fkey(id, first_name, last_name, email, avatar),
+        provider:users!chats_provider_id_fkey(id, first_name, last_name, email, avatar)
+      `)
       .or(`client_id.eq.${userId},provider_id.eq.${userId}`)
       .eq('is_active', true)
       .order('last_message_at', { ascending: false });
@@ -241,8 +245,8 @@ export class ChatService {
       throw new Error(`Failed to fetch user chats: ${error.message}`);
     }
 
-    // For each chat, get the unread message count
-    const chatsWithUnread = await Promise.all(
+    // For each chat, get the unread message count and determine the "other" user
+    const chatsWithDetails = await Promise.all(
       (data || []).map(async (chat) => {
         const { count } = await supabase
           .from('chat_messages')
@@ -251,14 +255,21 @@ export class ChatService {
           .eq('is_read', false)
           .neq('sender_id', userId);
 
+        // Determine the "other" user (the one the current user is chatting with)
+        const isClient = chat.client_id === userId;
+        const otherUser = isClient ? chat.provider : chat.client;
+        const otherUserType = isClient ? 'provider' : 'client';
+
         return {
           ...chat,
           unread_count: count || 0,
+          other_user: otherUser,
+          other_user_type: otherUserType,
         };
       }),
     );
 
-    return chatsWithUnread;
+    return chatsWithDetails;
   }
 
   /**
