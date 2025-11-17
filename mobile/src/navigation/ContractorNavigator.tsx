@@ -57,6 +57,7 @@ const CalendarStackNavigator = () => (
   <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
     <CalendarStack.Screen name="ContractorAppointmentsList" component={ContractorAppointmentsScreen} />
     <CalendarStack.Screen name="AppointmentDetails" component={AppointmentDetailsScreen} />
+    <CalendarStack.Screen name="Chat" component={ChatScreen} />
   </CalendarStack.Navigator>
 );
 

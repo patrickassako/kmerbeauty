@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { bookingApi, Booking } from '../../services/api';
+import { bookingsApi, Booking } from '../../services/api';
 import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 export const AppointmentDetailsScreen = () => {
@@ -32,7 +32,7 @@ export const AppointmentDetailsScreen = () => {
     try {
       if (!appointmentId) return;
       setLoading(true);
-      const data = await bookingApi.getById(appointmentId);
+      const data = await bookingsApi.getById(appointmentId);
       setAppointment(data);
     } catch (error: any) {
       console.error('Error loading appointment:', error);
@@ -63,7 +63,7 @@ export const AppointmentDetailsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await bookingApi.updateStatus(appointmentId, 'CANCELLED');
+              await bookingsApi.cancel(appointmentId, 'Cancelled by contractor');
               Alert.alert('Success', 'Appointment cancelled successfully');
               navigation.goBack();
             } catch (error: any) {
@@ -76,8 +76,15 @@ export const AppointmentDetailsScreen = () => {
   };
 
   const handleChatWithClient = () => {
-    if (appointment?.client) {
-      navigation.navigate('Chat', { userId: appointment.client.id });
+    if (appointment?.client && appointment?.id) {
+      // Navigate to Chat with bookingId - this will get or create a chat for this booking
+      navigation.navigate('Chat', {
+        bookingId: appointment.id,
+        providerId: appointment.client.id,
+        providerName: getFullName(appointment.client),
+        providerType: 'client',
+        providerImage: appointment.client.avatar,
+      });
     }
   };
 
