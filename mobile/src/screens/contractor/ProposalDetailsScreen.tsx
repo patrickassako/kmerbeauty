@@ -155,8 +155,29 @@ export const ProposalDetailsScreen = () => {
 
   const mainService = booking.items && booking.items.length > 0 ? booking.items[0] : null;
   const additionalServices = booking.items && booking.items.length > 1 ? booking.items.slice(1) : [];
-  const serviceImage = mainService?.service?.images?.length > 0 ? mainService.service.images[0] : null;
+  // booking_items n'a pas d'images - utiliser placeholder
+  const serviceImage = null;
   const isPending = booking.status === 'PENDING';
+
+  const formatDate = (datetime?: string) => {
+    if (!datetime) return language === 'fr' ? 'À définir' : 'TBD';
+    const date = new Date(datetime);
+    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const formatTime = (datetime?: string) => {
+    if (!datetime) return language === 'fr' ? 'À définir' : 'TBD';
+    const date = new Date(datetime);
+    return date.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: language !== 'fr',
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -185,6 +206,30 @@ export const ProposalDetailsScreen = () => {
           <Text style={[styles.mainServiceName, { fontSize: normalizeFontSize(24) }]}>
             {mainService?.service_name || (language === 'fr' ? 'Service' : 'Service')}
           </Text>
+        </View>
+
+        {/* Date and Time */}
+        <View style={[styles.section, { paddingHorizontal: spacing(2), paddingVertical: spacing(2) }]}>
+          <View style={styles.dateTimeRow}>
+            <View style={styles.dateTimeItem}>
+              <Text style={{ fontSize: normalizeFontSize(18) }}>📅</Text>
+              <Text style={[styles.dateTimeText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+                {formatDate(booking.scheduled_at)}
+              </Text>
+            </View>
+            <View style={styles.dateTimeItem}>
+              <Text style={{ fontSize: normalizeFontSize(18) }}>🕐</Text>
+              <Text style={[styles.dateTimeText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+                {formatTime(booking.scheduled_at)}
+              </Text>
+            </View>
+            <View style={styles.dateTimeItem}>
+              <Text style={{ fontSize: normalizeFontSize(18) }}>⏱️</Text>
+              <Text style={[styles.dateTimeText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+                {booking.duration} min
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Additional Services */}
@@ -482,6 +527,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2D2D2D',
     lineHeight: 32,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 12,
+  },
+  dateTimeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateTimeText: {
+    color: '#666',
+    fontWeight: '500',
   },
   sectionTitle: {
     fontWeight: 'bold',

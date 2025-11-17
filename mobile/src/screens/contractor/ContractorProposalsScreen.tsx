@@ -302,11 +302,8 @@ export const ContractorProposalsScreen = () => {
                 ? 'Service'
                 : 'Service';
 
-            // Get first service image
-            const serviceImage =
-              booking.items && booking.items.length > 0 && booking.items[0].service?.images?.length > 0
-                ? booking.items[0].service.images[0]
-                : null;
+            // booking_items n'a pas d'images - utiliser placeholder pour maintenant
+            const serviceImage = null;
 
             return (
               <TouchableOpacity
