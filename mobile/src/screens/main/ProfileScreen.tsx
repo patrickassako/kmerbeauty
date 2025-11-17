@@ -6,12 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useI18n } from '../../i18n/I18nContext';
 
 export const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, signOut } = useAuth();
   const { normalizeFontSize, spacing } = useResponsive();
+  const { language } = useI18n();
 
   const handleSignOut = async () => {
     try {
@@ -79,27 +83,47 @@ export const ProfileScreen: React.FC = () => {
         <View style={[styles.actionsSection, { marginTop: spacing(4) }]}>
           <TouchableOpacity
             style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
+            onPress={() => navigation.navigate('Conversations')}
           >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>Edit Profile</Text>
+            <View style={styles.actionButtonContent}>
+              <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1.5) }}>💬</Text>
+              <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Mes conversations' : 'My Conversations'}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
           >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>Settings</Text>
+            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
+              {language === 'fr' ? 'Modifier le profil' : 'Edit Profile'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
           >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>Help & Support</Text>
+            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
+              {language === 'fr' ? 'Paramètres' : 'Settings'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
+          >
+            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
+              {language === 'fr' ? 'Aide & Support' : 'Help & Support'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.signOutButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginTop: spacing(3) }]}
             onPress={handleSignOut}
           >
-            <Text style={[styles.signOutButtonText, { fontSize: normalizeFontSize(16) }]}>Sign Out</Text>
+            <Text style={[styles.signOutButtonText, { fontSize: normalizeFontSize(16) }]}>
+              {language === 'fr' ? 'Déconnexion' : 'Sign Out'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -161,6 +185,11 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButtonText: {
     color: '#2D2D2D',

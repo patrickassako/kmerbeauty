@@ -1,21 +1,34 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { ServiceScreen } from '../screens/main/ServiceScreen';
 import { SalonScreen } from '../screens/main/SalonScreen';
 import { BookingsScreen } from '../screens/main/BookingsScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
+import { ConversationsScreen } from '../screens/main/ConversationsScreen';
+import { ChatScreen } from '../screens/main/ChatScreen';
 
 export type MainTabParamList = {
   Home: undefined;
   Service: undefined;
   Salon: undefined;
   Bookings: undefined;
+  Conversations: undefined;
   Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const ChatStack = createNativeStackNavigator();
+
+// Chat Stack Navigator
+const ChatStackNavigator = () => (
+  <ChatStack.Navigator screenOptions={{ headerShown: false }}>
+    <ChatStack.Screen name="ConversationsList" component={ConversationsScreen} />
+    <ChatStack.Screen name="Chat" component={ChatScreen} />
+  </ChatStack.Navigator>
+);
 
 export const MainTabNavigator: React.FC = () => {
   return (
@@ -74,6 +87,16 @@ export const MainTabNavigator: React.FC = () => {
           tabBarLabel: 'BOOKINGS',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Conversations"
+        component={ChatStackNavigator}
+        options={{
+          tabBarLabel: 'CHAT',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-outline" size={size} color={color} />
           ),
         }}
       />
