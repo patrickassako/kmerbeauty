@@ -23,31 +23,9 @@ export class ServicesService {
       throw new Error(`Failed to fetch services: ${error.message}`);
     }
 
-    // Ajouter le nombre de prestataires (thérapeutes + salons) pour chaque service
-    const servicesWithCounts = await Promise.all(
-      data.map(async (service) => {
-        // Compter les thérapeutes qui offrent ce service
-        const { count: therapistCount } = await supabase
-          .from('therapist_services')
-          .select('*', { count: 'exact', head: true })
-          .eq('service_id', service.id)
-          .eq('is_active', true);
-
-        // Compter les salons qui offrent ce service
-        const { count: salonCount } = await supabase
-          .from('salon_services')
-          .select('*', { count: 'exact', head: true })
-          .eq('service_id', service.id)
-          .eq('is_active', true);
-
-        return {
-          ...service,
-          provider_count: (therapistCount || 0) + (salonCount || 0),
-        };
-      }),
-    );
-
-    return servicesWithCounts;
+    // provider_count is now denormalized and auto-maintained by triggers
+    // No need for N+1 queries - just return the data directly
+    return data;
   }
 
   async findOne(id: string) {
@@ -63,23 +41,8 @@ export class ServicesService {
       throw new Error(`Failed to fetch service: ${error.message}`);
     }
 
-    // Compter les thérapeutes qui offrent ce service
-    const { count: therapistCount } = await supabase
-      .from('therapist_services')
-      .select('*', { count: 'exact', head: true })
-      .eq('service_id', data.id)
-      .eq('is_active', true);
-
-    // Compter les salons qui offrent ce service
-    const { count: salonCount } = await supabase
-      .from('salon_services')
-      .select('*', { count: 'exact', head: true })
-      .eq('service_id', data.id)
-      .eq('is_active', true);
-
-    return {
-      ...data,
-      provider_count: (therapistCount || 0) + (salonCount || 0),
-    };
+    // provider_count is now denormalized and auto-maintained by triggers
+    // No need for additional COUNT queries
+    return data;
   }
 }

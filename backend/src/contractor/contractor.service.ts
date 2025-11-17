@@ -126,50 +126,22 @@ export class ContractorService implements OnModuleInit {
     console.log('✓ Contractor profile found:', contractor.id);
 
     // Get the therapist_id from therapists table using user_id
-    let { data: therapist, error: therapistError } = await supabase
+    const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('id')
       .eq('user_id', userId)
       .single();
 
     if (therapistError || !therapist) {
-      console.log('❌ No therapist record found for user:', userId);
-      console.log('   This indicates a sync issue. Contractor exists but therapist missing.');
-      console.log('   Triggering manual sync...');
-
-      // Try to trigger sync by updating the contractor profile
-      try {
-        await supabase
-          .from('contractor_profiles')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', contractor.id);
-
-        console.log('✓ Triggered manual sync for contractor:', contractor.id);
-
-        // Wait a bit for the trigger to execute
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Check again
-        const therapistRetry = await supabase
-          .from('therapists')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-        if (therapistRetry.error || !therapistRetry.data) {
-          console.log('❌ Manual sync failed. Therapist still not found.');
-          return false;
-        }
-
-        console.log('✓ Manual sync succeeded. Therapist found:', therapistRetry.data.id);
-        therapist = therapistRetry.data;
-      } catch (syncError) {
-        console.error('❌ Error during manual sync:', syncError);
-        return false;
-      }
-    } else {
-      console.log('✓ Therapist record found:', therapist.id);
+      console.error('❌ CRITICAL: No therapist record found for user:', userId);
+      console.error('   Contractor exists but therapist missing - sync trigger may have failed');
+      console.error('   Use /contractor/diagnose-sync/:userId endpoint to investigate');
+      // Return false immediately - don't try to fix sync issues in a getter method
+      // Sync should be handled by database triggers automatically
+      return false;
     }
+
+    console.log('✓ Therapist record found:', therapist.id);
 
     // Check if this therapist has any active services in therapist_services
     const { data: services, error: servicesError } = await supabase
