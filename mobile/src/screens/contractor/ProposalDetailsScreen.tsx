@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { proposalApi, Proposal } from '../../services/api';
+import { proposalApi, bookingsApi, Proposal, Booking } from '../../services/api';
 import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 export const ProposalDetailsScreen = () => {
@@ -20,13 +20,19 @@ export const ProposalDetailsScreen = () => {
   const route = useRoute<any>();
 
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
 
   const proposalId = route.params?.proposalId;
+  const bookingId = route.params?.bookingId;
 
   useEffect(() => {
-    loadProposal();
-  }, [proposalId]);
+    if (bookingId) {
+      loadBooking();
+    } else if (proposalId) {
+      loadProposal();
+    }
+  }, [proposalId, bookingId]);
 
   const loadProposal = async () => {
     try {
@@ -37,6 +43,20 @@ export const ProposalDetailsScreen = () => {
     } catch (error: any) {
       console.error('Error loading proposal:', error);
       Alert.alert('Error', error.message || 'Failed to load proposal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBooking = async () => {
+    try {
+      if (!bookingId) return;
+      setLoading(true);
+      const data = await bookingsApi.getById(bookingId);
+      setBooking(data);
+    } catch (error: any) {
+      console.error('Error loading booking:', error);
+      Alert.alert('Error', error.message || 'Failed to load booking');
     } finally {
       setLoading(false);
     }
@@ -100,8 +120,9 @@ export const ProposalDetailsScreen = () => {
   };
 
   const handleChatWithClient = () => {
-    if (proposal?.client) {
-      navigation.navigate('Chat', { userId: proposal.client.id });
+    const client = displayData?.client;
+    if (client) {
+      navigation.navigate('Chat', { userId: client.id });
     }
   };
 
@@ -113,15 +134,39 @@ export const ProposalDetailsScreen = () => {
     );
   }
 
-  if (!proposal) {
+  if (!proposal && !booking) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ fontSize: normalizeFontSize(16) }}>Proposal not found</Text>
+        <Text style={{ fontSize: normalizeFontSize(16) }}>
+          {bookingId ? 'Booking not found' : 'Proposal not found'}
+        </Text>
       </View>
     );
   }
 
-  const isActionable = proposal.status === 'PENDING';
+  // Map booking to proposal-like structure for display
+  const displayData = booking
+    ? {
+        id: booking.id,
+        service_name:
+          booking.items && booking.items.length > 0
+            ? booking.items.map((item) => item.service_name).join(', ')
+            : 'Service',
+        description: booking.notes || booking.instructions || '',
+        requested_date: booking.scheduled_at,
+        location: {
+          type: booking.location_type,
+          address: booking.street,
+          city: booking.city,
+        },
+        proposed_price: booking.total,
+        estimated_duration: booking.duration,
+        client: booking.client,
+        status: booking.status,
+      }
+    : proposal;
+
+  const isActionable = proposal ? proposal.status === 'PENDING' : false;
 
   return (
     <View style={styles.container}>
@@ -170,13 +215,13 @@ export const ProposalDetailsScreen = () => {
         >
           <View style={styles.infoBannerRow}>
             <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              🏠 {proposal.location?.type || 'Home'}
+              🏠 {displayData?.location?.type || 'Home'}
             </Text>
             <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              🕐 {formatTime(proposal.requested_date)}
+              🕐 {formatTime(displayData?.requested_date)}
             </Text>
             <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              📅 {formatDate(proposal.requested_date)}
+              📅 {formatDate(displayData?.requested_date)}
             </Text>
           </View>
         </View>
@@ -185,14 +230,14 @@ export const ProposalDetailsScreen = () => {
         <View style={[styles.section, { padding: spacing(2), gap: spacing(1) }]}>
           <View style={styles.priceRow}>
             <Text style={[styles.price, { fontSize: normalizeFontSize(24) }]}>
-              ${proposal.proposed_price || 'TBD'}
+              ${displayData?.proposed_price || 'TBD'}
             </Text>
             <Text style={[styles.duration, { fontSize: normalizeFontSize(14) }]}>
-              🕐 {proposal.estimated_duration || 60} min
+              🕐 {displayData?.estimated_duration || 60} min
             </Text>
             <View style={styles.clientBadge}>
               <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                👤 {getFullName(proposal.client)}
+                👤 {getFullName(displayData?.client)}
               </Text>
               <Text style={{ fontSize: normalizeFontSize(14) }}>⭐ (3.9k+)</Text>
             </View>
@@ -202,7 +247,7 @@ export const ProposalDetailsScreen = () => {
         {/* Service Title */}
         <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(1) }]}>
           <Text style={[styles.serviceTitle, { fontSize: normalizeFontSize(22) }]}>
-            {proposal.service_name}
+            {displayData?.service_name}
           </Text>
         </View>
 
@@ -211,16 +256,16 @@ export const ProposalDetailsScreen = () => {
           <View style={styles.locationRow}>
             <Text style={{ fontSize: normalizeFontSize(18) }}>📍</Text>
             <Text style={[styles.locationText, { fontSize: normalizeFontSize(14) }]}>
-              {proposal.location?.address || proposal.location?.city || 'Location not specified'}
+              {displayData?.location?.address || displayData?.location?.city || 'Location not specified'}
             </Text>
           </View>
         </View>
 
         {/* Description */}
-        {proposal.description && (
+        {displayData?.description && (
           <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
             <Text style={[styles.description, { fontSize: normalizeFontSize(14), lineHeight: 22 }]}>
-              {proposal.description}
+              {displayData.description}
             </Text>
           </View>
         )}
@@ -245,26 +290,26 @@ export const ProposalDetailsScreen = () => {
                   { width: spacing(6), height: spacing(6), borderRadius: spacing(3) },
                 ]}
               >
-                {proposal.client?.profile_picture ? (
+                {displayData?.client?.avatar ? (
                   <Image
-                    source={{ uri: proposal.client.profile_picture }}
+                    source={{ uri: displayData.client.avatar }}
                     style={{ width: '100%', height: '100%', borderRadius: spacing(3) }}
                   />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                      {getUserInitials(proposal.client)}
+                      {getUserInitials(displayData?.client)}
                     </Text>
                   </View>
                 )}
               </View>
               <View>
                 <Text style={[styles.clientCardName, { fontSize: normalizeFontSize(16) }]}>
-                  {getFullName(proposal.client)} {proposal.client?.is_verified && '✓'}
+                  {getFullName(displayData?.client)} {displayData?.client?.is_verified && '✓'}
                 </Text>
-                {proposal.client?.email && (
+                {displayData?.client?.email && (
                   <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>
-                    {proposal.client.email}
+                    {displayData.client.email}
                   </Text>
                 )}
               </View>
@@ -312,12 +357,12 @@ export const ProposalDetailsScreen = () => {
           </View>
         )}
 
-        {/* Status Badge for non-pending proposals */}
-        {!isActionable && (
+        {/* Status Badge for non-pending proposals or all bookings */}
+        {(!isActionable || booking) && (
           <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
             <View style={[styles.statusBadge, { padding: spacing(2), borderRadius: spacing(1.5) }]}>
               <Text style={[styles.statusText, { fontSize: normalizeFontSize(16) }]}>
-                Status: {proposal.status}
+                Status: {displayData?.status}
               </Text>
             </View>
           </View>

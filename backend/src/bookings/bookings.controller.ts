@@ -57,4 +57,12 @@ export class BookingsController {
   ) {
     return this.bookingsService.cancel(id, body.reason);
   }
+
+  @Get('contractor/:contractorId')
+  async findForContractor(
+    @Param('contractorId') contractorId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.bookingsService.findForContractor(contractorId, status);
+  }
 }

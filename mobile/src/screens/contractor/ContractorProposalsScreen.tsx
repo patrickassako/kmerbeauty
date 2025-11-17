@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { proposalApi, contractorApi, type Proposal } from '../../services/api';
+import { bookingsApi, contractorApi, type Booking } from '../../services/api';
 import { getFullName } from '../../utils/userHelpers';
 
 export const ContractorProposalsScreen = () => {
@@ -22,54 +22,26 @@ export const ContractorProposalsScreen = () => {
   const navigation = useNavigation<any>();
 
   const [loading, setLoading] = useState(true);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [contractorId, setContractorId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProposals();
+    loadBookings();
   }, []);
 
-  const loadProposals = async () => {
+  const loadBookings = async () => {
     try {
       setLoading(true);
       const profile = await contractorApi.getProfileByUserId(user?.id || '');
       if (!profile) return;
 
       setContractorId(profile.id);
-      const data = await proposalApi.getForContractor(profile.id);
-      setProposals(data);
+      const data = await bookingsApi.getForContractor(profile.id);
+      setBookings(data);
     } catch (error) {
-      console.error('Error loading proposals:', error);
+      console.error('Error loading bookings:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAccept = async (proposalId: string) => {
-    try {
-      await proposalApi.respond(proposalId, 'ACCEPTED');
-      Alert.alert(
-        language === 'fr' ? 'Accepté' : 'Accepted',
-        language === 'fr' ? 'Proposition acceptée avec succès' : 'Proposal accepted successfully'
-      );
-      loadProposals();
-    } catch (error) {
-      console.error('Error accepting proposal:', error);
-      Alert.alert('Error', 'Failed to accept proposal');
-    }
-  };
-
-  const handleDecline = async (proposalId: string) => {
-    try {
-      await proposalApi.respond(proposalId, 'DECLINED');
-      Alert.alert(
-        language === 'fr' ? 'Refusé' : 'Declined',
-        language === 'fr' ? 'Proposition refusée' : 'Proposal declined'
-      );
-      loadProposals();
-    } catch (error) {
-      console.error('Error declining proposal:', error);
-      Alert.alert('Error', 'Failed to decline proposal');
     }
   };
 
@@ -83,15 +55,34 @@ export const ContractorProposalsScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACCEPTED':
+      case 'CONFIRMED':
         return '#4CAF50';
-      case 'DECLINED':
+      case 'COMPLETED':
+        return '#2196F3';
+      case 'CANCELLED':
         return '#F44336';
-      case 'EXPIRED':
-        return '#999';
+      case 'PENDING':
       default:
         return '#FF9800';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels = {
+      fr: {
+        PENDING: 'En attente',
+        CONFIRMED: 'Confirmée',
+        COMPLETED: 'Terminée',
+        CANCELLED: 'Annulée',
+      },
+      en: {
+        PENDING: 'Pending',
+        CONFIRMED: 'Confirmed',
+        COMPLETED: 'Completed',
+        CANCELLED: 'Cancelled',
+      },
+    };
+    return labels[language === 'fr' ? 'fr' : 'en'][status as keyof typeof labels.en] || status;
   };
 
   if (loading) {
@@ -121,77 +112,74 @@ export const ContractorProposalsScreen = () => {
       </View>
 
       <Text style={[styles.title, { fontSize: normalizeFontSize(24), padding: spacing(2.5) }]}>
-        Proposals
+        {language === 'fr' ? 'Réservations' : 'Bookings'}
       </Text>
 
       <ScrollView style={styles.scrollView}>
-        {proposals.length === 0 ? (
+        {bookings.length === 0 ? (
           <Text style={[styles.emptyText, { fontSize: normalizeFontSize(14) }]}>
-            {language === 'fr' ? 'Aucune proposition' : 'No proposals'}
+            {language === 'fr' ? 'Aucune réservation' : 'No bookings'}
           </Text>
         ) : (
-          proposals.map((proposal) => (
-            <View
-              key={proposal.id}
-              style={[styles.proposalCard, { padding: spacing(2.5), margin: spacing(2.5) }]}
-            >
-              <View style={styles.proposalHeader}>
-                <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16) }]}>
-                  {proposal.service_name}
-                </Text>
-                <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>
-                  {formatTime(proposal.created_at || '')}
-                </Text>
-              </View>
+          bookings.map((booking) => {
+            const serviceName =
+              booking.items && booking.items.length > 0
+                ? booking.items.map((item) => item.service_name).join(', ')
+                : language === 'fr'
+                ? 'Services multiples'
+                : 'Multiple services';
 
-              <Text
-                style={[styles.description, { fontSize: normalizeFontSize(13), marginTop: spacing(1) }]}
-                numberOfLines={3}
+            return (
+              <View
+                key={booking.id}
+                style={[styles.proposalCard, { padding: spacing(2.5), margin: spacing(2.5) }]}
               >
-                {proposal.description}
-              </Text>
-
-              {/* Client info */}
-              <View style={[styles.clientInfo, { marginTop: spacing(2) }]}>
-                <View style={[styles.clientAvatar, { width: spacing(6), height: spacing(6) }]}>
-                  <Text style={{ fontSize: normalizeFontSize(20) }}>👤</Text>
-                </View>
-                <View style={styles.clientDetails}>
-                  <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                    {getFullName(proposal.client)}
+                <View style={styles.proposalHeader}>
+                  <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16) }]}>
+                    {serviceName}
                   </Text>
-                  <View style={styles.rating}>
-                    <Text style={[styles.ratingStars, { fontSize: normalizeFontSize(12) }]}>
-                      ⭐ (360+)
-                    </Text>
-                  </View>
+                  <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>
+                    {formatTime(booking.scheduled_at || booking.created_at || '')}
+                  </Text>
                 </View>
-              </View>
 
-              {/* Action buttons */}
-              {proposal.status === 'PENDING' ? (
+                {/* Location and notes */}
+                {(booking.city || booking.notes) && (
+                  <Text
+                    style={[styles.description, { fontSize: normalizeFontSize(13), marginTop: spacing(1) }]}
+                    numberOfLines={3}
+                  >
+                    {booking.city && booking.region && `📍 ${booking.city}, ${booking.region}`}
+                    {booking.notes && `\n${booking.notes}`}
+                  </Text>
+                )}
+
+                {/* Client info */}
+                {booking.client && (
+                  <View style={[styles.clientInfo, { marginTop: spacing(2) }]}>
+                    <View style={[styles.clientAvatar, { width: spacing(6), height: spacing(6) }]}>
+                      <Text style={{ fontSize: normalizeFontSize(20) }}>👤</Text>
+                    </View>
+                    <View style={styles.clientDetails}>
+                      <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
+                        {getFullName(booking.client)}
+                      </Text>
+                      <Text style={[styles.ratingStars, { fontSize: normalizeFontSize(12), marginTop: 3 }]}>
+                        💰 ${booking.total}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* View button and status */}
                 <View style={[styles.actions, { marginTop: spacing(2) }]}>
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      styles.acceptButton,
+                      styles.viewButton,
                       { padding: spacing(1.5), flex: 1, marginRight: spacing(1) },
                     ]}
-                    onPress={() => handleAccept(proposal.id)}
-                  >
-                    <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(14) }]}>
-                      {language === 'fr' ? 'Accepter' : 'Accept'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.viewButton,
-                      { padding: spacing(1.5), flex: 1, marginLeft: spacing(1) },
-                    ]}
-                    onPress={() =>
-                      navigation.navigate('ProposalDetails', { proposalId: proposal.id })
-                    }
+                    onPress={() => navigation.navigate('ProposalDetails', { bookingId: booking.id })}
                   >
                     <Text
                       style={[
@@ -203,21 +191,25 @@ export const ContractorProposalsScreen = () => {
                       {language === 'fr' ? 'Voir' : 'View'}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={[styles.statusBadge, { marginTop: spacing(2) }]}>
-                  <Text
+                  <View
                     style={[
-                      styles.statusText,
-                      { fontSize: normalizeFontSize(14), color: getStatusColor(proposal.status) },
+                      styles.statusBadge,
+                      { marginTop: 0, marginLeft: spacing(1), paddingHorizontal: 12, paddingVertical: 6 },
                     ]}
                   >
-                    {proposal.status}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { fontSize: normalizeFontSize(12), color: getStatusColor(booking.status) },
+                      ]}
+                    >
+                      {getStatusLabel(booking.status)}
+                    </Text>
+                  </View>
                 </View>
-              )}
-            </View>
-          ))
+              </View>
+            );
+          })
         )}
       </ScrollView>
     </View>

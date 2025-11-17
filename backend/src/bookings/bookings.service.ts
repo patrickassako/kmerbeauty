@@ -297,4 +297,51 @@ export class BookingsService {
       provider: providerData,
     };
   }
+
+  async findForContractor(contractorId: string, status?: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // Récupérer les bookings pour ce prestataire (therapist ou salon)
+    let query = supabase
+      .from('bookings')
+      .select('*')
+      .or(`therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch contractor bookings: ${error.message}`);
+    }
+
+    // Pour chaque booking, récupérer les items et les infos du client
+    const bookingsWithDetails = await Promise.all(
+      data.map(async (booking) => {
+        // Récupérer les booking items
+        const { data: items } = await supabase
+          .from('booking_items')
+          .select('*, service:services(id, images)')
+          .eq('booking_id', booking.id);
+
+        // Récupérer les infos du client
+        const { data: client } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, phone, avatar')
+          .eq('id', booking.user_id)
+          .single();
+
+        return {
+          ...booking,
+          items: items || [],
+          client: client || null,
+        };
+      }),
+    );
+
+    return bookingsWithDetails;
+  }
 }

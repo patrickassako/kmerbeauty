@@ -377,6 +377,15 @@ export const bookingsApi = {
     const response = await api.patch(`/bookings/${id}/cancel`, { reason });
     return response.data;
   },
+
+  /**
+   * Récupérer les réservations d'un prestataire
+   */
+  getForContractor: async (contractorId: string, status?: string): Promise<Booking[]> => {
+    const params = status ? { status } : undefined;
+    const response = await api.get(`/bookings/contractor/${contractorId}`, { params });
+    return response.data;
+  },
 };
 
 // =============================================
