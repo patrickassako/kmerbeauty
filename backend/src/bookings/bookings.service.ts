@@ -301,6 +301,9 @@ export class BookingsService {
   async findForContractor(contractorId: string, status?: string) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🔍 [BookingsService] Finding bookings for contractor:', contractorId);
+    console.log('🔍 [BookingsService] Status filter:', status || 'none');
+
     // Récupérer les bookings pour ce prestataire (therapist ou salon)
     let query = supabase
       .from('bookings')
@@ -315,24 +318,41 @@ export class BookingsService {
     const { data, error } = await query;
 
     if (error) {
+      console.error('❌ [BookingsService] Error fetching bookings:', error);
       throw new Error(`Failed to fetch contractor bookings: ${error.message}`);
     }
+
+    console.log('📦 [BookingsService] Found', data?.length || 0, 'bookings');
 
     // Pour chaque booking, récupérer les items et les infos du client
     const bookingsWithDetails = await Promise.all(
       data.map(async (booking) => {
+        console.log('📋 [BookingsService] Processing booking:', booking.id);
+
         // Récupérer les booking items
-        const { data: items } = await supabase
+        const { data: items, error: itemsError } = await supabase
           .from('booking_items')
           .select('*, service:services(id, images)')
           .eq('booking_id', booking.id);
 
+        if (itemsError) {
+          console.error('❌ [BookingsService] Error fetching items for booking', booking.id, ':', itemsError);
+        } else {
+          console.log('✅ [BookingsService] Found', items?.length || 0, 'items for booking', booking.id);
+        }
+
         // Récupérer les infos du client
-        const { data: client } = await supabase
+        const { data: client, error: clientError } = await supabase
           .from('users')
           .select('id, first_name, last_name, email, phone, avatar')
           .eq('id', booking.user_id)
           .single();
+
+        if (clientError) {
+          console.error('❌ [BookingsService] Error fetching client for booking', booking.id, ':', clientError);
+        } else {
+          console.log('✅ [BookingsService] Found client for booking', booking.id, ':', client?.id);
+        }
 
         return {
           ...booking,
@@ -342,6 +362,7 @@ export class BookingsService {
       }),
     );
 
+    console.log('✅ [BookingsService] Returning', bookingsWithDetails.length, 'bookings with details');
     return bookingsWithDetails;
   }
 }

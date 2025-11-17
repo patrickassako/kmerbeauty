@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -22,27 +23,94 @@ export const ContractorProposalsScreen = () => {
   const navigation = useNavigation<any>();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [contractorId, setContractorId] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
 
   useEffect(() => {
     loadBookings();
   }, []);
 
+  useEffect(() => {
+    filterBookings();
+  }, [selectedFilter, allBookings]);
+
   const loadBookings = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading contractor profile for user:', user?.id);
       const profile = await contractorApi.getProfileByUserId(user?.id || '');
-      if (!profile) return;
 
+      if (!profile) {
+        console.log('❌ No contractor profile found for user:', user?.id);
+        Alert.alert(
+          language === 'fr' ? 'Erreur' : 'Error',
+          language === 'fr' ? 'Profil prestataire introuvable' : 'Contractor profile not found'
+        );
+        return;
+      }
+
+      console.log('✅ Contractor profile found:', profile.id);
       setContractorId(profile.id);
+
+      console.log('🔍 Fetching bookings for contractor:', profile.id);
       const data = await bookingsApi.getForContractor(profile.id);
-      setBookings(data);
+      console.log('📦 Received bookings:', data?.length || 0, 'bookings');
+      console.log('📋 Bookings data:', JSON.stringify(data, null, 2));
+
+      setAllBookings(data || []);
     } catch (error) {
-      console.error('Error loading bookings:', error);
+      console.error('❌ Error loading bookings:', error);
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr'
+          ? 'Impossible de charger les réservations: ' + (error as any)?.message
+          : 'Failed to load bookings: ' + (error as any)?.message
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterBookings = () => {
+    const now = new Date();
+    let filtered: Booking[] = [];
+
+    switch (selectedFilter) {
+      case 'upcoming':
+        // Bookings with PENDING or CONFIRMED status, or scheduled in the future
+        filtered = allBookings.filter((booking) => {
+          const scheduledDate = booking.scheduled_at ? new Date(booking.scheduled_at) : null;
+          return (
+            (booking.status === 'PENDING' || booking.status === 'CONFIRMED') &&
+            (!scheduledDate || scheduledDate >= now)
+          );
+        });
+        break;
+      case 'completed':
+        // Bookings with COMPLETED status or past dates
+        filtered = allBookings.filter((booking) => booking.status === 'COMPLETED');
+        break;
+      case 'cancelled':
+        // Bookings with CANCELLED status
+        filtered = allBookings.filter((booking) => booking.status === 'CANCELLED');
+        break;
+      case 'all':
+      default:
+        filtered = allBookings;
+        break;
+    }
+
+    console.log(`🔎 Filter: ${selectedFilter}, Results: ${filtered.length}`);
+    setBookings(filtered);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadBookings();
+    setRefreshing(false);
   };
 
   const formatTime = (dateString: string) => {
@@ -115,11 +183,115 @@ export const ContractorProposalsScreen = () => {
         {language === 'fr' ? 'Réservations' : 'Bookings'}
       </Text>
 
-      <ScrollView style={styles.scrollView}>
+      {/* Filter Chips */}
+      <View style={[styles.filterContainer, { paddingHorizontal: spacing(2.5), paddingBottom: spacing(2) }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              { paddingHorizontal: spacing(2), paddingVertical: spacing(1), marginRight: spacing(1) },
+              selectedFilter === 'all' && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedFilter('all')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                { fontSize: normalizeFontSize(14) },
+                selectedFilter === 'all' && styles.filterChipTextActive,
+              ]}
+            >
+              {language === 'fr' ? 'Tous' : 'All'}
+              {selectedFilter === 'all' && ` (${allBookings.length})`}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              { paddingHorizontal: spacing(2), paddingVertical: spacing(1), marginRight: spacing(1) },
+              selectedFilter === 'upcoming' && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedFilter('upcoming')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                { fontSize: normalizeFontSize(14) },
+                selectedFilter === 'upcoming' && styles.filterChipTextActive,
+              ]}
+            >
+              {language === 'fr' ? 'À venir' : 'Upcoming'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              { paddingHorizontal: spacing(2), paddingVertical: spacing(1), marginRight: spacing(1) },
+              selectedFilter === 'completed' && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedFilter('completed')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                { fontSize: normalizeFontSize(14) },
+                selectedFilter === 'completed' && styles.filterChipTextActive,
+              ]}
+            >
+              {language === 'fr' ? 'Terminées' : 'Completed'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              { paddingHorizontal: spacing(2), paddingVertical: spacing(1), marginRight: spacing(1) },
+              selectedFilter === 'cancelled' && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedFilter('cancelled')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                { fontSize: normalizeFontSize(14) },
+                selectedFilter === 'cancelled' && styles.filterChipTextActive,
+              ]}
+            >
+              {language === 'fr' ? 'Annulées' : 'Cancelled'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {bookings.length === 0 ? (
-          <Text style={[styles.emptyText, { fontSize: normalizeFontSize(14) }]}>
-            {language === 'fr' ? 'Aucune réservation' : 'No bookings'}
-          </Text>
+          <View style={{ padding: spacing(4), alignItems: 'center' }}>
+            <Text style={[styles.emptyText, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
+              {language === 'fr' ? 'Aucune réservation' : 'No bookings'}
+            </Text>
+            <Text style={[styles.emptySubtext, { fontSize: normalizeFontSize(14), textAlign: 'center' }]}>
+              {language === 'fr'
+                ? 'Les clients peuvent réserver vos services depuis votre profil.'
+                : 'Clients can book your services from your profile.'}
+            </Text>
+            {allBookings.length > 0 && (
+              <Text
+                style={[
+                  styles.emptySubtext,
+                  { fontSize: normalizeFontSize(14), textAlign: 'center', marginTop: spacing(1) },
+                ]}
+              >
+                {language === 'fr'
+                  ? `Total: ${allBookings.length} réservation(s)`
+                  : `Total: ${allBookings.length} booking(s)`}
+              </Text>
+            )}
+          </View>
         ) : (
           bookings.map((booking) => {
             const serviceName =
@@ -259,8 +431,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
+    color: '#333',
+    fontWeight: '600',
+  },
+  emptySubtext: {
     color: '#999',
-    padding: 20,
   },
   proposalCard: {
     backgroundColor: '#FFF',
@@ -338,6 +513,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   statusText: {
+    fontWeight: '600',
+  },
+  filterContainer: {
+    backgroundColor: '#FFF',
+  },
+  filterChip: {
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  filterChipActive: {
+    backgroundColor: '#2D2D2D',
+    borderColor: '#2D2D2D',
+  },
+  filterChipText: {
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#FFF',
     fontWeight: '600',
   },
 });

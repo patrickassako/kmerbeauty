@@ -63,6 +63,10 @@ export class BookingsController {
     @Param('contractorId') contractorId: string,
     @Query('status') status?: string,
   ) {
-    return this.bookingsService.findForContractor(contractorId, status);
+    console.log('📥 [BookingsController] GET /bookings/contractor/' + contractorId);
+    console.log('📥 [BookingsController] Status filter:', status || 'none');
+    const result = await this.bookingsService.findForContractor(contractorId, status);
+    console.log('📤 [BookingsController] Returning', result?.length || 0, 'bookings');
+    return result;
   }
 }
