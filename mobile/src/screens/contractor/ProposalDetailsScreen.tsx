@@ -8,121 +8,108 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
-import { proposalApi, bookingsApi, Proposal, Booking } from '../../services/api';
-import { getFullName, getUserInitials } from '../../utils/userHelpers';
+import { useI18n } from '../../i18n/I18nContext';
+import { bookingsApi, Booking } from '../../services/api';
+import { getFullName } from '../../utils/userHelpers';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export const ProposalDetailsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
+  const { language } = useI18n();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  const [proposal, setProposal] = useState<Proposal | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
-  const proposalId = route.params?.proposalId;
   const bookingId = route.params?.bookingId;
 
   useEffect(() => {
     if (bookingId) {
       loadBooking();
-    } else if (proposalId) {
-      loadProposal();
     }
-  }, [proposalId, bookingId]);
-
-  const loadProposal = async () => {
-    try {
-      if (!proposalId) return;
-      setLoading(true);
-      const data = await proposalApi.getById(proposalId);
-      setProposal(data);
-    } catch (error: any) {
-      console.error('Error loading proposal:', error);
-      Alert.alert('Error', error.message || 'Failed to load proposal');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [bookingId]);
 
   const loadBooking = async () => {
     try {
       if (!bookingId) return;
       setLoading(true);
+      console.log('🔍 Loading booking details:', bookingId);
       const data = await bookingsApi.getById(bookingId);
+      console.log('✅ Booking loaded:', data);
       setBooking(data);
     } catch (error: any) {
-      console.error('Error loading booking:', error);
-      Alert.alert('Error', error.message || 'Failed to load booking');
+      console.error('❌ Error loading booking:', error);
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        error.message || (language === 'fr' ? 'Impossible de charger la réservation' : 'Failed to load booking')
+      );
+      navigation.goBack();
     } finally {
       setLoading(false);
     }
   };
 
   const formatTime = (datetime?: string) => {
-    if (!datetime) return 'TBD';
+    if (!datetime) return language === 'fr' ? 'À définir' : 'TBD';
     const date = new Date(datetime);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: !language || language !== 'fr',
+    });
   };
 
   const formatDate = (datetime?: string) => {
-    if (!datetime) return 'TBD';
+    if (!datetime) return language === 'fr' ? 'À définir' : 'TBD';
     const date = new Date(datetime);
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   };
 
-  const handleAcceptProposal = () => {
-    Alert.alert(
-      'Accept Proposal',
-      'Do you want to accept this proposal?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Accept',
-          onPress: async () => {
-            try {
-              await proposalApi.respond(proposalId, 'ACCEPTED');
-              Alert.alert('Success', 'Proposal accepted successfully');
-              navigation.goBack();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to accept proposal');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDeclineProposal = () => {
-    Alert.alert(
-      'Decline Proposal',
-      'Do you want to decline this proposal?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Decline',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await proposalApi.respond(proposalId, 'DECLINED', 'Not available at this time');
-              Alert.alert('Success', 'Proposal declined');
-              navigation.goBack();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to decline proposal');
-            }
-          },
-        },
-      ]
-    );
+  const handleCancelBooking = async () => {
+    try {
+      setCancelling(true);
+      console.log('🚫 Cancelling booking:', bookingId);
+      await bookingsApi.cancel(bookingId, language === 'fr' ? 'Annulé par le prestataire' : 'Cancelled by provider');
+      console.log('✅ Booking cancelled successfully');
+      Alert.alert(
+        language === 'fr' ? 'Annulée' : 'Cancelled',
+        language === 'fr' ? 'Réservation annulée avec succès' : 'Booking cancelled successfully'
+      );
+      setShowCancelModal(false);
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('❌ Error cancelling booking:', error);
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        error.message || (language === 'fr' ? "Impossible d'annuler la réservation" : 'Failed to cancel booking')
+      );
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleChatWithClient = () => {
-    const client = displayData?.client;
-    if (client) {
-      navigation.navigate('Chat', { userId: client.id });
+    if (booking?.client) {
+      navigation.navigate('Chat', {
+        userId: booking.client.id,
+        bookingId: booking.id,
+        providerName: getFullName(booking.client),
+        providerType: 'client',
+        providerImage: booking.client.avatar,
+      });
     }
   };
 
@@ -134,262 +121,313 @@ export const ProposalDetailsScreen = () => {
     );
   }
 
-  if (!proposal && !booking) {
+  if (!booking) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ fontSize: normalizeFontSize(16) }}>
-          {bookingId ? 'Booking not found' : 'Proposal not found'}
+          {language === 'fr' ? 'Réservation introuvable' : 'Booking not found'}
         </Text>
       </View>
     );
   }
 
-  // Map booking to proposal-like structure for display
-  const displayData = booking
-    ? {
-        id: booking.id,
-        service_name:
-          booking.items && booking.items.length > 0
-            ? booking.items.map((item) => item.service_name).join(', ')
-            : 'Service',
-        description: booking.notes || booking.instructions || '',
-        requested_date: booking.scheduled_at,
-        location: {
-          type: booking.location_type,
-          address: booking.street,
-          city: booking.city,
-        },
-        proposed_price: booking.total,
-        estimated_duration: booking.duration,
-        client: booking.client,
-        status: booking.status,
-      }
-    : proposal;
+  const serviceName =
+    booking.items && booking.items.length > 0
+      ? booking.items.map((item) => item.service_name).join(', ')
+      : language === 'fr'
+      ? 'Service'
+      : 'Service';
 
-  const isActionable = proposal ? proposal.status === 'PENDING' : false;
+  const canCancel = booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+
+  // Get service images from booking items
+  const serviceImages =
+    booking.items
+      ?.map((item: any) => item.service?.images)
+      .flat()
+      .filter(Boolean) || [];
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing(10) }}>
-        {/* Header Image Gallery */}
-        <View style={[styles.imageGallery, { height: spacing(30) }]}>
-          {/* Main Image - Using a placeholder for now */}
-          <View style={[styles.mainImage, styles.placeholderImage]}>
-            <Text style={{ fontSize: normalizeFontSize(40), color: '#999' }}>📷</Text>
-          </View>
+      {/* Close Button */}
+      <TouchableOpacity
+        style={[styles.closeButton, { top: spacing(6), right: spacing(2) }]}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={{ fontSize: normalizeFontSize(24), color: '#FFF' }}>✕</Text>
+      </TouchableOpacity>
 
-          {/* Close Button */}
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={[
-              styles.closeButton,
-              { top: spacing(5), right: spacing(2), width: spacing(4), height: spacing(4) },
-            ]}
-          >
-            <Text style={{ fontSize: normalizeFontSize(20), color: '#2D2D2D' }}>✕</Text>
-          </TouchableOpacity>
-
-          {/* Thumbnail Strip */}
-          <View style={[styles.thumbnailStrip, { bottom: spacing(2), left: spacing(2), gap: spacing(1) }]}>
-            <View style={[styles.thumbnail, { width: spacing(8), height: spacing(8) }]}>
-              <View style={[styles.placeholderImage, { width: '100%', height: '100%', borderRadius: spacing(1) }]}>
-                <Text style={{ fontSize: normalizeFontSize(20), color: '#999' }}>📷</Text>
-              </View>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {/* Hero Image with Gallery */}
+        <View style={styles.heroSection}>
+          {serviceImages.length > 0 ? (
+            <>
+              <Image
+                source={{ uri: serviceImages[0] }}
+                style={styles.heroImage}
+                resizeMode="cover"
+              />
+              {serviceImages.length > 1 && (
+                <View style={[styles.thumbnailContainer, { bottom: spacing(2), left: spacing(2) }]}>
+                  {serviceImages.slice(0, 3).map((img: string, idx: number) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: img }}
+                      style={[styles.thumbnail, { width: spacing(10), height: spacing(10) }]}
+                      resizeMode="cover"
+                    />
+                  ))}
+                  {serviceImages.length > 3 && (
+                    <View style={[styles.thumbnail, styles.moreThumbnail, { width: spacing(10), height: spacing(10) }]}>
+                      <Text style={[styles.moreThumbnailText, { fontSize: normalizeFontSize(16) }]}>
+                        +{serviceImages.length - 3}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.heroImage, styles.placeholderImage]}>
+              <Text style={{ fontSize: normalizeFontSize(48) }}>💅</Text>
             </View>
-            <View style={[styles.thumbnail, { width: spacing(8), height: spacing(8) }]}>
-              <View style={styles.moreThumbnail}>
-                <Text style={{ fontSize: normalizeFontSize(14), color: '#FFF', fontWeight: '600' }}>
-                  +12
-                </Text>
-              </View>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Info Banner */}
-        <View
-          style={[
-            styles.infoBanner,
-            { padding: spacing(2), gap: spacing(1.5), marginTop: -spacing(3), marginHorizontal: spacing(2) },
-          ]}
-        >
-          <View style={styles.infoBannerRow}>
-            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              🏠 {displayData?.location?.type || 'Home'}
+        <View style={[styles.infoBanner, { padding: spacing(2), marginHorizontal: spacing(2) }]}>
+          <View style={styles.infoBannerItem}>
+            <Text style={{ fontSize: normalizeFontSize(18) }}>🏠</Text>
+            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+              {booking.location_type === 'HOME'
+                ? language === 'fr'
+                  ? 'À domicile'
+                  : 'Home'
+                : language === 'fr'
+                ? 'Salon'
+                : 'Salon'}
             </Text>
-            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              🕐 {formatTime(displayData?.requested_date)}
+          </View>
+          <View style={styles.infoBannerItem}>
+            <Text style={{ fontSize: normalizeFontSize(18) }}>🕐</Text>
+            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+              {formatTime(booking.scheduled_at)}
             </Text>
-            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
-              📅 {formatDate(displayData?.requested_date)}
+          </View>
+          <View style={styles.infoBannerItem}>
+            <Text style={{ fontSize: normalizeFontSize(18) }}>📅</Text>
+            <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+              {formatDate(booking.scheduled_at)}
             </Text>
           </View>
         </View>
 
-        {/* Price and Client Info */}
-        <View style={[styles.section, { padding: spacing(2), gap: spacing(1) }]}>
+        {/* Price, Duration, Client Info */}
+        <View style={[styles.section, { padding: spacing(2) }]}>
           <View style={styles.priceRow}>
-            <Text style={[styles.price, { fontSize: normalizeFontSize(24) }]}>
-              ${displayData?.proposed_price || 'TBD'}
-            </Text>
-            <Text style={[styles.duration, { fontSize: normalizeFontSize(14) }]}>
-              🕐 {displayData?.estimated_duration || 60} min
-            </Text>
-            <View style={styles.clientBadge}>
-              <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                👤 {getFullName(displayData?.client)}
+            <Text style={[styles.price, { fontSize: normalizeFontSize(28) }]}>{booking.total} FCFA</Text>
+            <View style={styles.durationBadge}>
+              <Text style={{ fontSize: normalizeFontSize(14) }}>🕐</Text>
+              <Text style={[styles.duration, { fontSize: normalizeFontSize(14), marginLeft: spacing(0.5) }]}>
+                {booking.duration} min
               </Text>
-              <Text style={{ fontSize: normalizeFontSize(14) }}>⭐ (3.9k+)</Text>
             </View>
+            {booking.client && (
+              <View style={styles.clientBadge}>
+                <Text style={{ fontSize: normalizeFontSize(14) }}>👤</Text>
+                <Text style={[styles.clientName, { fontSize: normalizeFontSize(14), marginLeft: spacing(0.5) }]}>
+                  {getFullName(booking.client)}
+                </Text>
+                <Text style={[styles.rating, { fontSize: normalizeFontSize(12), marginLeft: spacing(0.5) }]}>
+                  ⭐ (3.9k+)
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
         {/* Service Title */}
         <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(1) }]}>
-          <Text style={[styles.serviceTitle, { fontSize: normalizeFontSize(22) }]}>
-            {displayData?.service_name}
-          </Text>
+          <Text style={[styles.serviceTitle, { fontSize: normalizeFontSize(24) }]}>{serviceName}</Text>
         </View>
 
         {/* Location */}
         <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
           <View style={styles.locationRow}>
             <Text style={{ fontSize: normalizeFontSize(18) }}>📍</Text>
-            <Text style={[styles.locationText, { fontSize: normalizeFontSize(14) }]}>
-              {displayData?.location?.address || displayData?.location?.city || 'Location not specified'}
+            <Text style={[styles.locationText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+              {booking.street && `${booking.street}, `}
+              {booking.quarter && `${booking.quarter}, `}
+              {booking.city}, {booking.region}
+              {booking.landmark && ` (${booking.landmark})`}
             </Text>
           </View>
         </View>
 
-        {/* Description */}
-        {displayData?.description && (
+        {/* Description/Notes */}
+        {(booking.notes || booking.instructions) && (
           <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
             <Text style={[styles.description, { fontSize: normalizeFontSize(14), lineHeight: 22 }]}>
-              {displayData.description}
+              {booking.notes || booking.instructions}
             </Text>
           </View>
         )}
 
-        {/* Client Details Card */}
-        <View
-          style={[
-            styles.clientCard,
-            {
-              marginHorizontal: spacing(2),
-              padding: spacing(2),
-              borderRadius: spacing(1.5),
-              marginBottom: spacing(2),
-            },
-          ]}
-        >
-          <View style={styles.clientCardHeader}>
-            <View style={styles.clientInfo}>
-              <View
-                style={[
-                  styles.clientAvatar,
-                  { width: spacing(6), height: spacing(6), borderRadius: spacing(3) },
-                ]}
-              >
-                {displayData?.client?.avatar ? (
-                  <Image
-                    source={{ uri: displayData.client.avatar }}
-                    style={{ width: '100%', height: '100%', borderRadius: spacing(3) }}
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                      {getUserInitials(displayData?.client)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <View>
-                <Text style={[styles.clientCardName, { fontSize: normalizeFontSize(16) }]}>
-                  {getFullName(displayData?.client)} {displayData?.client?.is_verified && '✓'}
-                </Text>
-                {displayData?.client?.email && (
-                  <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>
-                    {displayData.client.email}
+        {/* Booking Items */}
+        {booking.items && booking.items.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(18), marginBottom: spacing(1) }]}>
+              {language === 'fr' ? 'Services réservés' : 'Booked Services'}
+            </Text>
+            {booking.items.map((item: any, idx: number) => (
+              <View key={idx} style={[styles.serviceItem, { paddingVertical: spacing(1.5) }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.serviceItemName, { fontSize: normalizeFontSize(15) }]}>
+                    {item.service_name}
                   </Text>
-                )}
+                  <Text style={[styles.serviceItemDuration, { fontSize: normalizeFontSize(13) }]}>
+                    {item.duration} min
+                  </Text>
+                </View>
+                <Text style={[styles.serviceItemPrice, { fontSize: normalizeFontSize(15) }]}>
+                  {item.price} FCFA
+                </Text>
               </View>
+            ))}
+            <View style={[styles.totalRow, { paddingTop: spacing(2), marginTop: spacing(1) }]}>
+              <Text style={[styles.totalLabel, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Total' : 'Total'}
+              </Text>
+              <Text style={[styles.totalAmount, { fontSize: normalizeFontSize(18) }]}>{booking.total} FCFA</Text>
             </View>
-            <TouchableOpacity onPress={handleChatWithClient} style={styles.chatButton}>
-              <Text style={{ fontSize: normalizeFontSize(24) }}>💬</Text>
-            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Status Badge */}
+        <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { padding: spacing(1.5), backgroundColor: getStatusColor(booking.status) },
+            ]}
+          >
+            <Text style={[styles.statusText, { fontSize: normalizeFontSize(14) }]}>
+              {language === 'fr' ? 'Statut: ' : 'Status: '}
+              {getStatusLabel(booking.status, language)}
+            </Text>
           </View>
         </View>
 
         {/* Action Buttons */}
-        {isActionable && (
-          <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3), gap: spacing(1.5) }}>
-            <TouchableOpacity
-              onPress={handleDeclineProposal}
-              style={[
-                styles.declineButton,
-                {
-                  padding: spacing(2),
-                  borderRadius: spacing(1.5),
-                },
-              ]}
-            >
-              <Text style={{ fontSize: normalizeFontSize(18) }}>✕</Text>
-              <Text style={[styles.declineButtonText, { fontSize: normalizeFontSize(16) }]}>
-                Decline Proposal
+        <View style={[styles.actionsSection, { padding: spacing(2), gap: spacing(2) }]}>
+          {/* Chat Button */}
+          {booking.client && (
+            <TouchableOpacity style={[styles.primaryButton, { padding: spacing(2) }]} onPress={handleChatWithClient}>
+              <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1) }}>💬</Text>
+              <Text style={[styles.primaryButtonText, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Contacter le client' : 'Contact Client'}
               </Text>
             </TouchableOpacity>
+          )}
 
+          {/* Cancel Button */}
+          {canCancel && (
             <TouchableOpacity
-              onPress={handleAcceptProposal}
-              style={[
-                styles.acceptButton,
-                {
-                  padding: spacing(2),
-                  borderRadius: spacing(1.5),
-                },
-              ]}
+              style={[styles.cancelButton, { padding: spacing(2) }]}
+              onPress={() => setShowCancelModal(true)}
             >
-              <Text style={{ fontSize: normalizeFontSize(20) }}>📅</Text>
-              <Text style={[styles.acceptButtonText, { fontSize: normalizeFontSize(16) }]}>
-                Accept Proposal
+              <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1) }}>✕</Text>
+              <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Annuler le rendez-vous' : 'Cancel Appointment'}
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
 
-        {/* Status Badge for non-pending proposals or all bookings */}
-        {(!isActionable || booking) && (
-          <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
-            <View style={[styles.statusBadge, { padding: spacing(2), borderRadius: spacing(1.5) }]}>
-              <Text style={[styles.statusText, { fontSize: normalizeFontSize(16) }]}>
-                Status: {displayData?.status}
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Spacer for bottom */}
+        <View style={{ height: spacing(10) }} />
       </ScrollView>
 
-      {/* Go to Homepage Button */}
-      <View style={[styles.footer, { padding: spacing(2) }]}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('ContractorDashboard')}
-          style={[
-            styles.homepageButton,
-            {
-              padding: spacing(2),
-              borderRadius: spacing(1.5),
-              gap: spacing(1),
-            },
-          ]}
-        >
-          <Text style={{ fontSize: normalizeFontSize(20) }}>→</Text>
-          <Text style={[styles.homepageButtonText, { fontSize: normalizeFontSize(16) }]}>
-            Go to Homepage
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.cancelModalContent, { padding: spacing(3) }]}>
+            <Text style={[styles.cancelModalTitle, { fontSize: normalizeFontSize(24), marginBottom: spacing(2) }]}>
+              {language === 'fr' ? 'Voulez-vous vraiment annuler?' : 'Do you really want to cancel?'}
+            </Text>
+            <Text style={[styles.cancelModalText, { fontSize: normalizeFontSize(14), marginBottom: spacing(3) }]}>
+              {language === 'fr'
+                ? "Assurez-vous de ne plus avoir besoin de ce rendez-vous avant de continuer. Si vous êtes certain de la suppression, confirmez votre décision."
+                : "Ensure you no longer need the file before proceeding. If you're certain about the deletion, confirm your decision."}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalNotNowButton, { padding: spacing(2), marginBottom: spacing(2) }]}
+              onPress={() => setShowCancelModal(false)}
+            >
+              <Text style={[styles.modalNotNowText, { fontSize: normalizeFontSize(16) }]}>
+                {language === 'fr' ? 'Pas maintenant' : 'Not Now'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancelButton, { padding: spacing(2) }]}
+              onPress={handleCancelBooking}
+              disabled={cancelling}
+            >
+              {cancelling ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1), color: '#FFF' }}>✕</Text>
+                  <Text style={[styles.modalCancelText, { fontSize: normalizeFontSize(16) }]}>
+                    {language === 'fr' ? 'Annuler le rendez-vous' : 'Cancel Appointment'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'CONFIRMED':
+      return '#4CAF50';
+    case 'COMPLETED':
+      return '#2196F3';
+    case 'CANCELLED':
+      return '#F44336';
+    case 'PENDING':
+    default:
+      return '#FF9800';
+  }
+};
+
+const getStatusLabel = (status: string, language: string) => {
+  const labels = {
+    fr: {
+      PENDING: 'En attente',
+      CONFIRMED: 'Confirmée',
+      COMPLETED: 'Terminée',
+      CANCELLED: 'Annulée',
+    },
+    en: {
+      PENDING: 'Pending',
+      CONFIRMED: 'Confirmed',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+    },
+  };
+  return labels[language === 'fr' ? 'fr' : 'en'][status as keyof typeof labels.en] || status;
 };
 
 const styles = StyleSheet.create({
@@ -397,192 +435,236 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
-  imageGallery: {
-    position: 'relative',
-    backgroundColor: '#DDD',
+  closeButton: {
+    position: 'absolute',
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  mainImage: {
+  heroSection: {
+    position: 'relative',
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH * 0.75,
+  },
+  heroImage: {
     width: '100%',
     height: '100%',
   },
   placeholderImage: {
-    backgroundColor: '#DDD',
+    backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  closeButton: {
-    position: 'absolute',
-    backgroundColor: '#FFF',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  thumbnailStrip: {
+  thumbnailContainer: {
     position: 'absolute',
     flexDirection: 'row',
+    gap: 8,
   },
   thumbnail: {
     borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#999',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
   moreThumbnail: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  moreThumbnailText: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
   infoBanner: {
     backgroundColor: '#2D2D2D',
     borderRadius: 12,
-    zIndex: 1,
-  },
-  infoBannerRow: {
+    marginTop: -20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  infoBannerItem: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   infoBannerText: {
     color: '#FFF',
+    fontWeight: '500',
   },
   section: {
     backgroundColor: '#FFF',
+    marginTop: 2,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   price: {
     fontWeight: 'bold',
     color: '#2D2D2D',
   },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
   duration: {
     color: '#666',
+    fontWeight: '500',
   },
   clientBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     flex: 1,
-    justifyContent: 'flex-end',
   },
   clientName: {
     color: '#2D2D2D',
+    fontWeight: '600',
+  },
+  rating: {
+    color: '#666',
   },
   serviceTitle: {
     fontWeight: 'bold',
     color: '#2D2D2D',
+    lineHeight: 32,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
   },
   locationText: {
     color: '#666',
     flex: 1,
+    lineHeight: 20,
   },
   description: {
     color: '#666',
+    lineHeight: 22,
   },
-  clientCard: {
-    backgroundColor: '#FFF',
-  },
-  clientCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  clientInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  clientAvatar: {
-    backgroundColor: '#DDD',
-    overflow: 'hidden',
-  },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#999',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clientCardName: {
-    fontWeight: '600',
+  sectionTitle: {
+    fontWeight: 'bold',
     color: '#2D2D2D',
   },
-  userBadge: {
-    color: '#FF6B6B',
-  },
-  chatButton: {
-    padding: 8,
-  },
-  detailsSection: {
-    backgroundColor: '#FFF',
-    padding: 16,
-  },
-  detailRow: {
+  serviceItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  detailLabel: {
-    color: '#666',
-  },
-  detailValue: {
+  serviceItemName: {
     color: '#2D2D2D',
     fontWeight: '500',
   },
-  declineButton: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+  serviceItemDuration: {
+    color: '#999',
+    marginTop: 4,
   },
-  declineButtonText: {
+  serviceItemPrice: {
     color: '#2D2D2D',
     fontWeight: '600',
   },
-  acceptButton: {
-    backgroundColor: '#2D2D2D',
+  totalRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    borderTopWidth: 2,
+    borderTopColor: '#2D2D2D',
   },
-  acceptButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
+  totalLabel: {
+    fontWeight: 'bold',
+    color: '#2D2D2D',
+  },
+  totalAmount: {
+    fontWeight: 'bold',
+    color: '#2D2D2D',
   },
   statusBadge: {
-    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
     alignItems: 'center',
   },
   statusText: {
-    color: '#666',
+    color: '#FFF',
     fontWeight: '600',
   },
-  footer: {
+  actionsSection: {
     backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    marginTop: 2,
   },
-  homepageButton: {
+  primaryButton: {
     backgroundColor: '#2D2D2D',
+    borderRadius: 12,
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F44336',
+  },
+  cancelButtonText: {
+    color: '#F44336',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  cancelModalContent: {
+    backgroundColor: '#DC3545',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  cancelModalTitle: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cancelModalText: {
+    color: '#FFF',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButton: {
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  homepageButtonText: {
+  modalNotNowButton: {
+    backgroundColor: '#FFF',
+  },
+  modalNotNowText: {
+    color: '#2D2D2D',
+    fontWeight: '600',
+  },
+  modalCancelButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    flexDirection: 'row',
+  },
+  modalCancelText: {
     color: '#FFF',
     fontWeight: '600',
   },
