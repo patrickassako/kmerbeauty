@@ -12,6 +12,8 @@ export class ChatService {
   async getOrCreateChatByBooking(bookingId: string) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🔍 [ChatService] Getting or creating chat for booking:', bookingId);
+
     // Check if chat already exists for this booking
     const { data: existingChat, error: findError } = await supabase
       .from('chats')
@@ -20,8 +22,11 @@ export class ChatService {
       .single();
 
     if (existingChat) {
+      console.log('✅ [ChatService] Found existing chat:', existingChat.id);
       return existingChat;
     }
+
+    console.log('📝 [ChatService] No existing chat found, creating new one...');
 
     // Get booking details to create the chat
     const { data: booking, error: bookingError } = await supabase
@@ -31,14 +36,58 @@ export class ChatService {
       .single();
 
     if (bookingError || !booking) {
+      console.error('❌ [ChatService] Booking not found:', bookingError?.message);
       throw new Error(`Booking not found: ${bookingError?.message || 'Unknown error'}`);
     }
 
-    // Determine provider_id (contractor, therapist, or salon)
-    const providerId = booking.contractor_id || booking.therapist_id || booking.salon_id;
-    if (!providerId) {
+    console.log('📦 [ChatService] Booking data:', {
+      user_id: booking.user_id,
+      therapist_id: booking.therapist_id,
+      salon_id: booking.salon_id,
+      contractor_id: booking.contractor_id,
+    });
+
+    // Determine provider user_id based on booking type
+    let providerUserId = null;
+
+    if (booking.contractor_id) {
+      // Contractor booking - get user_id from contractor_profiles
+      const { data: contractor } = await supabase
+        .from('contractor_profiles')
+        .select('user_id')
+        .eq('id', booking.contractor_id)
+        .single();
+
+      providerUserId = contractor?.user_id;
+      console.log('👤 [ChatService] Contractor user_id:', providerUserId);
+    } else if (booking.therapist_id) {
+      // Therapist booking - get user_id from therapists table
+      const { data: therapist } = await supabase
+        .from('therapists')
+        .select('user_id')
+        .eq('id', booking.therapist_id)
+        .single();
+
+      providerUserId = therapist?.user_id;
+      console.log('👤 [ChatService] Therapist user_id:', providerUserId);
+    } else if (booking.salon_id) {
+      // Salon booking - get user_id from salons table
+      const { data: salon } = await supabase
+        .from('salons')
+        .select('user_id')
+        .eq('id', booking.salon_id)
+        .single();
+
+      providerUserId = salon?.user_id;
+      console.log('👤 [ChatService] Salon user_id:', providerUserId);
+    }
+
+    if (!providerUserId) {
+      console.error('❌ [ChatService] No provider user_id found for booking');
       throw new Error('Booking has no provider');
     }
+
+    console.log('💾 [ChatService] Creating chat with client_id:', booking.user_id, '| provider_id:', providerUserId);
 
     // Create new chat
     const { data: newChat, error: createError } = await supabase
@@ -47,7 +96,7 @@ export class ChatService {
         {
           booking_id: bookingId,
           client_id: booking.user_id,
-          provider_id: providerId,
+          provider_id: providerUserId,
           is_active: true,
         },
       ])
@@ -55,9 +104,11 @@ export class ChatService {
       .single();
 
     if (createError) {
+      console.error('❌ [ChatService] Failed to create chat:', createError);
       throw new Error(`Failed to create chat: ${createError.message}`);
     }
 
+    console.log('✅ [ChatService] Chat created successfully:', newChat.id);
     return newChat;
   }
 
