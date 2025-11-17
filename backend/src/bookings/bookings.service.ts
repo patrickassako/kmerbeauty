@@ -171,6 +171,8 @@ export class BookingsService {
   async findOne(id: string) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🔍 [BookingsService] Fetching booking:', id);
+
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
@@ -181,11 +183,54 @@ export class BookingsService {
       throw new Error(`Failed to fetch booking: ${error.message}`);
     }
 
+    console.log('✅ [BookingsService] Found booking:', data.id, '| user_id:', data.user_id);
+
     // Récupérer les booking items (SANS JOIN - booking_items n'a pas de FK vers services)
     const { data: items } = await supabase
       .from('booking_items')
       .select('*')
       .eq('booking_id', data.id);
+
+    console.log('✅ [BookingsService] Found', items?.length || 0, 'items for booking');
+
+    // Pour chaque item, récupérer l'image du service en cherchant par nom
+    const itemsWithImages = await Promise.all(
+      (items || []).map(async (item) => {
+        // Chercher le service par nom (name_fr ou name_en)
+        const { data: services } = await supabase
+          .from('services')
+          .select('id, name_fr, name_en, images')
+          .or(`name_fr.eq.${item.service_name},name_en.eq.${item.service_name}`)
+          .limit(1);
+
+        const service = services && services.length > 0 ? services[0] : null;
+        const firstImage = service?.images && service.images.length > 0 ? service.images[0] : null;
+
+        if (service) {
+          console.log('✅ [BookingsService] Found service', service.id, 'for item', item.service_name, '| image:', firstImage);
+        } else {
+          console.log('⚠️ [BookingsService] No service found for item:', item.service_name);
+        }
+
+        return {
+          ...item,
+          service_image: firstImage,
+        };
+      }),
+    );
+
+    // Récupérer les infos du client
+    const { data: client, error: clientError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, email, phone, avatar')
+      .eq('id', data.user_id)
+      .single();
+
+    if (clientError) {
+      console.error('❌ [BookingsService] Error fetching client:', clientError);
+    } else {
+      console.log('✅ [BookingsService] Found client:', client?.id, '| name:', client?.first_name, client?.last_name);
+    }
 
     // Récupérer les infos du prestataire
     let providerData = null;
@@ -223,9 +268,12 @@ export class BookingsService {
       }
     }
 
+    console.log('✅ [BookingsService] Returning booking with client and', itemsWithImages.length, 'items with images');
+
     return {
       ...data,
-      items: items || [],
+      items: itemsWithImages || [],
+      client: client || null,
       provider: providerData,
     };
   }
@@ -377,6 +425,26 @@ export class BookingsService {
           console.log('✅ [BookingsService] Found', items?.length || 0, 'items for booking', booking.id);
         }
 
+        // Pour chaque item, récupérer l'image du service en cherchant par nom
+        const itemsWithImages = await Promise.all(
+          (items || []).map(async (item) => {
+            // Chercher le service par nom (name_fr ou name_en)
+            const { data: services } = await supabase
+              .from('services')
+              .select('id, name_fr, name_en, images')
+              .or(`name_fr.eq.${item.service_name},name_en.eq.${item.service_name}`)
+              .limit(1);
+
+            const service = services && services.length > 0 ? services[0] : null;
+            const firstImage = service?.images && service.images.length > 0 ? service.images[0] : null;
+
+            return {
+              ...item,
+              service_image: firstImage,
+            };
+          }),
+        );
+
         // Récupérer les infos du client
         const { data: client, error: clientError } = await supabase
           .from('users')
@@ -392,7 +460,7 @@ export class BookingsService {
 
         return {
           ...booking,
-          items: items || [],
+          items: itemsWithImages || [],
           client: client || null,
         };
       }),

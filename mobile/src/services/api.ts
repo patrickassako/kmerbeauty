@@ -285,6 +285,7 @@ export interface BookingItem {
   price: number;
   duration: number;
   created_at?: string;
+  service_image?: string; // Première image du service récupérée par le backend
   service?: {
     id: string;
     images: string[];
@@ -319,6 +320,14 @@ export interface Booking {
   updated_at: string;
   items?: BookingItem[];
   provider?: any;
+  client?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+    avatar?: string;
+  };
 }
 
 export interface CreateBookingDto {

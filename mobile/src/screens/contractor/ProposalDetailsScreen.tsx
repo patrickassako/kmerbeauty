@@ -158,8 +158,8 @@ export const ProposalDetailsScreen = () => {
 
   const mainService = booking.items && booking.items.length > 0 ? booking.items[0] : null;
   const additionalServices = booking.items && booking.items.length > 1 ? booking.items.slice(1) : [];
-  // booking_items n'a pas d'images - utiliser placeholder
-  const serviceImage = null;
+  // Le backend récupère l'image du service en cherchant par nom
+  const serviceImage = mainService?.service_image || null;
   const isPending = booking.status === 'PENDING';
 
   const formatDate = (datetime?: string) => {

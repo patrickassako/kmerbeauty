@@ -302,8 +302,8 @@ export const ContractorProposalsScreen = () => {
                 ? 'Service'
                 : 'Service';
 
-            // booking_items n'a pas d'images - utiliser placeholder pour maintenant
-            const serviceImage = null;
+            // Le backend récupère l'image du service en cherchant par nom
+            const serviceImage = booking.items && booking.items.length > 0 ? booking.items[0].service_image : null;
 
             return (
               <TouchableOpacity
