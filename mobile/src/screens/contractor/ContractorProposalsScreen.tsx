@@ -106,10 +106,11 @@ export const ContractorProposalsScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { padding: spacing(2.5), paddingTop: spacing(6) }]}>
-        <Text style={[styles.logo, { fontSize: normalizeFontSize(24) }]}>S</Text>
+        <Text style={[styles.logo, { fontSize: normalizeFontSize(16) }]}>K-B</Text>
         <View style={styles.headerCenter}>
+          <Text style={[styles.locationIcon, { fontSize: normalizeFontSize(14) }]}>📍</Text>
           <Text style={[styles.location, { fontSize: normalizeFontSize(14) }]}>
-            📍 Notre-Dame - 754 Paris, France
+            {user?.city && user?.region ? `${user.city}, ${user.region}` : 'Cameroun'}
           </Text>
         </View>
         <TouchableOpacity>
@@ -242,10 +243,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
     marginLeft: 20,
   },
-  location: {},
+  locationIcon: {},
+  location: {
+    marginLeft: 5,
+  },
   avatar: {
     borderRadius: 100,
     backgroundColor: '#F0F0F0',

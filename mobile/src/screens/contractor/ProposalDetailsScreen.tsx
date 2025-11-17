@@ -211,18 +211,19 @@ export const ProposalDetailsScreen = () => {
           <View style={styles.locationRow}>
             <Text style={{ fontSize: normalizeFontSize(18) }}>📍</Text>
             <Text style={[styles.locationText, { fontSize: normalizeFontSize(14) }]}>
-              {proposal.location?.address || '6 Parvis Notre-Dame - 754 Paris, France (1km away)'}
+              {proposal.location?.address || proposal.location?.city || 'Location not specified'}
             </Text>
           </View>
         </View>
 
         {/* Description */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
-          <Text style={[styles.description, { fontSize: normalizeFontSize(14), lineHeight: 22 }]}>
-            {proposal.description ||
-              'Facial is specifically designed to address and manage acne-prone skin, reducing breakouts, and improving overall skin health'}
-          </Text>
-        </View>
+        {proposal.description && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2), paddingBottom: spacing(2) }]}>
+            <Text style={[styles.description, { fontSize: normalizeFontSize(14), lineHeight: 22 }]}>
+              {proposal.description}
+            </Text>
+          </View>
+        )}
 
         {/* Client Details Card */}
         <View
@@ -261,34 +262,16 @@ export const ProposalDetailsScreen = () => {
                 <Text style={[styles.clientCardName, { fontSize: normalizeFontSize(16) }]}>
                   {getFullName(proposal.client)} {proposal.client?.is_verified && '✓'}
                 </Text>
-                <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>Diamond User</Text>
+                {proposal.client?.email && (
+                  <Text style={[styles.userBadge, { fontSize: normalizeFontSize(12) }]}>
+                    {proposal.client.email}
+                  </Text>
+                )}
               </View>
             </View>
             <TouchableOpacity onPress={handleChatWithClient} style={styles.chatButton}>
               <Text style={{ fontSize: normalizeFontSize(24) }}>💬</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Details Section */}
-        <View style={[styles.detailsSection, { paddingHorizontal: spacing(2), gap: spacing(1.5) }]}>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(14) }]}>Skin Type</Text>
-            <Text style={[styles.detailValue, { fontSize: normalizeFontSize(14) }]}>
-              Dry Skin
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(14) }]}>Notes</Text>
-            <Text style={[styles.detailValue, { fontSize: normalizeFontSize(14) }]}>
-              {proposal.description || 'No medical conditions'}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(14) }]}>Service Type</Text>
-            <Text style={[styles.detailValue, { fontSize: normalizeFontSize(14) }]}>
-              Hairdressing
-            </Text>
           </View>
         </View>
 
