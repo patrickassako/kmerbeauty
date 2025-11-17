@@ -127,10 +127,11 @@ export const ProposalDetailsScreen = () => {
   };
 
   const handleChatWithClient = () => {
-    if (booking?.client) {
+    if (booking?.client && booking?.id) {
+      // Navigate to Chat with bookingId - this will get or create a chat for this booking
       navigation.navigate('Chat', {
-        userId: booking.client.id,
         bookingId: booking.id,
+        providerId: booking.client.id,
         providerName: getFullName(booking.client),
         providerType: 'client',
         providerImage: booking.client.avatar,

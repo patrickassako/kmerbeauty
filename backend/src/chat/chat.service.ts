@@ -26,7 +26,7 @@ export class ChatService {
     // Get booking details to create the chat
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('user_id, therapist_id, salon_id')
+      .select('user_id, therapist_id, salon_id, contractor_id')
       .eq('id', bookingId)
       .single();
 
@@ -34,8 +34,8 @@ export class ChatService {
       throw new Error(`Booking not found: ${bookingError?.message || 'Unknown error'}`);
     }
 
-    // Determine provider_id (therapist or salon)
-    const providerId = booking.therapist_id || booking.salon_id;
+    // Determine provider_id (contractor, therapist, or salon)
+    const providerId = booking.contractor_id || booking.therapist_id || booking.salon_id;
     if (!providerId) {
       throw new Error('Booking has no provider');
     }
