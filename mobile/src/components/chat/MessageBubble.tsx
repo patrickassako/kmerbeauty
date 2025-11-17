@@ -239,7 +239,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <Text
             style={[
               styles.messageText,
-              { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) },
+              {
+                fontSize: normalizeFontSize(14),
+                lineHeight: normalizeFontSize(20),
+                flexShrink: 1,
+              },
               isMyMessage ? styles.myMessageText : styles.otherMessageText,
             ]}
           >
@@ -293,9 +297,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               style={[
                 styles.messageBubble,
                 {
-                  maxWidth: message.type === 'IMAGE' ? undefined : '80%',
+                  maxWidth: message.type === 'IMAGE' ? undefined : SCREEN_WIDTH * 0.75,
                   padding: spacing(1.5),
                   borderRadius: spacing(2),
+                  alignSelf: isMyMessage ? 'flex-end' : 'flex-start',
                 },
                 isMyMessage ? styles.myMessage : styles.otherMessage,
               ]}

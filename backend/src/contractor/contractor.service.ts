@@ -77,10 +77,10 @@ export class ContractorService implements OnModuleInit {
 
     console.log('✅ Profile created successfully:', data.id);
 
-    // Also update user role
+    // Also update user role to PROVIDER
     await supabase
       .from('users')
-      .update({ role: 'CONTRACTOR' })
+      .update({ role: 'PROVIDER' })
       .eq('id', dto.user_id);
 
     // Sync to therapists table is now handled by PostgreSQL trigger
