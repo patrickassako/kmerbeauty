@@ -401,4 +401,50 @@ export class BookingsService {
     console.log('✅ [BookingsService] Returning', bookingsWithDetails.length, 'bookings with details');
     return bookingsWithDetails;
   }
+
+  async confirmBooking(id: string) {
+    const supabase = this.supabaseService.getClient();
+
+    console.log('✅ [BookingsService] Confirming booking:', id);
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({ status: 'CONFIRMED' })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('❌ [BookingsService] Error confirming booking:', error);
+      throw new Error(`Failed to confirm booking: ${error.message}`);
+    }
+
+    console.log('✅ [BookingsService] Booking confirmed successfully');
+    return data;
+  }
+
+  async declineBooking(id: string, reason: string) {
+    const supabase = this.supabaseService.getClient();
+
+    console.log('🚫 [BookingsService] Declining booking:', id, '| Reason:', reason);
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'CANCELLED',
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('❌ [BookingsService] Error declining booking:', error);
+      throw new Error(`Failed to decline booking: ${error.message}`);
+    }
+
+    console.log('✅ [BookingsService] Booking declined successfully');
+    return data;
+  }
 }

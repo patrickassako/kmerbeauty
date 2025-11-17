@@ -386,6 +386,22 @@ export const bookingsApi = {
     const response = await api.get(`/bookings/contractor/${contractorId}`, { params });
     return response.data;
   },
+
+  /**
+   * Confirmer une réservation
+   */
+  confirm: async (id: string): Promise<Booking> => {
+    const response = await api.patch(`/bookings/${id}/confirm`);
+    return response.data;
+  },
+
+  /**
+   * Décliner une réservation
+   */
+  decline: async (id: string, reason: string): Promise<Booking> => {
+    const response = await api.patch(`/bookings/${id}/decline`, { reason });
+    return response.data;
+  },
 };
 
 // =============================================

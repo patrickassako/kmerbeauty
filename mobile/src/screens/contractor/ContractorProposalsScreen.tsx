@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -296,90 +297,95 @@ export const ContractorProposalsScreen = () => {
           bookings.map((booking) => {
             const serviceName =
               booking.items && booking.items.length > 0
-                ? booking.items.map((item) => item.service_name).join(', ')
+                ? booking.items[0].service_name
                 : language === 'fr'
-                ? 'Services multiples'
-                : 'Multiple services';
+                ? 'Service'
+                : 'Service';
+
+            // Get first service image
+            const serviceImage =
+              booking.items && booking.items.length > 0 && booking.items[0].service?.images?.length > 0
+                ? booking.items[0].service.images[0]
+                : null;
 
             return (
-              <View
+              <TouchableOpacity
                 key={booking.id}
-                style={[styles.proposalCard, { padding: spacing(2.5), margin: spacing(2.5) }]}
+                style={[styles.proposalCard, { marginHorizontal: spacing(2.5), marginBottom: spacing(2) }]}
+                onPress={() => navigation.navigate('ProposalDetails', { bookingId: booking.id })}
+                activeOpacity={0.7}
               >
-                <View style={styles.proposalHeader}>
-                  <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16) }]}>
-                    {serviceName}
-                  </Text>
-                  <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>
-                    {formatTime(booking.scheduled_at || booking.created_at || '')}
-                  </Text>
-                </View>
+                <View style={styles.cardContent}>
+                  {/* Service Image */}
+                  <View style={[styles.serviceImageContainer, { width: spacing(14), height: spacing(14) }]}>
+                    {serviceImage ? (
+                      <Image
+                        source={{ uri: serviceImage }}
+                        style={styles.serviceImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.serviceImage, styles.placeholderImage]}>
+                        <Text style={{ fontSize: normalizeFontSize(32) }}>💅</Text>
+                      </View>
+                    )}
+                  </View>
 
-                {/* Location and notes */}
-                {(booking.city || booking.notes) && (
-                  <Text
-                    style={[styles.description, { fontSize: normalizeFontSize(13), marginTop: spacing(1) }]}
-                    numberOfLines={3}
-                  >
-                    {booking.city && booking.region && `📍 ${booking.city}, ${booking.region}`}
-                    {booking.notes && `\n${booking.notes}`}
-                  </Text>
-                )}
-
-                {/* Client info */}
-                {booking.client && (
-                  <View style={[styles.clientInfo, { marginTop: spacing(2) }]}>
-                    <View style={[styles.clientAvatar, { width: spacing(6), height: spacing(6) }]}>
-                      <Text style={{ fontSize: normalizeFontSize(20) }}>👤</Text>
-                    </View>
-                    <View style={styles.clientDetails}>
-                      <Text style={[styles.clientName, { fontSize: normalizeFontSize(14) }]}>
-                        {getFullName(booking.client)}
+                  {/* Booking Info */}
+                  <View style={styles.bookingInfo}>
+                    <View style={styles.bookingHeader}>
+                      <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                        {serviceName}
                       </Text>
-                      <Text style={[styles.ratingStars, { fontSize: normalizeFontSize(12), marginTop: 3 }]}>
-                        💰 ${booking.total}
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5) },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusText,
+                            { fontSize: normalizeFontSize(11), color: getStatusColor(booking.status) },
+                          ]}
+                        >
+                          {getStatusLabel(booking.status)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Quarter/Location */}
+                    {booking.quarter && (
+                      <View style={[styles.locationRow, { marginTop: spacing(0.5) }]}>
+                        <Text style={{ fontSize: normalizeFontSize(14), marginRight: spacing(0.5) }}>📍</Text>
+                        <Text style={[styles.quarterText, { fontSize: normalizeFontSize(13) }]} numberOfLines={1}>
+                          {booking.quarter}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Client Name */}
+                    {booking.client && (
+                      <View style={[styles.clientRow, { marginTop: spacing(0.5) }]}>
+                        <Text style={{ fontSize: normalizeFontSize(14), marginRight: spacing(0.5) }}>👤</Text>
+                        <Text style={[styles.clientText, { fontSize: normalizeFontSize(13) }]} numberOfLines={1}>
+                          {getFullName(booking.client)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Price and Time */}
+                    <View style={[styles.priceTimeRow, { marginTop: spacing(1) }]}>
+                      <Text style={[styles.price, { fontSize: normalizeFontSize(18) }]}>
+                        {booking.total} FCFA
+                      </Text>
+                      <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>
+                        🕐 {formatTime(booking.scheduled_at || booking.created_at || '')}
                       </Text>
                     </View>
                   </View>
-                )}
-
-                {/* View button and status */}
-                <View style={[styles.actions, { marginTop: spacing(2) }]}>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.viewButton,
-                      { padding: spacing(1.5), flex: 1, marginRight: spacing(1) },
-                    ]}
-                    onPress={() => navigation.navigate('ProposalDetails', { bookingId: booking.id })}
-                  >
-                    <Text
-                      style={[
-                        styles.actionButtonText,
-                        styles.viewButtonText,
-                        { fontSize: normalizeFontSize(14) },
-                      ]}
-                    >
-                      {language === 'fr' ? 'Voir' : 'View'}
-                    </Text>
-                  </TouchableOpacity>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { marginTop: 0, marginLeft: spacing(1), paddingHorizontal: 12, paddingVertical: 6 },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        { fontSize: normalizeFontSize(12), color: getStatusColor(booking.status) },
-                      ]}
-                    >
-                      {getStatusLabel(booking.status)}
-                    </Text>
-                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
@@ -440,70 +446,73 @@ const styles = StyleSheet.create({
   proposalCard: {
     backgroundColor: '#FFF',
     borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  proposalHeader: {
+  cardContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: 12,
   },
-  serviceName: {
-    fontWeight: 'bold',
-    flex: 1,
+  serviceImageContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
   },
-  time: {
-    color: '#999',
+  serviceImage: {
+    width: '100%',
+    height: '100%',
   },
-  description: {
-    color: '#666',
-    lineHeight: 20,
-  },
-  clientInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  clientAvatar: {
-    borderRadius: 100,
+  placeholderImage: {
     backgroundColor: '#F0F0F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  clientDetails: {
-    marginLeft: 10,
+  bookingInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  bookingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  serviceName: {
+    fontWeight: 'bold',
+    color: '#2D2D2D',
+    flex: 1,
+    marginRight: 8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quarterText: {
+    color: '#666',
     flex: 1,
   },
-  clientName: {
-    fontWeight: '600',
-  },
-  rating: {
+  clientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
   },
-  ratingStars: {
-    color: '#FF9800',
+  clientText: {
+    color: '#666',
+    flex: 1,
   },
-  actions: {
+  priceTimeRow: {
     flexDirection: 'row',
-  },
-  actionButton: {
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  acceptButton: {
-    backgroundColor: '#2D2D2D',
-  },
-  viewButton: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  actionButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  viewButtonText: {
+  price: {
+    fontWeight: 'bold',
     color: '#2D2D2D',
+  },
+  time: {
+    color: '#999',
+    fontSize: 12,
   },
   statusBadge: {
     alignSelf: 'flex-start',

@@ -69,4 +69,19 @@ export class BookingsController {
     console.log('📤 [BookingsController] Returning', result?.length || 0, 'bookings');
     return result;
   }
+
+  @Patch(':id/confirm')
+  async confirm(@Param('id') id: string) {
+    console.log('📥 [BookingsController] PATCH /bookings/' + id + '/confirm');
+    return this.bookingsService.confirmBooking(id);
+  }
+
+  @Patch(':id/decline')
+  async decline(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    console.log('📥 [BookingsController] PATCH /bookings/' + id + '/decline');
+    return this.bookingsService.declineBooking(id, body.reason);
+  }
 }
