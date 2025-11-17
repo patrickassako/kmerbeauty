@@ -40,6 +40,7 @@ const ProposalStackNavigator = () => (
   <ProposalStack.Navigator screenOptions={{ headerShown: false }}>
     <ProposalStack.Screen name="ContractorProposalsList" component={ContractorProposalsScreen} />
     <ProposalStack.Screen name="ProposalDetails" component={ProposalDetailsScreen} />
+    <ProposalStack.Screen name="Chat" component={ChatScreen} />
   </ProposalStack.Navigator>
 );
 
