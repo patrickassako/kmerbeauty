@@ -47,6 +47,9 @@ export const ProposalDetailsScreen = () => {
       console.log('🔍 Loading booking details:', bookingId);
       const data = await bookingsApi.getById(bookingId);
       console.log('✅ Booking loaded:', data);
+      console.log('🔍 Client data:', data.client);
+      console.log('🔍 Client exists?', !!data.client);
+      console.log('🔍 Full booking object:', JSON.stringify(data, null, 2));
       setBooking(data);
     } catch (error: any) {
       console.error('❌ Error loading booking:', error);
@@ -251,13 +254,71 @@ export const ProposalDetailsScreen = () => {
           </View>
         )}
 
-        {/* Total Amount */}
+        {/* Price Breakdown */}
         <View style={[styles.section, { paddingHorizontal: spacing(2), paddingVertical: spacing(2) }]}>
-          <View style={styles.totalRow}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(1.5) }]}>
+            {language === 'fr' ? 'Récapitulatif' : 'Summary'}
+          </Text>
+
+          {/* Main Service */}
+          {mainService && (
+            <View style={[styles.priceRow, { paddingVertical: spacing(1) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(14) }]}>
+                {mainService.service_name}
+              </Text>
+              <Text style={[styles.priceValue, { fontSize: normalizeFontSize(14) }]}>
+                {mainService.price} FCFA
+              </Text>
+            </View>
+          )}
+
+          {/* Additional Services Total */}
+          {additionalServices.length > 0 && (
+            <View style={[styles.priceRow, { paddingVertical: spacing(1) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Services additionnels' : 'Additional Services'} ({additionalServices.length})
+              </Text>
+              <Text style={[styles.priceValue, { fontSize: normalizeFontSize(14) }]}>
+                {additionalServices.reduce((sum, item) => sum + (item.price || 0), 0)} FCFA
+              </Text>
+            </View>
+          )}
+
+          {/* Travel Fee */}
+          {booking.travel_fee && booking.travel_fee > 0 ? (
+            <View style={[styles.priceRow, { paddingVertical: spacing(1) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(14) }]}>
+                {language === 'fr' ? 'Frais de transport' : 'Travel Fee'}
+              </Text>
+              <Text style={[styles.priceValue, { fontSize: normalizeFontSize(14) }]}>
+                {booking.travel_fee} FCFA
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Divider */}
+          <View style={[styles.divider, { marginVertical: spacing(1.5) }]} />
+
+          {/* Subtotal */}
+          {booking.subtotal && (
+            <View style={[styles.priceRow, { paddingVertical: spacing(1) }]}>
+              <Text style={[styles.priceLabel, { fontSize: normalizeFontSize(15), fontWeight: '600' }]}>
+                {language === 'fr' ? 'Sous-total' : 'Subtotal'}
+              </Text>
+              <Text style={[styles.priceValue, { fontSize: normalizeFontSize(15), fontWeight: '600' }]}>
+                {booking.subtotal} FCFA
+              </Text>
+            </View>
+          )}
+
+          {/* Total */}
+          <View style={[styles.totalRow, { paddingTop: spacing(1) }]}>
             <Text style={[styles.totalLabel, { fontSize: normalizeFontSize(18) }]}>
-              {language === 'fr' ? 'Montant total' : 'Total Amount'}
+              {language === 'fr' ? 'Total' : 'Total'}
             </Text>
-            <Text style={[styles.totalAmount, { fontSize: normalizeFontSize(28) }]}>{booking.total} FCFA</Text>
+            <Text style={[styles.totalAmount, { fontSize: normalizeFontSize(24) }]}>
+              {booking.total} FCFA
+            </Text>
           </View>
         </View>
 
@@ -560,6 +621,23 @@ const styles = StyleSheet.create({
     color: '#2D2D2D',
     fontWeight: '600',
   },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceLabel: {
+    color: '#666',
+    flex: 1,
+  },
+  priceValue: {
+    color: '#2D2D2D',
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -567,7 +645,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontWeight: 'bold',
-    color: '#666',
+    color: '#2D2D2D',
   },
   totalAmount: {
     fontWeight: 'bold',
