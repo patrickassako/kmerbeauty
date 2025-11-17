@@ -21,7 +21,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-import { chatApi, type ChatMessage, type Chat, type ChatOffer } from '../../services/api';
+import { chatApi, bookingsApi, type ChatMessage, type Chat, type ChatOffer, type Booking } from '../../services/api';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { OfferMessage } from '../../components/chat/OfferMessage';
 import { CreateOfferModal } from '../../components/chat/CreateOfferModal';
@@ -46,6 +46,7 @@ export const ChatScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
 
   // Voice recording state
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -108,6 +109,13 @@ export const ChatScreen: React.FC = () => {
         chatData = { id: chatId } as Chat;
       } else if (bookingId) {
         chatData = await chatApi.getOrCreateChatByBooking(bookingId);
+        // Load booking details to show service banner
+        try {
+          const bookingData = await bookingsApi.getById(bookingId);
+          setBooking(bookingData);
+        } catch (err) {
+          console.error('Error loading booking details:', err);
+        }
       } else {
         if (!user?.id) {
           throw new Error('User not authenticated');
@@ -548,6 +556,32 @@ export const ChatScreen: React.FC = () => {
         )}
       </View>
 
+      {/* Booking Service Banner */}
+      {booking && booking.items && booking.items.length > 0 && (
+        <TouchableOpacity
+          style={[styles.bookingBanner, { paddingHorizontal: spacing(2.5), paddingVertical: spacing(1.5) }]}
+          onPress={() => {
+            if (bookingId) {
+              navigation.navigate('ProposalDetails', { bookingId });
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.bookingBannerIcon, { width: spacing(5), height: spacing(5), borderRadius: spacing(1) }]}>
+            <Text style={{ fontSize: normalizeFontSize(20) }}>📋</Text>
+          </View>
+          <View style={[styles.bookingBannerContent, { flex: 1, marginLeft: spacing(2) }]}>
+            <Text style={[styles.bookingBannerTitle, { fontSize: normalizeFontSize(13) }]} numberOfLines={1}>
+              {booking.items[0].service_name}
+            </Text>
+            <Text style={[styles.bookingBannerSubtitle, { fontSize: normalizeFontSize(11), marginTop: spacing(0.3) }]}>
+              {language === 'fr' ? 'Appuyez pour voir les détails de la commande' : 'Tap to view order details'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: normalizeFontSize(18) }}>→</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Messages List */}
       {loading ? (
         <View style={[styles.centerContent, { flex: 1 }]}>
@@ -823,5 +857,27 @@ const styles = StyleSheet.create({
   },
   voiceIcon: {
     color: '#FFFFFF',
+  },
+  bookingBanner: {
+    backgroundColor: '#FFF8E1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFD54F',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bookingBannerIcon: {
+    backgroundColor: '#FFEB3B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookingBannerContent: {
+    justifyContent: 'center',
+  },
+  bookingBannerTitle: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  bookingBannerSubtitle: {
+    color: '#666',
   },
 });
