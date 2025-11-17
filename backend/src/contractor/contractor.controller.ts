@@ -53,6 +53,11 @@ export class ContractorController {
     return { hasServices };
   }
 
+  @Get('diagnose-sync/:userId')
+  async diagnoseSync(@Param('userId') userId: string) {
+    return this.contractorService.diagnoseSync(userId);
+  }
+
   @Put('profile/:userId')
   async updateProfile(
     @Param('userId') userId: string,

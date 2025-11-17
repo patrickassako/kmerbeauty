@@ -109,29 +109,167 @@ export class ContractorService implements OnModuleInit {
   async hasServices(userId: string): Promise<boolean> {
     const supabase = this.supabaseService.getClient();
 
-    // First, get the therapist_id from therapists table using user_id
-    const { data: therapist, error: therapistError } = await supabase
+    console.log('🔍 Checking if user has services:', userId);
+
+    // First, verify contractor profile exists
+    const { data: contractor, error: contractorError } = await supabase
+      .from('contractor_profiles')
+      .select('id, user_id, is_active')
+      .eq('user_id', userId)
+      .single();
+
+    if (contractorError || !contractor) {
+      console.log('❌ No contractor profile found for user:', userId);
+      return false;
+    }
+
+    console.log('✓ Contractor profile found:', contractor.id);
+
+    // Get the therapist_id from therapists table using user_id
+    let { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('id')
       .eq('user_id', userId)
       .single();
 
     if (therapistError || !therapist) {
-      return false;
+      console.log('❌ No therapist record found for user:', userId);
+      console.log('   This indicates a sync issue. Contractor exists but therapist missing.');
+      console.log('   Triggering manual sync...');
+
+      // Try to trigger sync by updating the contractor profile
+      try {
+        await supabase
+          .from('contractor_profiles')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', contractor.id);
+
+        console.log('✓ Triggered manual sync for contractor:', contractor.id);
+
+        // Wait a bit for the trigger to execute
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Check again
+        const therapistRetry = await supabase
+          .from('therapists')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (therapistRetry.error || !therapistRetry.data) {
+          console.log('❌ Manual sync failed. Therapist still not found.');
+          return false;
+        }
+
+        console.log('✓ Manual sync succeeded. Therapist found:', therapistRetry.data.id);
+        therapist = therapistRetry.data;
+      } catch (syncError) {
+        console.error('❌ Error during manual sync:', syncError);
+        return false;
+      }
+    } else {
+      console.log('✓ Therapist record found:', therapist.id);
     }
 
-    // Then check if this therapist has any services in therapist_services
+    // Check if this therapist has any active services in therapist_services
     const { data: services, error: servicesError } = await supabase
       .from('therapist_services')
-      .select('id')
+      .select('id, service_id, is_active')
       .eq('therapist_id', therapist.id)
+      .eq('is_active', true)
       .limit(1);
 
     if (servicesError) {
+      console.error('❌ Error checking therapist services:', servicesError);
       return false;
     }
 
-    return services && services.length > 0;
+    const hasServices = services && services.length > 0;
+    console.log(
+      hasServices
+        ? `✓ User has ${services.length} active service(s)`
+        : '⚠ User has no active services',
+    );
+
+    return hasServices;
+  }
+
+  async diagnoseSync(userId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const diagnosis = {
+      userId,
+      timestamp: new Date().toISOString(),
+      contractor: null,
+      therapist: null,
+      services: [],
+      issues: [],
+      status: 'unknown',
+    };
+
+    // Check contractor profile
+    const { data: contractor, error: contractorError } = await supabase
+      .from('contractor_profiles')
+      .select('id, user_id, is_active, created_at, updated_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (contractorError || !contractor) {
+      diagnosis.issues.push('Contractor profile not found');
+      diagnosis.status = 'CRITICAL';
+      return diagnosis;
+    }
+
+    diagnosis.contractor = contractor;
+
+    // Check therapist record
+    const { data: therapist, error: therapistError } = await supabase
+      .from('therapists')
+      .select('id, user_id, is_active, created_at, updated_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (therapistError || !therapist) {
+      diagnosis.issues.push('Therapist record missing - sync failed');
+      diagnosis.status = 'ERROR';
+      return diagnosis;
+    }
+
+    diagnosis.therapist = therapist;
+
+    // Check therapist services
+    const { data: services, error: servicesError } = await supabase
+      .from('therapist_services')
+      .select(`
+        id,
+        service_id,
+        price,
+        duration,
+        is_active,
+        created_at,
+        service:services(id, name_fr, name_en)
+      `)
+      .eq('therapist_id', therapist.id);
+
+    if (servicesError) {
+      diagnosis.issues.push(`Error fetching services: ${servicesError.message}`);
+    } else {
+      diagnosis.services = services || [];
+
+      const activeServices = services?.filter((s) => s.is_active) || [];
+
+      if (services.length === 0) {
+        diagnosis.issues.push('No services configured');
+        diagnosis.status = 'NO_SERVICES';
+      } else if (activeServices.length === 0) {
+        diagnosis.issues.push('Services exist but all are inactive');
+        diagnosis.status = 'INACTIVE_SERVICES';
+      } else {
+        diagnosis.status = 'OK';
+      }
+    }
+
+    return diagnosis;
   }
 
   async getProfileById(contractorId: string) {
