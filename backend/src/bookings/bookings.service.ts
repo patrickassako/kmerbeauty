@@ -304,11 +304,47 @@ export class BookingsService {
     console.log('🔍 [BookingsService] Finding bookings for contractor:', contractorId);
     console.log('🔍 [BookingsService] Status filter:', status || 'none');
 
-    // Récupérer les bookings pour ce prestataire (therapist ou salon)
+    // Récupérer d'abord le user_id et therapist_id associés à ce contractor
+    const { data: contractorProfile, error: contractorError } = await supabase
+      .from('contractor_profiles')
+      .select('user_id')
+      .eq('id', contractorId)
+      .single();
+
+    if (contractorError) {
+      console.error('❌ [BookingsService] Contractor profile not found:', contractorError);
+      throw new Error(`Contractor profile not found: ${contractorError.message}`);
+    }
+
+    console.log('✅ [BookingsService] Contractor user_id:', contractorProfile.user_id);
+
+    // Récupérer le therapist_id associé
+    const { data: therapist } = await supabase
+      .from('therapists')
+      .select('id')
+      .eq('user_id', contractorProfile.user_id)
+      .single();
+
+    const therapistId = therapist?.id;
+    console.log('🔍 [BookingsService] Associated therapist_id:', therapistId || 'none');
+
+    // Construire la requête OR pour chercher dans les 3 champs possibles
+    const orConditions = [
+      `contractor_id.eq.${contractorId}`,
+      `salon_id.eq.${contractorId}`,
+    ];
+
+    if (therapistId) {
+      orConditions.push(`therapist_id.eq.${therapistId}`);
+    }
+
+    console.log('🔍 [BookingsService] OR conditions:', orConditions.join(' OR '));
+
+    // Récupérer les bookings pour ce prestataire
     let query = supabase
       .from('bookings')
       .select('*')
-      .or(`therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
+      .or(orConditions.join(','))
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -327,7 +363,7 @@ export class BookingsService {
     // Pour chaque booking, récupérer les items et les infos du client
     const bookingsWithDetails = await Promise.all(
       data.map(async (booking) => {
-        console.log('📋 [BookingsService] Processing booking:', booking.id);
+        console.log('📋 [BookingsService] Processing booking:', booking.id, '| Status:', booking.status);
 
         // Récupérer les booking items
         const { data: items, error: itemsError } = await supabase
