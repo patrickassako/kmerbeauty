@@ -525,7 +525,6 @@ export class BookingsService {
       .from('bookings')
       .update({
         status: 'COMPLETED',
-        completed_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select('*')

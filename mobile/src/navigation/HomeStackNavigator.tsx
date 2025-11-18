@@ -9,7 +9,9 @@ import { SearchResultsScreen } from '../screens/main/SearchResultsScreen';
 import { BookingScreen } from '../screens/main/BookingScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
+import ReviewScreen from '../screens/main/ReviewScreen';
 import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
+import type { Booking } from '../services/api';
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 
 // Type simplifié pour la navigation (avec les données essentielles)
@@ -77,6 +79,9 @@ export type HomeStackParamList = {
     providerType: 'therapist' | 'salon' | 'client';
     providerImage?: string; // Optional provider image
   };
+  Review: {
+    booking: Booking;
+  };
   BookingManagement: undefined;
 };
 
@@ -106,6 +111,7 @@ export const HomeStackNavigator: React.FC = () => {
       <Stack.Screen name="Booking" component={BookingScreen} />
       <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="BookingManagement" component={BookingManagementScreen} />
     </Stack.Navigator>
   );

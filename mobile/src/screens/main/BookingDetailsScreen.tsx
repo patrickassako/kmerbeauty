@@ -449,10 +449,22 @@ export const BookingDetailsScreen: React.FC = () => {
           {/* Review Button - Only show if booking is completed */}
           {booking.status.toUpperCase() === 'COMPLETED' && (
             <TouchableOpacity
-              style={[styles.reviewButton, { paddingVertical: spacing(2), borderRadius: spacing(2) }]}
+              style={[
+                styles.reviewButton,
+                {
+                  paddingVertical: spacing(2),
+                  paddingHorizontal: spacing(3),
+                  borderRadius: spacing(2),
+                  width: '100%',
+                }
+              ]}
               onPress={handleLeaveReview}
             >
-              <Text style={[styles.reviewButtonText, { fontSize: normalizeFontSize(16) }]}>
+              <Text
+                style={[styles.reviewButtonText, { fontSize: normalizeFontSize(16) }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 ⭐ {language === 'fr' ? 'Laisser un avis' : 'Leave a review'}
               </Text>
             </TouchableOpacity>
