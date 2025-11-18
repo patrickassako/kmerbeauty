@@ -139,6 +139,45 @@ export const ProposalDetailsScreen = () => {
     }
   };
 
+  const handleCompleteBooking = async () => {
+    Alert.alert(
+      language === 'fr' ? 'Marquer comme terminée' : 'Mark as Completed',
+      language === 'fr' ? 'Voulez-vous marquer cette commande comme terminée ?' : 'Do you want to mark this order as completed?',
+      [
+        { text: language === 'fr' ? 'Annuler' : 'Cancel', style: 'cancel' },
+        {
+          text: language === 'fr' ? 'Terminer' : 'Complete',
+          onPress: async () => {
+            try {
+              setProcessing(true);
+              console.log('✅ Completing booking:', bookingId);
+              await bookingsApi.complete(bookingId);
+              console.log('✅ Booking completed successfully');
+              Alert.alert(
+                language === 'fr' ? 'Terminée' : 'Completed',
+                language === 'fr' ? 'Commande marquée comme terminée' : 'Order marked as completed',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => loadBooking(), // Reload to update status
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error('❌ Error completing booking:', error);
+              Alert.alert(
+                language === 'fr' ? 'Erreur' : 'Error',
+                error.message || (language === 'fr' ? 'Impossible de terminer la commande' : 'Failed to complete order')
+              );
+            } finally {
+              setProcessing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -444,6 +483,28 @@ export const ProposalDetailsScreen = () => {
           </View>
         )}
 
+        {/* Complete Button for CONFIRMED or IN_PROGRESS status */}
+        {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
+          <View style={[styles.actionsSection, { padding: spacing(2) }]}>
+            <TouchableOpacity
+              style={[styles.completeButton, { padding: spacing(2) }]}
+              onPress={handleCompleteBooking}
+              disabled={processing}
+            >
+              {processing ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1) }}>✓</Text>
+                  <Text style={[styles.completeButtonText, { fontSize: normalizeFontSize(16) }]}>
+                    {language === 'fr' ? 'Marquer comme terminée' : 'Mark as Completed'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={{ height: spacing(10) }} />
       </ScrollView>
 
@@ -524,14 +585,16 @@ export const ProposalDetailsScreen = () => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'CONFIRMED':
-      return '#4CAF50';
-    case 'COMPLETED':
       return '#2196F3';
+    case 'IN_PROGRESS':
+      return '#FF9800';
+    case 'COMPLETED':
+      return '#4CAF50';
     case 'CANCELLED':
       return '#F44336';
     case 'PENDING':
     default:
-      return '#FF9800';
+      return '#FFC107';
   }
 };
 
@@ -540,12 +603,14 @@ const getStatusLabel = (status: string, language: string) => {
     fr: {
       PENDING: 'En attente',
       CONFIRMED: 'Confirmée',
+      IN_PROGRESS: 'En cours',
       COMPLETED: 'Terminée',
       CANCELLED: 'Annulée',
     },
     en: {
       PENDING: 'Pending',
       CONFIRMED: 'Confirmed',
+      IN_PROGRESS: 'In Progress',
       COMPLETED: 'Completed',
       CANCELLED: 'Cancelled',
     },
@@ -732,6 +797,17 @@ const styles = StyleSheet.create({
   },
   declineButtonText: {
     color: '#F44336',
+    fontWeight: '600',
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    color: '#FFF',
     fontWeight: '600',
   },
   statusBadge: {
