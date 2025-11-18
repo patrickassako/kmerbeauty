@@ -515,4 +515,28 @@ export class BookingsService {
     console.log('✅ [BookingsService] Booking declined successfully');
     return data;
   }
+
+  async completeBooking(id: string) {
+    const supabase = this.supabaseService.getClient();
+
+    console.log('✅ [BookingsService] Completing booking:', id);
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'COMPLETED',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('❌ [BookingsService] Error completing booking:', error);
+      throw new Error(`Failed to complete booking: ${error.message}`);
+    }
+
+    console.log('✅ [BookingsService] Booking completed successfully');
+    return data;
+  }
 }

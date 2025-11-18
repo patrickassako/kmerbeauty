@@ -183,6 +183,14 @@ export const BookingDetailsScreen: React.FC = () => {
     });
   };
 
+  const handleLeaveReview = () => {
+    if (!booking) return;
+
+    navigation.navigate('Review', {
+      booking: booking,
+    });
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -438,6 +446,18 @@ export const BookingDetailsScreen: React.FC = () => {
             </TouchableOpacity>
           )}
 
+          {/* Review Button - Only show if booking is completed */}
+          {booking.status.toUpperCase() === 'COMPLETED' && (
+            <TouchableOpacity
+              style={[styles.reviewButton, { paddingVertical: spacing(2), borderRadius: spacing(2) }]}
+              onPress={handleLeaveReview}
+            >
+              <Text style={[styles.reviewButtonText, { fontSize: normalizeFontSize(16) }]}>
+                ⭐ {language === 'fr' ? 'Laisser un avis' : 'Leave a review'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Cancel Button - Only show if booking is not completed or cancelled */}
           {booking.status.toUpperCase() !== 'COMPLETED' && booking.status.toUpperCase() !== 'CANCELLED' && (
             <TouchableOpacity
@@ -652,6 +672,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chatButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  reviewButton: {
+    backgroundColor: '#FFB800',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',
   },

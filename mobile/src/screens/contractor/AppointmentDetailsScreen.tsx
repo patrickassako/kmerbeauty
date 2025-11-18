@@ -88,6 +88,28 @@ export const AppointmentDetailsScreen = () => {
     }
   };
 
+  const handleCompleteAppointment = () => {
+    Alert.alert(
+      'Complete Appointment',
+      'Mark this appointment as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete',
+          onPress: async () => {
+            try {
+              await bookingsApi.complete(appointmentId);
+              Alert.alert('Success', 'Appointment marked as completed');
+              loadAppointment(); // Reload to update status
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to complete appointment');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -285,30 +307,53 @@ export const AppointmentDetailsScreen = () => {
           </View>
         </View>
 
-        {/* Cancel Button */}
-        <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
-          <TouchableOpacity onPress={handleCancelAppointment} style={styles.cancelTextButton}>
-            <Text style={[styles.cancelText, { fontSize: normalizeFontSize(14) }]}>
-              Do want to cancel this appointment?
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleCancelAppointment}
-            style={[
-              styles.cancelButton,
-              {
-                padding: spacing(2),
-                borderRadius: spacing(1.5),
-                marginTop: spacing(1.5),
-              },
-            ]}
-          >
-            <Text style={{ fontSize: normalizeFontSize(18) }}>✕</Text>
-            <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
-              Cancel Appointment
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Complete Button - Only show if status is CONFIRMED */}
+        {appointment.status === 'CONFIRMED' && (
+          <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
+            <TouchableOpacity
+              onPress={handleCompleteAppointment}
+              style={[
+                styles.completeButton,
+                {
+                  padding: spacing(2),
+                  borderRadius: spacing(1.5),
+                },
+              ]}
+            >
+              <Text style={{ fontSize: normalizeFontSize(18) }}>✓</Text>
+              <Text style={[styles.completeButtonText, { fontSize: normalizeFontSize(16) }]}>
+                Mark as Completed
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Cancel Button - Only show if status is not COMPLETED or CANCELLED */}
+        {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && (
+          <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
+            <TouchableOpacity onPress={handleCancelAppointment} style={styles.cancelTextButton}>
+              <Text style={[styles.cancelText, { fontSize: normalizeFontSize(14) }]}>
+                Do want to cancel this appointment?
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleCancelAppointment}
+              style={[
+                styles.cancelButton,
+                {
+                  padding: spacing(2),
+                  borderRadius: spacing(1.5),
+                  marginTop: spacing(1.5),
+                },
+              ]}
+            >
+              <Text style={{ fontSize: normalizeFontSize(18) }}>✕</Text>
+              <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
+                Cancel Appointment
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Go to Homepage Button */}
@@ -498,6 +543,17 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#2D2D2D',
+    fontWeight: '600',
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  completeButtonText: {
+    color: '#FFF',
     fontWeight: '600',
   },
   footer: {

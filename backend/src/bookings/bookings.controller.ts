@@ -84,4 +84,10 @@ export class BookingsController {
     console.log('📥 [BookingsController] PATCH /bookings/' + id + '/decline');
     return this.bookingsService.declineBooking(id, body.reason);
   }
+
+  @Patch(':id/complete')
+  async complete(@Param('id') id: string) {
+    console.log('📥 [BookingsController] PATCH /bookings/' + id + '/complete');
+    return this.bookingsService.completeBooking(id);
+  }
 }

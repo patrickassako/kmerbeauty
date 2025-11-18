@@ -411,6 +411,14 @@ export const bookingsApi = {
     const response = await api.patch(`/bookings/${id}/decline`, { reason });
     return response.data;
   },
+
+  /**
+   * Marquer une réservation comme terminée
+   */
+  complete: async (id: string): Promise<Booking> => {
+    const response = await api.patch(`/bookings/${id}/complete`);
+    return response.data;
+  },
 };
 
 // =============================================

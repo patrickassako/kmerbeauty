@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../design-system/colors';
@@ -19,6 +21,8 @@ import { spacing } from '../../design-system/spacing';
 import { radius } from '../../design-system/radius';
 import { shadows } from '../../design-system/shadows';
 import { typography } from '../../design-system/typography';
+import { reviewsApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ReviewScreenProps {
   navigation: any;
@@ -27,30 +31,57 @@ interface ReviewScreenProps {
 
 const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
   const { booking } = route.params || {};
+  const { user } = useAuth();
 
   const [overallRating, setOverallRating] = useState(0);
   const [cleanlinessRating, setCleanlinessRating] = useState(0);
   const [professionalismRating, setProfessionalismRating] = useState(0);
   const [valueRating, setValueRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (overallRating === 0) {
-      alert('Veuillez donner une note globale');
+      Alert.alert('Erreur', 'Veuillez donner une note globale');
       return;
     }
 
-    // TODO: Submit review to API
-    console.log({
-      bookingId: booking?.id,
-      overallRating,
-      cleanlinessRating,
-      professionalismRating,
-      valueRating,
-      comment,
-    });
+    if (!user?.id) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour laisser un avis');
+      return;
+    }
 
-    navigation.goBack();
+    if (!booking?.therapist_id && !booking?.salon_id) {
+      Alert.alert('Erreur', 'Impossible de déterminer le prestataire à noter');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await reviewsApi.createReview({
+        user_id: user.id,
+        therapist_id: booking.therapist_id || undefined,
+        salon_id: booking.salon_id || undefined,
+        rating: overallRating,
+        comment: comment.trim() || undefined,
+        cleanliness: cleanlinessRating > 0 ? cleanlinessRating : undefined,
+        professionalism: professionalismRating > 0 ? professionalismRating : undefined,
+        value: valueRating > 0 ? valueRating : undefined,
+      });
+
+      Alert.alert('Merci !', 'Votre avis a été publié avec succès', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      Alert.alert('Erreur', error.message || 'Impossible de publier votre avis');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const StarRating = ({
@@ -208,11 +239,15 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
       {/* Bottom Action */}
       <View style={styles.bottomActions}>
         <TouchableOpacity
-          style={[styles.submitButton, overallRating === 0 && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (overallRating === 0 || submitting) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={overallRating === 0}
+          disabled={overallRating === 0 || submitting}
         >
-          <Text style={styles.submitButtonText}>Publier l'avis</Text>
+          {submitting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.submitButtonText}>Publier l'avis</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
