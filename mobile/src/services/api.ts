@@ -312,7 +312,7 @@ export interface Booking {
   travel_fee?: number;
   tip?: number;
   total: number;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
   cancelled_at?: string;
   cancel_reason?: string;

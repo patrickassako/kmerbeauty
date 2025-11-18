@@ -33,6 +33,7 @@ export const AppointmentDetailsScreen = () => {
       if (!appointmentId) return;
       setLoading(true);
       const data = await bookingsApi.getById(appointmentId);
+      console.log('📋 [AppointmentDetailsScreen] Loaded appointment status:', data.status);
       setAppointment(data);
     } catch (error: any) {
       console.error('Error loading appointment:', error);
@@ -192,6 +193,29 @@ export const AppointmentDetailsScreen = () => {
             </Text>
             <Text style={[styles.infoBannerText, { fontSize: normalizeFontSize(14) }]}>
               📅 {formatDate(appointment.scheduled_at)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Status Badge */}
+        <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(2) }}>
+          <View style={[
+            styles.statusBadge,
+            {
+              backgroundColor:
+                appointment.status === 'COMPLETED' ? '#4CAF50' :
+                appointment.status === 'CONFIRMED' ? '#2196F3' :
+                appointment.status === 'IN_PROGRESS' ? '#FF9800' :
+                appointment.status === 'PENDING' ? '#FFC107' :
+                appointment.status === 'CANCELLED' ? '#F44336' : '#999',
+              paddingHorizontal: spacing(2),
+              paddingVertical: spacing(1),
+              borderRadius: spacing(1),
+              alignSelf: 'flex-start',
+            }
+          ]}>
+            <Text style={[styles.statusText, { fontSize: normalizeFontSize(12), color: '#FFF', fontWeight: '600' }]}>
+              Status: {appointment.status}
             </Text>
           </View>
         </View>
@@ -432,6 +456,12 @@ const styles = StyleSheet.create({
   },
   infoBannerText: {
     color: '#FFF',
+  },
+  statusBadge: {
+    // Styles dynamiques dans le composant
+  },
+  statusText: {
+    // Styles dynamiques dans le composant
   },
   section: {
     backgroundColor: '#FFF',
