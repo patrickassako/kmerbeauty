@@ -39,6 +39,7 @@ export const BookingDetailsScreen: React.FC = () => {
     try {
       setLoading(true);
       const data = await bookingsApi.getById(bookingId);
+      console.log('📋 [BookingDetailsScreen] Booking loaded - Status:', data.status);
       setBooking(data);
     } catch (error) {
       console.error('Error loading booking:', error);
@@ -51,11 +52,13 @@ export const BookingDetailsScreen: React.FC = () => {
     const upperStatus = status.toUpperCase();
     switch (upperStatus) {
       case 'CONFIRMED':
-        return '#4CAF50';
-      case 'PENDING':
-        return '#FF9800';
-      case 'COMPLETED':
         return '#2196F3';
+      case 'IN_PROGRESS':
+        return '#FF9800';
+      case 'PENDING':
+        return '#FFC107';
+      case 'COMPLETED':
+        return '#4CAF50';
       case 'CANCELLED':
         return '#F44336';
       default:
@@ -68,6 +71,7 @@ export const BookingDetailsScreen: React.FC = () => {
     const labels = {
       PENDING: language === 'fr' ? 'En attente' : 'Pending',
       CONFIRMED: language === 'fr' ? 'Confirmée' : 'Confirmed',
+      IN_PROGRESS: language === 'fr' ? 'En cours' : 'In Progress',
       COMPLETED: language === 'fr' ? 'Terminée' : 'Completed',
       CANCELLED: language === 'fr' ? 'Annulée' : 'Cancelled',
     };
@@ -434,61 +438,73 @@ export const BookingDetailsScreen: React.FC = () => {
 
         {/* Action Buttons */}
         <View style={[styles.actionsContainer, { marginTop: spacing(3), marginBottom: spacing(3) }]}>
-          {/* Chat Button - Only show if booking is confirmed */}
-          {booking.status.toUpperCase() === 'CONFIRMED' && (
-            <TouchableOpacity
-              style={[styles.chatButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2), marginRight: spacing(1) }]}
-              onPress={handleOpenChat}
-            >
-              <Text style={[styles.chatButtonText, { fontSize: normalizeFontSize(16) }]}>
-                💬 {language === 'fr' ? 'Chat' : 'Chat'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {(() => {
+            const status = booking.status.toUpperCase();
+            console.log('🔍 [BookingDetailsScreen] Rendering buttons for status:', status);
 
-          {/* Review Button - Only show if booking is completed */}
-          {booking.status.toUpperCase() === 'COMPLETED' && (
-            <TouchableOpacity
-              style={[
-                styles.reviewButton,
-                {
-                  paddingVertical: spacing(2),
-                  paddingHorizontal: spacing(3),
-                  borderRadius: spacing(2),
-                  width: '100%',
-                }
-              ]}
-              onPress={handleLeaveReview}
-            >
-              <Text
-                style={[styles.reviewButtonText, { fontSize: normalizeFontSize(16) }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                ⭐ {language === 'fr' ? 'Laisser un avis' : 'Leave a review'}
-              </Text>
-            </TouchableOpacity>
-          )}
+            // Review Button - Only show if booking is COMPLETED
+            if (status === 'COMPLETED') {
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.reviewButton,
+                    {
+                      paddingVertical: spacing(2),
+                      paddingHorizontal: spacing(3),
+                      borderRadius: spacing(2),
+                      width: '100%',
+                    }
+                  ]}
+                  onPress={handleLeaveReview}
+                >
+                  <Text
+                    style={[styles.reviewButtonText, { fontSize: normalizeFontSize(16) }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    ⭐ {language === 'fr' ? 'Laisser un avis' : 'Leave a review'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
 
-          {/* Cancel Button - Only show if booking is not completed or cancelled */}
-          {booking.status.toUpperCase() !== 'COMPLETED' && booking.status.toUpperCase() !== 'CANCELLED' && (
-            <TouchableOpacity
-              style={[
-                styles.cancelButton,
-                {
-                  flex: booking.status.toUpperCase() === 'CONFIRMED' ? 1 : undefined,
-                  paddingVertical: spacing(2),
-                  borderRadius: spacing(2),
-                  marginLeft: booking.status.toUpperCase() === 'CONFIRMED' ? spacing(1) : 0
-                }
-              ]}
-              onPress={handleCancelBooking}
-            >
-              <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
-                {language === 'fr' ? 'Annuler la réservation' : 'Cancel booking'}
-              </Text>
-            </TouchableOpacity>
-          )}
+            // For non-completed bookings, show chat and/or cancel buttons
+            return (
+              <>
+                {/* Chat Button - Only show if booking is CONFIRMED or IN_PROGRESS */}
+                {(status === 'CONFIRMED' || status === 'IN_PROGRESS') && (
+                  <TouchableOpacity
+                    style={[styles.chatButton, { flex: 1, paddingVertical: spacing(2), borderRadius: spacing(2), marginRight: spacing(1) }]}
+                    onPress={handleOpenChat}
+                  >
+                    <Text style={[styles.chatButtonText, { fontSize: normalizeFontSize(16) }]}>
+                      💬 {language === 'fr' ? 'Chat' : 'Chat'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Cancel Button - Only show if booking is not COMPLETED or CANCELLED */}
+                {status !== 'COMPLETED' && status !== 'CANCELLED' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelButton,
+                      {
+                        flex: (status === 'CONFIRMED' || status === 'IN_PROGRESS') ? 1 : undefined,
+                        paddingVertical: spacing(2),
+                        borderRadius: spacing(2),
+                        marginLeft: (status === 'CONFIRMED' || status === 'IN_PROGRESS') ? spacing(1) : 0
+                      }
+                    ]}
+                    onPress={handleCancelBooking}
+                  >
+                    <Text style={[styles.cancelButtonText, { fontSize: normalizeFontSize(16) }]}>
+                      {language === 'fr' ? 'Annuler la réservation' : 'Cancel booking'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            );
+          })()}
         </View>
 
         {/* Booking ID */}

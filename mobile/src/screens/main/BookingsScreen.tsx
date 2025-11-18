@@ -62,11 +62,13 @@ export const BookingsScreen: React.FC = () => {
     const upperStatus = status.toUpperCase();
     switch (upperStatus) {
       case 'CONFIRMED':
-        return '#4CAF50';
-      case 'PENDING':
-        return '#FF9800';
-      case 'COMPLETED':
         return '#2196F3';
+      case 'IN_PROGRESS':
+        return '#FF9800';
+      case 'PENDING':
+        return '#FFC107';
+      case 'COMPLETED':
+        return '#4CAF50';
       case 'CANCELLED':
         return '#F44336';
       default:
@@ -79,6 +81,7 @@ export const BookingsScreen: React.FC = () => {
     const labels = {
       PENDING: language === 'fr' ? 'En attente' : 'Pending',
       CONFIRMED: language === 'fr' ? 'Confirmée' : 'Confirmed',
+      IN_PROGRESS: language === 'fr' ? 'En cours' : 'In Progress',
       COMPLETED: language === 'fr' ? 'Terminée' : 'Completed',
       CANCELLED: language === 'fr' ? 'Annulée' : 'Cancelled',
     };
@@ -126,6 +129,11 @@ export const BookingsScreen: React.FC = () => {
   const getServiceImage = (booking: Booking): string | null => {
     if (booking.items && booking.items.length > 0) {
       const firstItem = booking.items[0];
+      // Check for service_image first (from backend)
+      if (firstItem.service_image) {
+        return firstItem.service_image;
+      }
+      // Fallback to service.images array
       if (firstItem.service?.images && firstItem.service.images.length > 0) {
         return firstItem.service.images[0];
       }
