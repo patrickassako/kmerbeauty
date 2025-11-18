@@ -562,7 +562,13 @@ export const ChatScreen: React.FC = () => {
           style={[styles.bookingBanner, { paddingHorizontal: spacing(2.5), paddingVertical: spacing(1.5) }]}
           onPress={() => {
             if (bookingId) {
-              navigation.navigate('ProposalDetails', { bookingId });
+              // Navigate to appropriate screen based on user role
+              if (user?.role === 'PROVIDER') {
+                navigation.navigate('ProposalDetails', { bookingId });
+              } else {
+                // CLIENT role
+                navigation.navigate('BookingDetails', { bookingId });
+              }
             }
           }}
           activeOpacity={0.7}

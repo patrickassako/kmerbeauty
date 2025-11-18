@@ -9,6 +9,7 @@ import { BookingsScreen } from '../screens/main/BookingsScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
+import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -27,6 +28,7 @@ const ChatStackNavigator = () => (
   <ChatStack.Navigator screenOptions={{ headerShown: false }}>
     <ChatStack.Screen name="ConversationsList" component={ConversationsScreen} />
     <ChatStack.Screen name="Chat" component={ChatScreen} />
+    <ChatStack.Screen name="BookingDetails" component={BookingDetailsScreen} />
   </ChatStack.Navigator>
 );
 

@@ -12,12 +12,14 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n/I18nContext';
 import { getFullName, getUserInitials } from '../../utils/userHelpers';
 import { chatApi, type Chat } from '../../services/api';
 
 export const ConversationsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
   const { user } = useAuth();
+  const { language } = useI18n();
   const navigation = useNavigation<any>();
 
   const [conversations, setConversations] = useState<Chat[]>([]);
@@ -155,9 +157,19 @@ export const ConversationsScreen = () => {
 
                     <View style={{ flex: 1, marginLeft: spacing(1.5) }}>
                       <View style={styles.headerRow}>
-                        <Text style={[styles.userName, { fontSize: normalizeFontSize(16) }]}>
-                          {getFullName(otherUser)}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <Text style={[styles.userName, { fontSize: normalizeFontSize(16) }]}>
+                            {getFullName(otherUser)}
+                          </Text>
+                          {/* Badge pour chat de commande */}
+                          {chat.booking_id && (
+                            <View style={[styles.bookingBadge, { marginLeft: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.3) }]}>
+                              <Text style={[styles.bookingBadgeText, { fontSize: normalizeFontSize(10) }]}>
+                                📋 {language === 'fr' ? 'Commande' : 'Order'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                         {chat.last_message_at && (
                           <Text style={[styles.time, { fontSize: normalizeFontSize(12) }]}>
                             {formatTime(chat.last_message_at)}
@@ -250,6 +262,16 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     color: '#666',
+  },
+  bookingBadge: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFD54F',
+  },
+  bookingBadgeText: {
+    color: '#F57C00',
+    fontWeight: '600',
   },
   unreadBadge: {
     backgroundColor: '#FF4444',
