@@ -307,8 +307,8 @@ export const AppointmentDetailsScreen = () => {
           </View>
         </View>
 
-        {/* Complete Button - Only show if status is CONFIRMED */}
-        {appointment.status === 'CONFIRMED' && (
+        {/* Complete Button - Only show if status is CONFIRMED or IN_PROGRESS */}
+        {(appointment.status === 'CONFIRMED' || appointment.status === 'IN_PROGRESS') && (
           <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(3) }}>
             <TouchableOpacity
               onPress={handleCompleteAppointment}

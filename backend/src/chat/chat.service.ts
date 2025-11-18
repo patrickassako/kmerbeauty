@@ -311,10 +311,39 @@ export class ChatService {
         const otherUser = isClient ? chat.provider : chat.client;
         const otherUserType = isClient ? 'provider' : 'client';
 
+        // If the other user is a provider, get their profile image from therapists or salons
+        let profileImage = otherUser?.avatar;
+        if (isClient && otherUser?.id) {
+          // Check if they have a therapist profile with profile_image
+          const { data: therapist } = await supabase
+            .from('therapists')
+            .select('profile_image')
+            .eq('user_id', otherUser.id)
+            .single();
+
+          if (therapist?.profile_image) {
+            profileImage = therapist.profile_image;
+          } else {
+            // Check if they have a salon profile with logo
+            const { data: salon } = await supabase
+              .from('salons')
+              .select('logo')
+              .eq('user_id', otherUser.id)
+              .single();
+
+            if (salon?.logo) {
+              profileImage = salon.logo;
+            }
+          }
+        }
+
         return {
           ...chat,
           unread_count: count || 0,
-          other_user: otherUser,
+          other_user: {
+            ...otherUser,
+            avatar: profileImage, // Use professional profile image if available
+          },
           other_user_type: otherUserType,
         };
       }),
