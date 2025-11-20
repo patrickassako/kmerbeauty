@@ -32,14 +32,11 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#ffffff",
-          "sounds": ["./assets/notification-sound.wav"]
+          "color": "#ffffff"
         }
       ]
     ],
     "notification": {
-      "icon": "./assets/notification-icon.png",
       "color": "#2D2D2D",
       "androidMode": "default",
       "androidCollapsedTitle": "KmerServices"
