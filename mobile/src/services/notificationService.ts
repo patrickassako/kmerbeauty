@@ -74,9 +74,18 @@ class NotificationService {
         return null;
       }
 
+      // Obtenir le projectId depuis différentes sources possibles
+      const projectId =
+        Constants.expoConfig?.extra?.eas?.projectId ||
+        Constants.expoConfig?.projectId ||
+        Constants.manifest?.extra?.eas?.projectId ||
+        Constants.manifest2?.extra?.eas?.projectId;
+
+      console.log('🔍 ProjectId détecté:', projectId);
+
       // Obtenir le token
       const token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        projectId: projectId,
       });
 
       this.expoPushToken = token.data;
