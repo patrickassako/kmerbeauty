@@ -17,6 +17,7 @@ import {
 } from '../screens/contractor';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
+import { useNotifications } from '../hooks/useNotifications';
 
 // Stack navigators for each tab
 const HomeStack = createNativeStackNavigator();
@@ -124,6 +125,9 @@ const MenuButton = ({ title, onPress }: { title: string; onPress: () => void }) 
 const Tab = createBottomTabNavigator();
 
 const ContractorTabNavigator = () => {
+  // Initialize push notifications for provider users
+  useNotifications();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

@@ -9,7 +9,6 @@ import { SignInScreen } from '../screens/SignInScreen';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ContractorNavigator } from './ContractorNavigator';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../hooks/useNotifications';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export type AuthStackParamList = {
@@ -25,9 +24,6 @@ export const AppNavigator: React.FC = () => {
   const { isAuthenticated, loading: authLoading, signUp, signIn, user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [initializing, setInitializing] = useState(true);
-
-  // Initialiser les notifications push
-  useNotifications();
 
   useEffect(() => {
     checkFirstLaunch();

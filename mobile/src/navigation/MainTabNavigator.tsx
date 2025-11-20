@@ -10,6 +10,7 @@ import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
+import { useNotifications } from '../hooks/useNotifications';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -33,6 +34,9 @@ const ChatStackNavigator = () => (
 );
 
 export const MainTabNavigator: React.FC = () => {
+  // Initialize push notifications for client users
+  useNotifications();
+
   return (
     <Tab.Navigator
       screenOptions={{
