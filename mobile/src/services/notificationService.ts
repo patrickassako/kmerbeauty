@@ -75,11 +75,13 @@ class NotificationService {
       }
 
       // Obtenir le projectId depuis différentes sources possibles
+      // Dans un bare workflow (après prebuild), on utilise le projectId en dur
       const projectId =
         Constants.expoConfig?.extra?.eas?.projectId ||
         Constants.expoConfig?.projectId ||
         Constants.manifest?.extra?.eas?.projectId ||
-        Constants.manifest2?.extra?.eas?.projectId;
+        Constants.manifest2?.extra?.eas?.projectId ||
+        'kmerservice-d178f'; // Fallback pour bare workflow
 
       console.log('🔍 ProjectId détecté:', projectId);
 
