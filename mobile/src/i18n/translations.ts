@@ -2,10 +2,10 @@ export const translations = {
   fr: {
     // Onboarding
     onboarding: {
-      title: 'KMERSERVICES',
-      subtitle: 'Services de Beauté à Domicile',
-      slide1Title: 'Capturez l\'essence de',
-      slide1Subtitle: 'KmerServices',
+      title: 'KMR-BEAUTY',
+      subtitle: 'La beauté à votre porte, ou à deux pas',
+      slide1Title: 'Bienvenue sur KMR-BEAUTY',
+      slide1Subtitle: 'La première plateforme de services beauté au Cameroun',
       slide2Title: 'Services de Beauté',
       slide2Subtitle: 'À votre porte',
       slide3Title: 'Réservez facilement',
@@ -187,10 +187,10 @@ export const translations = {
   en: {
     // Onboarding
     onboarding: {
-      title: 'KMERSERVICES',
-      subtitle: 'Home Beauty Services',
-      slide1Title: 'Captures the essence of',
-      slide1Subtitle: 'KmerServices',
+      title: 'KMR-BEAUTY',
+      subtitle: 'Beauty at your doorstep, or a stone\'s throw away',
+      slide1Title: 'Welcome to KMR-BEAUTY',
+      slide1Subtitle: 'The first beauty services platform in Cameroon',
       slide2Title: 'Beauty Services',
       slide2Subtitle: 'At your doorstep',
       slide3Title: 'Book easily',

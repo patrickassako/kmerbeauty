@@ -8,6 +8,8 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { GeolocationProvider } from './src/contexts/GeolocationContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
+import { ToastProvider } from './src/contexts/ToastContext';
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,12 +26,14 @@ export default function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <I18nProvider>
-            <AuthProvider>
-              <GeolocationProvider>
-                <StatusBar barStyle="light-content" />
-                <AppNavigator />
-              </GeolocationProvider>
-            </AuthProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <GeolocationProvider>
+                  <StatusBar barStyle="light-content" />
+                  <AppNavigator />
+                </GeolocationProvider>
+              </AuthProvider>
+            </ToastProvider>
           </I18nProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

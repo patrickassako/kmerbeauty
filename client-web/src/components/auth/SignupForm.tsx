@@ -189,7 +189,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                     .upsert({
                         id: data.session.user.id,
                         phone: phone, // Verified phone
-                        email: `${phone.replace(/\+/g, '')}@kmerservices.temp`, // Placeholder email (can be removed if column is nullable)
+                        email: `${phone.replace(/\+/g, '')}@kmrbeauty.temp`, // Placeholder email (can be removed if column is nullable)
                         first_name: name.split(' ')[0] || 'User',
                         last_name: name.split(' ').slice(1).join(' ') || '',
                         role: 'CLIENT' // Default role

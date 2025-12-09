@@ -191,7 +191,11 @@ export const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
         <View>
-          <Text style={[styles.logo, { fontSize: normalizeFontSize(20) }]}>KMR-Beauty</Text>
+          <Image
+            source={require('../../../assets/logo_outline.png')}
+            style={{ width: spacing(6), height: spacing(6) }}
+            resizeMode="contain"
+          />
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing(0.5) }}
             onPress={() => setLocationModalVisible(true)}

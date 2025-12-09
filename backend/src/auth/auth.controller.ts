@@ -12,6 +12,11 @@ export class AuthController {
     return this.authService.signUp(dto);
   }
 
+  @Post('verify')
+  async verify(@Body() body: { phone: string; token: string }) {
+    return this.authService.verifyPhone(body.phone, body.token);
+  }
+
   @Post('signin')
   async signIn(@Body() dto: SignInDto) {
     return this.authService.signIn(dto);

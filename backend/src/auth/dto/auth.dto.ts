@@ -14,8 +14,9 @@ export enum Language {
 }
 
 export class SignUpDto {
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @IsPhoneNumber('CM') // Format Cameroun: +237XXXXXXXXX
   phone: string;
@@ -85,7 +86,7 @@ export class SignInDto {
 export class AuthResponseDto {
   accessToken: string;
   refreshToken: string;
-  user: {
+  user?: {
     id: string;
     email: string;
     phone: string;
@@ -94,4 +95,6 @@ export class AuthResponseDto {
     role: UserRole;
     language: Language;
   };
+  @IsOptional()
+  verificationRequired?: boolean;
 }

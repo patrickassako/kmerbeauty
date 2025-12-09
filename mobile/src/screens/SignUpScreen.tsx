@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { useToast } from '../contexts/ToastContext';
 import { DEFAULT_COUNTRY } from '../components/CountryPicker';
 
 interface SignUpScreenProps {
@@ -28,7 +30,7 @@ interface Country {
 }
 
 export interface SignUpData {
-  email: string;
+  email?: string;
   phone: string;
   password: string;
   confirmPassword: string;
@@ -44,6 +46,8 @@ export interface SignUpData {
 export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }) => {
   const { t } = useI18n();
   const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
+  const { showToast } = useToast();
+  const [mode, setMode] = useState<'phone' | 'email'>('phone');
   const [formData, setFormData] = useState<SignUpData>({
     email: '',
     phone: '',
@@ -51,7 +55,6 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'client',
     role: 'client',
   });
   const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
@@ -77,10 +80,12 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
       newErrors.lastName = t.errors.required;
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = t.errors.required;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t.errors.invalidEmail;
+    if (mode === 'email') {
+      if (!formData.email.trim()) {
+        newErrors.email = t.errors.required;
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = t.errors.invalidEmail;
+      }
     }
 
     if (!formData.phone.trim()) {
@@ -103,27 +108,37 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
     if (!acceptTerms) {
-      alert(t.auth.acceptTerms);
+      showToast(t.auth.acceptTerms, 'warning');
       return;
     }
 
     setLoading(true);
+
     // Combine country code with phone number
     const fullPhone = `${selectedCountry.dialCode}${formData.phone}`;
 
     // Prepare data for backend
     const signupData = {
       ...formData,
+      email: mode === 'email' ? formData.email : undefined, // Send undefined if phone mode
       phone: fullPhone,
       role: formData.role.toUpperCase() as any, // Convert to CLIENT or PROVIDER
       city: 'Douala', // Default city
       region: 'Littoral', // Default region
     };
 
-    onSignUp(signupData);
+    try {
+      await onSignUp(signupData);
+    } catch (error: any) {
+      console.log('Signup error handled by parent:', error);
+      const msg = error.response?.data?.message || 'Une erreur est survenue';
+      showToast(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -139,11 +154,16 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
         style={styles.container}
       >
         <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+          <Image
+            source={require('../../assets/logo_nobg.png')}
+            style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
+            resizeMode="contain"
+          />
           <Text style={[styles.title, {
             fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
             letterSpacing: isSmallDevice ? 3 : 4
           }]}>
-            KMERSERVICES
+            KMR-BEAUTY
           </Text>
           <Text style={[styles.subtitle, {
             fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
@@ -170,6 +190,22 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
               {t.auth.createAccountSubtitle}
             </Text>
 
+            {/* Auth Mode Tabs */}
+            <View style={[styles.tabContainer, { marginBottom: spacing(3) }]}>
+              <TouchableOpacity
+                style={[styles.tab, mode === 'phone' && styles.activeTab]}
+                onPress={() => setMode('phone')}
+              >
+                <Text style={[styles.tabText, mode === 'phone' && styles.activeTabText]}>{t.auth.phone || 'Téléphone'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, mode === 'email' && styles.activeTab]}
+                onPress={() => setMode('email')}
+              >
+                <Text style={[styles.tabText, mode === 'email' && styles.activeTabText]}>Email</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.form}>
               <Input
                 label={t.auth.firstName}
@@ -189,15 +225,17 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                 autoCapitalize="words"
               />
 
-              <Input
-                label={t.auth.email}
-                placeholder={t.auth.emailPlaceholder}
-                value={formData.email}
-                onChangeText={(value) => updateField('email', value)}
-                error={errors.email}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              {mode === 'email' && (
+                <Input
+                  label={t.auth.email}
+                  placeholder={t.auth.emailPlaceholder}
+                  value={formData.email}
+                  onChangeText={(value) => updateField('email', value)}
+                  error={errors.email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              )}
 
               <Input
                 label={t.auth.phone}
@@ -295,31 +333,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                 icon="arrow"
               />
 
-              <View style={[styles.divider, { marginVertical: spacing(3) }]}>
-                <View style={styles.dividerLine} />
-                <Text style={[styles.dividerText, { fontSize: normalizeFontSize(14), paddingHorizontal: spacing(2) }]}>
-                  {t.auth.or}
-                </Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <Text style={[styles.socialTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
-                {t.auth.continueWith}
-              </Text>
-
-              <View style={[styles.socialButtons, { marginBottom: spacing(3) }]}>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>G</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>f</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}></Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.footer}>
+              <View style={[styles.footer, { marginTop: spacing(3) }]}>
                 <Text style={[styles.footerText, { fontSize: normalizeFontSize(14) }]}>{t.auth.haveAccount} </Text>
                 <TouchableOpacity onPress={onSignIn}>
                   <Text style={[styles.footerLink, { fontSize: normalizeFontSize(14) }]}>{t.auth.signInLink}</Text>
@@ -348,6 +362,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+  },
+  logo: {
+    marginBottom: 10,
+    borderRadius: 12,
   },
   title: {
     fontWeight: '700',
@@ -477,6 +495,36 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabText: {
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
     color: '#2D2D2D',
   },
   indicator: {

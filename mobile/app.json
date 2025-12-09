@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KmerServices",
-    "slug": "kmerservices",
+    "name": "KMR-BEAUTY",
+    "slug": "kmr-beauty",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,25 +14,16 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "extra": {
-      "eas": {}
-    },
-    "scheme": "kmerservices",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kmerservices.app",
-      "googleServicesFile": "./GoogleService-Info.plist",
-      "associatedDomains": [
-        "applinks:kmerservices.com"
-      ]
+      "bundleIdentifier": "com.kmrbeauty.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kmerservices.app",
-      "googleServicesFile": "./google-services.json",
+      "package": "com.kmrbeauty.app",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -49,9 +40,11 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "description": "La beauté à votre porte, ou à deux pas"
     },
     "plugins": [
+      "expo-font",
       [
         "expo-notifications",
         {
@@ -59,10 +52,16 @@
         }
       ]
     ],
+    "extra": {
+      "apiUrl": "http://192.168.8.114:3000/api/v1",
+      "eas": {
+        "projectId": "39255f9d-5412-4217-a06d-a7a584346bb2"
+      }
+    },
     "notification": {
       "color": "#2D2D2D",
       "androidMode": "default",
-      "androidCollapsedTitle": "KmerServices"
+      "androidCollapsedTitle": "KMR-BEAUTY"
     }
   }
 }

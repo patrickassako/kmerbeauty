@@ -8,6 +8,7 @@ import {
   ScrollView,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Image,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
@@ -86,11 +87,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }
               paddingHorizontal: spacing(4)
             }]}>
               <View style={styles.header}>
+                <Image
+                  source={require('../../assets/logo_nobg.png')}
+                  style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
+                  resizeMode="contain"
+                />
                 <Text style={[styles.title, {
                   fontSize: normalizeFontSize(isSmallDevice ? 28 : 32),
                   letterSpacing: isSmallDevice ? 4 : 6
                 }]}>
-                  KMERSERVICES
+                  KMR-BEAUTY
                 </Text>
                 <Text style={[styles.subtitle, {
                   fontSize: normalizeFontSize(isSmallDevice ? 10 : 12),
@@ -191,6 +197,13 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+    borderRadius: 16,
   },
   slideTitle: {
     fontWeight: '600',

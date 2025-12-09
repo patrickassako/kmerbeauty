@@ -8,16 +8,25 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { DEFAULT_COUNTRY } from '../components/CountryPicker';
 
 interface SignInScreenProps {
   onSignIn: (data: SignInData) => Promise<void>;
   onSignUp: () => void;
   onForgotPassword: () => void;
+}
+
+interface Country {
+  code: string;
+  name: string;
+  flag: string;
+  dialCode: string;
 }
 
 export interface SignInData {
@@ -33,6 +42,8 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 }) => {
   const { t } = useI18n();
   const { width, height, normalizeFontSize, spacing, isSmallDevice } = useResponsive();
+  const [mode, setMode] = useState<'email' | 'phone'>('email');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [formData, setFormData] = useState<SignInData>({
     emailOrPhone: '',
     password: '',
@@ -53,6 +64,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
     if (!formData.emailOrPhone.trim()) {
       newErrors.emailOrPhone = t.errors.required;
+    } else if (mode === 'email' && !/\S+@\S+\.\S+/.test(formData.emailOrPhone)) {
+      newErrors.emailOrPhone = t.errors.invalidEmail;
+    } else if (mode === 'phone' && !/^[0-9]+$/.test(formData.emailOrPhone)) {
+      newErrors.emailOrPhone = t.errors.invalidPhone;
     }
 
     if (!formData.password) {
@@ -68,9 +83,23 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
 
     setLoading(true);
     try {
-      await onSignIn(formData);
+      let submitData = { ...formData };
+
+      // Format phone number if in phone mode
+      if (mode === 'phone') {
+        const cleanPhone = formData.emailOrPhone.replace(/\D/g, ''); // Remove non-digits
+        const countryCodeDigits = selectedCountry.dialCode.replace('+', '');
+
+        if (cleanPhone.startsWith(countryCodeDigits)) {
+          submitData.emailOrPhone = `+${cleanPhone}`;
+        } else {
+          submitData.emailOrPhone = `${selectedCountry.dialCode}${cleanPhone}`;
+        }
+        console.log('Formatted phone for login:', submitData.emailOrPhone);
+      }
+
+      await onSignIn(submitData);
     } catch (error) {
-      // Error is handled in AppNavigator but we catch here just in case
       console.error(error);
     } finally {
       setLoading(false);
@@ -90,11 +119,16 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
         style={styles.container}
       >
         <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+          <Image
+            source={require('../../assets/logo_nobg.png')}
+            style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
+            resizeMode="contain"
+          />
           <Text style={[styles.title, {
             fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
             letterSpacing: isSmallDevice ? 3 : 4
           }]}>
-            KMERSERVICES
+            KMR-BEAUTY
           </Text>
           <Text style={[styles.subtitle, {
             fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
@@ -114,23 +148,58 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
             padding: isSmallDevice ? spacing(3) : spacing(4),
             paddingTop: isSmallDevice ? spacing(4) : spacing(5)
           }]}>
-            <Text style={[styles.cardTitle, { fontSize: normalizeFontSize(isSmallDevice ? 20 : 24), marginBottom: spacing(1) }]}>
+            <Text style={[styles.cardTitle, { fontSize: normalizeFontSize(isSmallDevice ? 20 : 24), marginBottom: spacing(3) }]}>
               {t.auth.signIn}
             </Text>
-            <Text style={[styles.cardSubtitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(4) }]}>
-              {t.auth.signInSubtitle}
-            </Text>
+
+            {/* Auth Mode Tabs */}
+            <View style={[styles.tabContainer, { marginBottom: spacing(3) }]}>
+              <TouchableOpacity
+                style={[styles.tab, mode === 'email' && styles.activeTab]}
+                onPress={() => {
+                  setMode('email');
+                  setErrors({});
+                  setFormData(prev => ({ ...prev, emailOrPhone: '' }));
+                }}
+              >
+                <Text style={[styles.tabText, mode === 'email' && styles.activeTabText]}>Email</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, mode === 'phone' && styles.activeTab]}
+                onPress={() => {
+                  setMode('phone');
+                  setErrors({});
+                  setFormData(prev => ({ ...prev, emailOrPhone: '' }));
+                }}
+              >
+                <Text style={[styles.tabText, mode === 'phone' && styles.activeTabText]}>{t.auth.phone || 'Téléphone'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.form}>
-              <Input
-                label={t.auth.emailOrPhone}
-                placeholder={t.auth.emailPlaceholder}
-                value={formData.emailOrPhone}
-                onChangeText={(value) => updateField('emailOrPhone', value)}
-                error={errors.emailOrPhone}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              {mode === 'email' ? (
+                <Input
+                  label={t.auth.email}
+                  placeholder={t.auth.emailPlaceholder}
+                  value={formData.emailOrPhone}
+                  onChangeText={(value) => updateField('emailOrPhone', value)}
+                  error={errors.emailOrPhone}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              ) : (
+                <Input
+                  label={t.auth.phone || 'Téléphone'}
+                  placeholder="6XXXXXXXX"
+                  value={formData.emailOrPhone}
+                  onChangeText={(value) => updateField('emailOrPhone', value)}
+                  error={errors.emailOrPhone}
+                  keyboardType="phone-pad"
+                  isPhone
+                  country={selectedCountry}
+                  onCountryChange={setSelectedCountry}
+                />
+              )}
 
               <Input
                 label={t.auth.password}
@@ -172,31 +241,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
                 icon="arrow"
               />
 
-              <View style={[styles.divider, { marginVertical: spacing(3) }]}>
-                <View style={styles.dividerLine} />
-                <Text style={[styles.dividerText, { fontSize: normalizeFontSize(14), paddingHorizontal: spacing(2) }]}>
-                  {t.auth.or}
-                </Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <Text style={[styles.socialTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
-                {t.auth.continueWith}
-              </Text>
-
-              <View style={[styles.socialButtons, { marginBottom: spacing(3) }]}>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>G</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}>f</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}>
-                  <Text style={[styles.socialButtonText, { fontSize: normalizeFontSize(20) }]}></Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.footer}>
+              <View style={[styles.footer, { marginTop: spacing(3) }]}>
                 <Text style={[styles.footerText, { fontSize: normalizeFontSize(14) }]}>{t.auth.noAccount} </Text>
                 <TouchableOpacity onPress={onSignUp}>
                   <Text style={[styles.footerLink, { fontSize: normalizeFontSize(14) }]}>{t.auth.signUpLink}</Text>
@@ -225,6 +270,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+  },
+  logo: {
+    marginBottom: 10,
+    borderRadius: 12,
   },
   title: {
     fontWeight: '700',
@@ -326,6 +375,36 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tabText: {
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
     color: '#2D2D2D',
   },
   indicator: {

@@ -23,7 +23,7 @@ interface AuthContextType {
   user: User | null;
   userMode: 'client' | 'provider';
   loading: boolean;
-  signUp: (data: SignUpData) => Promise<void>;
+  signUp: (data: SignUpData) => Promise<any>;
   signIn: (data: SignInData) => Promise<void>;
   signOut: () => Promise<void>;
   switchRole: () => Promise<void>; // Kept for compatibility, but behavior changes
@@ -127,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (data: SignUpData) => {
     try {
+      // setLoading(true); // Removed to prevent AppNavigator unmount
       const response = await api.post('/auth/signup', {
         email: data.email,
         phone: data.phone,
@@ -145,7 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }),
       });
 
-      const { user: userData, accessToken, refreshToken } = response.data;
+      const { user: userData, accessToken, refreshToken, verificationRequired } = response.data;
+
+      if (verificationRequired || (!userData && !accessToken)) {
+        return { verificationRequired: true, phone: data.phone };
+      }
 
       await SecureStore.setItemAsync('accessToken', accessToken);
       await SecureStore.setItemAsync('refreshToken', refreshToken);

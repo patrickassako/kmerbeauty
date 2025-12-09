@@ -28,10 +28,11 @@ export const TermsScreen = () => {
                     Conditions Générales d'Utilisation (CGU)
                 </Text>
 
-                <Text style={[styles.paragraph, { fontSize: normalizeFontSize(14), marginBottom: spacing(2) }]}>
-                    Bienvenue sur KmerServices. En utilisant notre application, vous acceptez les conditions suivantes :
-                </Text>
-
+                <View style={styles.section}>
+                    <Text style={styles.paragraph}>
+                        Bienvenue sur KMR-BEAUTY. En utilisant notre application, vous acceptez les conditions suivantes :
+                    </Text>
+                </View>
                 <Text style={[styles.subtitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(1) }]}>
                     1. Acceptation des conditions
                 </Text>

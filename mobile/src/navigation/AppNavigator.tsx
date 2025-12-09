@@ -8,6 +8,7 @@ import { SignUpScreen } from '../screens/SignUpScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
+import { VerificationScreen } from '../screens/VerificationScreen';
 import { MainTabNavigator } from './MainTabNavigator';
 import * as Linking from 'expo-linking';
 import { ContractorNavigator } from './ContractorNavigator';
@@ -21,6 +22,7 @@ export type AuthStackParamList = {
   SignIn: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
+  Verification: { phone: string };
 };
 
 const prefix = Linking.createURL('/');
@@ -123,8 +125,11 @@ export const AppNavigator: React.FC = () => {
               {...props}
               onSignUp={async (data) => {
                 try {
-                  await signUp(data);
-                  // Navigation will happen automatically via auth state change
+                  const result = await signUp(data);
+                  if (result?.verificationRequired) {
+                    props.navigation.navigate('Verification', { phone: result.phone });
+                  }
+                  // Navigation will happen automatically via auth state change if success (no verification needed)
                 } catch (error: any) {
                   alert(error.message || 'Sign up failed');
                 }
@@ -154,6 +159,7 @@ export const AppNavigator: React.FC = () => {
 
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="Verification" component={VerificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

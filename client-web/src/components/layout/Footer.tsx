@@ -55,7 +55,7 @@ export function Footer() {
                 </div>
 
                 <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                    <p>© 2025 KmerServices. Tous droits réservés.</p>
+                    <p>© 2025 KMR-BEAUTY. Tous droits réservés.</p>
                     <div className="flex items-center gap-6">
                         <Link href="/privacy" className="hover:text-foreground">Confidentialité</Link>
                         <Link href="/terms" className="hover:text-foreground">Conditions d'utilisation</Link>

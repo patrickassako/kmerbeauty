@@ -12,17 +12,21 @@ export class AuthService {
   ) { }
 
   async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
-    console.log('🔵 [SignUp] Starting signup process for:', dto.email);
+    console.log('🔵 [SignUp] Starting signup process for:', dto.phone);
+
+    // 0. Handle optional email (generate placeholder if missing)
+    const emailToUse = dto.email || `${dto.phone.replace('+', '')}@kmrbeauty.temp`;
+    console.log('🔵 [SignUp] Using email:', emailToUse);
 
     // Vérifier si l'email existe déjà dans notre table
     const { data: existingEmail } = await this.supabase
       .from('users')
       .select('id')
-      .eq('email', dto.email)
+      .eq('email', emailToUse)
       .single();
 
     if (existingEmail) {
-      console.log('🔴 [SignUp] Email already exists:', dto.email);
+      console.log('🔴 [SignUp] Email already exists:', emailToUse);
       throw new ConflictException('Cet email est déjà utilisé');
     }
 
@@ -40,18 +44,27 @@ export class AuthService {
 
     // 1. Créer l'utilisateur dans Supabase Auth via ADMIN API (évite de connecter le client admin)
     console.log('🔵 [SignUp] Creating auth user via Admin API...');
+
+    // Prepare create user params
+    const createUserParams: any = {
+      password: dto.password,
+      email_confirm: false, // Do NOT auto-confirm email (it's a placeholder/optional)
+      phone: dto.phone,
+      phone_confirm: false, // Require OTP verification for phone
+      user_metadata: {
+        first_name: dto.firstName,
+        last_name: dto.lastName,
+        phone: dto.phone,
+      },
+    };
+
+    // If real email provided, use it. If placeholder, we still use it for Auth but maybe mark it?
+    // Actually, passing 'email' is standard for Supabase Auth even if using Phone. 
+    createUserParams.email = emailToUse;
+
     const { data: authData, error: authError } = await this.supabase
       .getClient()
-      .auth.admin.createUser({
-        email: dto.email,
-        password: dto.password,
-        email_confirm: true, // Auto-confirm email since we are admin
-        user_metadata: {
-          first_name: dto.firstName,
-          last_name: dto.lastName,
-          phone: dto.phone,
-        },
-      });
+      .auth.admin.createUser(createUserParams);
 
     if (authError || !authData.user) {
       console.log('🔴 [SignUp] Auth creation failed:', authError);
@@ -66,7 +79,7 @@ export class AuthService {
     // 3. Créer l'entrée dans notre table users avec l'ID de Supabase Auth
     const userDataToInsert = {
       id: authData.user.id,
-      email: dto.email,
+      email: emailToUse, // Use the determined email (real or placeholder)
       phone: dto.phone,
       password: hashedPassword,
       first_name: dto.firstName,
@@ -151,48 +164,26 @@ export class AuthService {
       }
     }
 
-    // 4. Retourner les tokens
-    // Pour cela, on doit se connecter. On utilise un client temporaire pour ne pas polluer le client admin.
-    console.log('🔵 [SignUp] Signing in to get tokens...');
+    // 4. Verification Required & Send OTP
+    console.log('🔵 [SignUp] Phone verification required. Sending OTP and skipping auto-login.');
 
-    const tempClient = this.supabase.createNewClient();
-    const { data: signInData, error: signInError } = await tempClient.auth.signInWithPassword({
-      email: dto.email,
-      password: dto.password,
+    // Trigger OTP sending
+    const { error: otpError } = await this.supabase.getClient().auth.signInWithOtp({
+      phone: dto.phone,
     });
 
-    if (signInError || !signInData.session) {
-      console.log('⚠️ [SignUp] Auto-login failed:', signInError);
-      // Fallback: return user without tokens (client will need to login)
-      return {
-        accessToken: '',
-        refreshToken: '',
-        user: {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          language: user.language,
-        },
-      };
+    if (otpError) {
+      console.log('🔴 [SignUp] Failed to send OTP:', otpError);
+      // We still return success for signup but user might need to resend code
     }
 
-    console.log('✅ [SignUp] Signup completed successfully with tokens');
     return {
-      accessToken: signInData.session.access_token,
-      refreshToken: signInData.session.refresh_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        phone: user.phone,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        role: user.role,
-        language: user.language,
-      },
+      accessToken: '',
+      refreshToken: '',
+      verificationRequired: true,
+      user: null
     };
+
   }
 
   async signIn(dto: SignInDto): Promise<AuthResponseDto> {
@@ -351,5 +342,53 @@ export class AuthService {
     }
 
     console.log('✅ [ForgotPassword] Reset email sent');
+  }
+  async verifyPhone(phone: string, token: string): Promise<AuthResponseDto> {
+    console.log('🔵 [VerifyPhone] Verifying OTP for:', phone);
+
+    // Using the public client since OTP verification is a public action
+    // But since we are backend, we might need to be careful.
+    // Supabase JS client verifyOtp is for client-side usually.
+    // However, we can use it here.
+    // We need to format phone properly if needed.
+
+    const { data, error } = await this.supabase.getClient().auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms',
+    });
+
+    if (error) {
+      console.log('🔴 [VerifyPhone] Verification failed:', error);
+      throw new UnauthorizedException('Code de vérification invalide');
+    }
+
+    if (!data.session || !data.user) {
+      throw new UnauthorizedException('Vérification réussie mais session introuvable');
+    }
+
+    // Auth successful, return tokens
+    console.log('✅ [VerifyPhone] Verification successful');
+
+    // Retrieve full user profile from DB to return
+    const { data: user } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    return {
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        language: user.language,
+      },
+    };
   }
 }

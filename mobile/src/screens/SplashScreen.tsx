@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   View,
@@ -5,6 +6,7 @@ import {
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
@@ -27,8 +29,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
 
       <View style={[styles.content, { paddingTop: spacing(10), paddingBottom: spacing(6), paddingHorizontal: spacing(4) }]}>
         <View style={styles.header}>
+          <Image
+            source={require('../../assets/logo_nobg.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={[styles.title, { fontSize: normalizeFontSize(isSmallDevice ? 24 : 28), letterSpacing: isSmallDevice ? 3 : 4, marginBottom: spacing(0.75) }]}>
-            KMERSERVICES
+            KMR-BEAUTY
           </Text>
           <Text style={[styles.subtitle, { fontSize: normalizeFontSize(isSmallDevice ? 9 : 11), letterSpacing: 2 }]}>
             {t.onboarding.subtitle.toUpperCase()}
@@ -49,7 +56,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onContinue }) => {
               <Text style={[styles.buttonIcon, { fontSize: normalizeFontSize(20) }]}>→</Text>
             </View>
             <Text style={[styles.buttonText, { fontSize: normalizeFontSize(isSmallDevice ? 14 : 16) }]}>
-              {t.onboarding.getStarted.replace('Commencer', 'Découvrir KmerServices').replace('Get Started', 'Discover KmerServices')}
+              {t.onboarding.getStarted.replace('Commencer', 'Découvrir KMR-BEAUTY').replace('Get Started', 'Discover KMR-BEAUTY')}
             </Text>
           </TouchableOpacity>
 
@@ -71,6 +78,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginBottom: 50,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+    borderRadius: 20, // Optional for rounded icon look
   },
   header: {
     alignItems: 'center',

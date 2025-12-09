@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KmerServices - Réservez vos soins beauté & bien-être",
-  description: "Trouvez et réservez les meilleurs coiffeurs, barbiers et instituts de beauté au Cameroun.",
+  title: "KMR-BEAUTY",
+  description: "La beauté à votre porte, ou à deux pas",
+  icons: {
+    icon: '/icon.png',
+  },
 };
 
 import { LanguageProvider } from "@/context/LanguageContext";
