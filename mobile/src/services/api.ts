@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 // Configuration de l'API
 // TODO: Mettre à jour avec l'URL réelle de votre backend
@@ -17,12 +18,12 @@ const api = axios.create({
 
 // Intercepteur pour ajouter le token d'authentification et désactiver le cache
 api.interceptors.request.use(
-  (config) => {
-    // TODO: Ajouter le token d'authentification depuis le store
-    // const token = getToken();
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+  async (config: InternalAxiosRequestConfig) => {
+    // Ajouter le token d'authentification depuis le store
+    const token = await SecureStore.getItemAsync('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
     // Désactiver le cache pour toutes les requêtes
     config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
@@ -60,6 +61,7 @@ export interface Service {
   ideal_for_fr?: string;
   ideal_for_en?: string;
   provider_count?: number;
+  components?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -181,6 +183,39 @@ export const servicesApi = {
     const response = await api.get(`/services/${id}`);
     return response.data;
   },
+
+  /**
+   * Récupérer les prestataires à proximité pour un service
+   */
+  getNearbyProviders: async (
+    serviceId: string,
+    params: {
+      lat: number;
+      lng: number;
+      radius?: number;
+      city?: string;
+      district?: string;
+    }
+  ): Promise<any[]> => {
+    const response = await api.get(`/services/${serviceId}/providers/nearby`, { params });
+    return response.data;
+  },
+
+  /**
+   * Récupérer tous les prestataires à proximité (unifiés)
+   */
+  getAllNearbyProviders: async (
+    params: {
+      lat: number;
+      lng: number;
+      radius?: number;
+      city?: string;
+      district?: string;
+    }
+  ): Promise<any[]> => {
+    const response = await api.get('/services/nearby-providers', { params });
+    return response.data;
+  },
 };
 
 // =============================================
@@ -209,6 +244,16 @@ export const therapistsApi = {
    */
   getServices: async (id: string): Promise<TherapistService[]> => {
     const response = await api.get(`/therapists/${id}/services`);
+    return response.data;
+  },
+
+  /**
+   * Récupérer les disponibilités d'un thérapeute
+   */
+  getAvailability: async (id: string, date: string): Promise<string[]> => {
+    const response = await api.get(`/therapists/${id}/availability`, {
+      params: { date },
+    });
     return response.data;
   },
 };
@@ -247,6 +292,16 @@ export const salonsApi = {
    */
   getTherapists: async (id: string): Promise<Therapist[]> => {
     const response = await api.get(`/salons/${id}/therapists`);
+    return response.data;
+  },
+
+  /**
+   * Récupérer les disponibilités d'un salon
+   */
+  getAvailability: async (id: string, date: string): Promise<string[]> => {
+    const response = await api.get(`/salons/${id}/availability`, {
+      params: { date },
+    });
     return response.data;
   },
 };
@@ -794,6 +849,7 @@ export interface ContractorProfile {
   insurance_url?: string;
   training_certificates?: string[];
   portfolio_images?: string[];
+  profile_image?: string;
   confidentiality_accepted?: boolean;
   terms_accepted?: boolean;
   languages_spoken?: string[];
@@ -805,8 +861,13 @@ export interface ContractorProfile {
   profile_completed?: boolean;
   is_verified?: boolean;
   is_active?: boolean;
+  is_online?: boolean;
   created_at?: string;
   updated_at?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  region?: string;
   user?: any;
 }
 
@@ -1140,6 +1201,253 @@ export const proposalApi = {
 
   expireOld: async (): Promise<Proposal[]> => {
     const response = await api.post('/proposals/expire-old');
+    return response.data;
+  },
+};
+
+// =====================================================
+// CREDITS API
+// =====================================================
+
+export interface CreditPack {
+  id: string;
+  name: string;
+  credits: number;
+  bonus_credits: number;
+  price_fcfa: number;
+  discount_percentage: number;
+  display_order: number;
+  active: boolean;
+}
+
+export interface CreditBalance {
+  id: string;
+  provider_id: string;
+  provider_type: 'therapist' | 'salon';
+  balance: number;
+  total_earned: number;
+  total_spent: number;
+  monthly_credits_last_given: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditTransaction {
+  id: string;
+  provider_id: string;
+  provider_type: 'therapist' | 'salon';
+  amount: number;
+  transaction_type: string;
+  reference_id?: string;
+  balance_before: number;
+  balance_after: number;
+  metadata?: any;
+  created_at: string;
+}
+
+export const creditsApi = {
+  getBalance: async (providerId: string, providerType: 'therapist' | 'salon'): Promise<CreditBalance> => {
+    const response = await api.get(`/credits/balance/${providerId}`, {
+      params: { type: providerType },
+    });
+    return response.data;
+  },
+
+  getPacks: async (): Promise<CreditPack[]> => {
+    const response = await api.get('/credits/packs');
+    return response.data;
+  },
+
+  getTransactions: async (
+    providerId: string,
+    providerType: 'therapist' | 'salon',
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ data: CreditTransaction[]; count: number }> => {
+    const response = await api.get(`/credits/transactions/${providerId}`, {
+      params: { type: providerType, page, limit },
+    });
+    return response.data;
+  },
+
+  initiatePurchase: async (params: {
+    amount: number;
+    currency: string;
+    email: string;
+    phoneNumber: string;
+    name: string;
+    providerId: string;
+    providerType: 'therapist' | 'salon';
+    packId: string;
+    redirectUrl: string;
+    paymentMethod?: 'orange_money' | 'mtn_momo' | 'card';
+  }): Promise<{ link?: string; transactionId?: string; status?: string; message?: string }> => {
+    const response = await api.post('/payments/initiate', params);
+    return response.data;
+  },
+};
+
+// =============================================
+// Marketplace API
+// =============================================
+export const marketplaceApi = {
+  // Products
+  getProducts: async (filters?: {
+    category?: string;
+    city?: string;
+    min_price?: number;
+    max_price?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const response = await api.get('/marketplace/products', { params: filters });
+    return response.data;
+  },
+
+  getProductById: async (id: string) => {
+    const response = await api.get(`/marketplace/products/${id}`);
+    return response.data;
+  },
+
+  getMyProducts: async () => {
+    const response = await api.get('/marketplace/my-products');
+    return response.data;
+  },
+
+  createProduct: async (data: {
+    name: string;
+    description?: string;
+    category: string;
+    price: number;
+    stock_quantity: number;
+    images?: string[];
+    video_url?: string;
+    city?: string;
+  }) => {
+    const response = await api.post('/marketplace/products', data);
+    return response.data;
+  },
+
+  updateProduct: async (id: string, data: any) => {
+    const response = await api.patch(`/marketplace/products/${id}`, data);
+    return response.data;
+  },
+
+  deleteProduct: async (id: string) => {
+    const response = await api.delete(`/marketplace/products/${id}`);
+    return response.data;
+  },
+
+  // Orders
+  createOrder: async (data: {
+    product_id: string;
+    quantity: number;
+    delivery_method: 'delivery' | 'pickup';
+    payment_method?: 'cash_on_delivery' | 'cash_on_pickup';
+    delivery_address?: string;
+    delivery_phone?: string;
+    delivery_notes?: string;
+  }) => {
+    const response = await api.post('/marketplace/orders', data);
+    return response.data;
+  },
+
+  getOrders: async (role: 'buyer' | 'seller' = 'buyer') => {
+    const response = await api.get('/marketplace/orders', { params: { role } });
+    return response.data;
+  },
+
+  getOrderById: async (id: string) => {
+    const response = await api.get(`/marketplace/orders/${id}`);
+    return response.data;
+  },
+
+  updateOrderStatus: async (id: string, data: { status?: string; payment_status?: string }) => {
+    const response = await api.patch(`/marketplace/orders/${id}/status`, data);
+    return response.data;
+  },
+
+  // Comments
+  getComments: async (productId: string) => {
+    const response = await api.get(`/marketplace/products/${productId}/comments`);
+    return response.data;
+  },
+
+  getProductComments: async (productId: string) => {
+    const response = await api.get(`/marketplace/products/${productId}/comments`);
+    return response.data;
+  },
+
+  createComment: async (productId: string, comment: string) => {
+    const response = await api.post(`/marketplace/products/${productId}/comments`, { comment });
+    return response.data;
+  },
+
+  // Reviews
+  getProductReviews: async (productId: string) => {
+    const response = await api.get(`/marketplace/products/${productId}/reviews`);
+    return response.data;
+  },
+
+  replyToComment: async (commentId: string, seller_reply: string) => {
+    const response = await api.patch(`/marketplace/comments/${commentId}/reply`, { seller_reply });
+    return response.data;
+  },
+
+  // Reviews
+  getReviews: async (productId: string) => {
+    const response = await api.get(`/marketplace/products/${productId}/reviews`);
+    return response.data;
+  },
+
+  createReview: async (productId: string, data: { order_id: string; rating: number; review_text?: string }) => {
+    const response = await api.post(`/marketplace/products/${productId}/reviews`, data);
+    return response.data;
+  },
+
+  replyToReview: async (reviewId: string, seller_reply: string) => {
+    const response = await api.patch(`/marketplace/reviews/${reviewId}/reply`, { seller_reply });
+    return response.data;
+  },
+
+  // Messages
+  getConversations: async (productId?: string) => {
+    const response = await api.get('/marketplace/messages', { params: { product_id: productId } });
+    return response.data;
+  },
+
+  sendMessage: async (data: { product_id: string; receiver_id: string; message: string }) => {
+    const response = await api.post('/marketplace/messages', data);
+    return response.data;
+  },
+
+  markAsRead: async (messageId: string) => {
+    const response = await api.patch(`/marketplace/messages/${messageId}/read`);
+    return response.data;
+  },
+
+  // Upload file to Supabase Storage
+  uploadFile: async (fileUri: string, userId: string, fileType: 'product' | 'video'): Promise<{ url: string }> => {
+    const formData = new FormData();
+
+    const filename = fileUri.split('/').pop() || 'file';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = fileType === 'video' ? `video/${match?.[1] || 'mp4'}` : `image/${match?.[1] || 'jpeg'}`;
+
+    formData.append('file', {
+      uri: fileUri,
+      name: filename,
+      type,
+    } as any);
+    formData.append('userId', userId);
+    formData.append('fileType', fileType);
+
+    const response = await api.post('/marketplace/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

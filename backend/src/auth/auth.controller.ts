@@ -1,11 +1,11 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto, SignInDto } from './dto/auth.dto';
 import { AuthGuard } from './guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('signup')
   async signUp(@Body() dto: SignUpDto) {
@@ -32,5 +32,16 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async getCurrentUser(@Req() req: any) {
     return this.authService.getCurrentUser(req.user.id);
+  }
+
+  @Delete('account')
+  @UseGuards(AuthGuard)
+  async deleteAccount(@Req() req: any) {
+    return this.authService.deleteAccount(req.user.id);
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
   }
 }

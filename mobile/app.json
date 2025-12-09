@@ -11,16 +11,20 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "extra": {
-      "eas": {
-        "projectId": "kmerservice-d178f"
-      }
+      "eas": {}
     },
+    "scheme": "kmerservices",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kmerservices.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "associatedDomains": [
+        "applinks:kmerservices.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +32,21 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.kmerservices.app",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "kmerservices"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

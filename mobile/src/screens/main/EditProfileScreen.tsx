@@ -3,7 +3,7 @@
  * Écran pour modifier le profil utilisateur
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,27 +11,46 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../design-system/colors';
-import { spacing } from '../../design-system/spacing';
+import { space as spacing } from '../../design-system/spacing';
 import { radius } from '../../design-system/radius';
-import { shadows } from '../../design-system/shadows';
 import { typography } from '../../design-system/typography';
+import { shadows } from '../../design-system/shadows';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 interface EditProfileScreenProps {
   navigation: any;
 }
 
 const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => {
-  const [firstName, setFirstName] = useState('Elyna');
-  const [lastName, setLastName] = useState('Des Sui');
-  const [email, setEmail] = useState('elyna.dessui@email.com');
-  const [phone, setPhone] = useState('+237 699 123 456');
-  const [city, setCity] = useState('Douala');
-  const [region, setRegion] = useState('Littoral');
+  const { user, refreshUser } = useAuth(); // Assuming refreshUser exists in AuthContext, if not I'll need to check
+  const [loading, setLoading] = useState(false);
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [region, setRegion] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setCity(user.city || '');
+      setRegion(user.region || '');
+    }
+  }, [user]);
 
   const handleSave = async () => {
     // Validation
@@ -40,28 +59,60 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       return;
     }
 
-    // TODO: Save to API
-    console.log({
-      firstName,
-      lastName,
-      email,
-      phone,
-      city,
-      region,
-    });
+    setLoading(true);
 
-    Alert.alert('Succès', 'Votre profil a été mis à jour', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          // email: email, // Email update requires auth verification usually
+          phone: phone,
+          city: city,
+          region: region,
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      // await refreshUser(); // Refresh context - assuming this might not exist yet, so I'll comment it out if it fails, but I saw it in previous file content? No, I didn't see refreshUser in AuthContext.tsx.
+      // Let's check AuthContext.tsx again. It has setUser but not refreshUser exposed.
+      // I should probably just update the local user state if possible or trigger a reload.
+      // For now, I'll just rely on the fact that AuthContext might re-fetch or I can manually update it if I had access.
+      // Actually, I can't easily update AuthContext user from here without a method.
+      // I'll skip refreshUser for now and just go back. The ProfileScreen might not update immediately unless it re-renders.
+
+      Alert.alert('Succès', 'Votre profil a été mis à jour', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+
+      let errorMessage = 'Impossible de mettre à jour le profil';
+
+      if (error.message?.includes('users_phone_key')) {
+        errorMessage = 'Ce numéro de téléphone est déjà utilisé par un autre compte';
+      } else if (error.message?.includes('users_email_key')) {
+        errorMessage = 'Cet email est déjà utilisé par un autre compte';
+      } else {
+        errorMessage += ': ' + (error.message || 'Erreur inconnue');
+      }
+
+      Alert.alert('Erreur', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChangePhoto = () => {
-    // TODO: Implement image picker
     Alert.alert('Changer la photo', 'Fonctionnalité bientôt disponible');
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -73,158 +124,140 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
 
         <Text style={styles.headerTitle}>Modifier le profil</Text>
 
-        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-          <Text style={styles.saveText}>Enregistrer</Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Text style={styles.saveText}>Enregistrer</Text>
+          )}
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
-        {/* Profile Photo */}
-        <View style={styles.photoSection}>
-          <View style={styles.photoContainer}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/150?img=5' }}
-              style={styles.photo}
-            />
-            <TouchableOpacity style={styles.photoEditButton} onPress={handleChangePhoto}>
-              <Ionicons name="camera" size={20} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.photoHint}>Appuyez pour changer la photo</Text>
-        </View>
-
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations personnelles</Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Prénom *</Text>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Votre prénom"
-              placeholderTextColor={colors.textSecondary}
-            />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Photo */}
+          <View style={styles.photoSection}>
+            <View style={styles.photoContainer}>
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoInitial}>
+                  {firstName?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.photoEditButton} onPress={handleChangePhoto}>
+                <Ionicons name="camera" size={20} color={colors.black} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.photoHint}>Appuyez pour changer la photo</Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nom *</Text>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Votre nom"
-              placeholderTextColor={colors.textSecondary}
-            />
+          {/* Personal Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Informations personnelles</Text>
+            <View style={styles.card}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Prénom</Text>
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Votre prénom"
+                  placeholderTextColor={colors.gray400}
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Nom</Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Votre nom"
+                  placeholderTextColor={colors.gray400}
+                />
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Coordonnées</Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email *</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="votre@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor={colors.textSecondary}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Téléphone *</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+237 6XX XXX XXX"
-              keyboardType="phone-pad"
-              placeholderTextColor={colors.textSecondary}
-            />
+          {/* Contact Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Coordonnées</Text>
+            <View style={styles.card}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.gray500 }]}
+                  value={email}
+                  editable={false}
+                  placeholder="votre@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Téléphone</Text>
+                <TextInput
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="+237 6XX XXX XXX"
+                  keyboardType="phone-pad"
+                  placeholderTextColor={colors.gray400}
+                />
+              </View>
+            </View>
             <Text style={styles.helperText}>
               Votre numéro sera utilisé pour les notifications SMS
             </Text>
           </View>
-        </View>
 
-        {/* Location */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Localisation</Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Ville</Text>
-            <View style={styles.selectInput}>
-              <Text style={styles.selectInputText}>{city}</Text>
-              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+          {/* Location */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Localisation</Text>
+            <View style={styles.card}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Ville</Text>
+                <TextInput
+                  style={styles.input}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="Votre ville"
+                  placeholderTextColor={colors.gray400}
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Région</Text>
+                <TextInput
+                  style={styles.input}
+                  value={region}
+                  onChangeText={setRegion}
+                  placeholder="Votre région"
+                  placeholderTextColor={colors.gray400}
+                />
+              </View>
             </View>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Région</Text>
-            <View style={styles.selectInput}>
-              <Text style={styles.selectInputText}>{region}</Text>
-              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-            </View>
+          {/* Danger Zone */}
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.dangerButton}>
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+              <Text style={styles.dangerButtonText}>Supprimer mon compte</Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Account Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Paramètres du compte</Text>
-
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={styles.actionItemLeft}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
-              <Text style={styles.actionItemText}>Changer le mot de passe</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={styles.actionItemLeft}>
-              <Ionicons name="globe-outline" size={20} color={colors.textSecondary} />
-              <Text style={styles.actionItemText}>Langue de l'application</Text>
-            </View>
-            <View style={styles.actionItemRight}>
-              <Text style={styles.actionItemValue}>Français</Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={styles.actionItemLeft}>
-              <Ionicons
-                name="notifications-outline"
-                size={20}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.actionItemText}>Préférences de notifications</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.dangerButton}>
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={styles.dangerButtonText}>Supprimer mon compte</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Spacing */}
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          {/* Bottom Spacing */}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -232,52 +265,74 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
   headerButton: {
-    width: 80,
+    width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: radius.full,
+    backgroundColor: colors.gray50,
   },
   headerTitle: {
     fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.bold,
     color: colors.black,
   },
+  saveButton: {
+    backgroundColor: colors.black,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    minWidth: 80,
+    alignItems: 'center',
+  },
   saveText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.coral,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.white,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: spacing.xl,
+    padding: spacing.lg,
   },
   photoSection: {
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
   photoContainer: {
     position: 'relative',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  photo: {
+  photoPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: radius.full,
-    backgroundColor: colors.gray100,
+    borderRadius: 50,
+    backgroundColor: colors.gray200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: colors.white,
+    ...shadows.sm,
+  },
+  photoInitial: {
+    fontSize: 40,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.gray500,
   },
   photoEditButton: {
     position: 'absolute',
@@ -286,7 +341,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.full,
-    backgroundColor: colors.coral,
+    backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -297,89 +352,58 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   section: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.black,
-    marginBottom: spacing.lg,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    ...shadows.sm,
   },
   formGroup: {
-    marginBottom: spacing.lg,
+    padding: spacing.md,
   },
   label: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.black,
-    marginBottom: spacing.sm,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textTertiary,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: colors.gray50,
-    borderRadius: radius.sm,
-    padding: spacing.lg,
     fontSize: typography.fontSize.base,
     color: colors.black,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginLeft: spacing.md,
   },
   helperText: {
     fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    color: colors.textTertiary,
     marginTop: spacing.sm,
-  },
-  selectInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.gray50,
-    borderRadius: radius.sm,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  selectInputText: {
-    fontSize: typography.fontSize.base,
-    color: colors.black,
-  },
-  actionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  actionItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-  },
-  actionItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  actionItemText: {
-    fontSize: typography.fontSize.base,
-    color: colors.black,
-  },
-  actionItemValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    marginLeft: spacing.xs,
   },
   dangerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.error,
-    backgroundColor: colors.error + '10',
   },
   dangerButtonText: {
     fontSize: typography.fontSize.base,

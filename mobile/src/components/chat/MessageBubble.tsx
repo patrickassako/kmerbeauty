@@ -10,6 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import { MaterialIcons } from '@expo/vector-icons';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
@@ -95,9 +96,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       // Set audio mode to speakerphone for better volume
       await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
         shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
 
       const { sound: newSound } = await Audio.Sound.createAsync(
@@ -178,12 +181,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   width: spacing(5),
                   height: spacing(5),
                   borderRadius: spacing(2.5),
+                  backgroundColor: isMyMessage ? 'rgba(255, 255, 255, 0.3)' : '#F0F0F0', // Better contrast
                 },
               ]}
             >
-              <Text style={[styles.playIcon, { fontSize: normalizeFontSize(20) }]}>
-                {isPlaying ? '⏸' : '▶'}
-              </Text>
+              <MaterialIcons
+                name={isPlaying ? "pause" : "play-arrow"}
+                size={normalizeFontSize(24)}
+                color={isMyMessage ? '#FFFFFF' : '#2D2D2D'}
+              />
             </TouchableOpacity>
             <View style={[styles.voiceInfo, { marginLeft: spacing(1.5) }]}>
               <View style={[styles.waveform, { height: spacing(4) }]}>

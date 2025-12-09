@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateBookingDto } from './bookings.controller';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly eventEmitter: EventEmitter2,
+  ) { }
 
   async create(createBookingDto: CreateBookingDto) {
     const supabase = this.supabaseService.getClient();
@@ -68,7 +72,7 @@ export class BookingsService {
     if (createBookingDto.therapist_id) {
       const { data: therapist } = await supabase
         .from('therapists')
-        .select('id, profile_image, city')
+        .select('id, user_id, profile_image, city')
         .eq('id', createBookingDto.therapist_id)
         .single();
 
@@ -76,7 +80,7 @@ export class BookingsService {
         const { data: user } = await supabase
           .from('users')
           .select('first_name, last_name, phone')
-          .eq('id', therapist.id)
+          .eq('id', therapist.user_id)
           .single();
 
         providerData = { ...therapist, user };
@@ -130,12 +134,32 @@ export class BookingsService {
           .select('*')
           .eq('booking_id', booking.id);
 
+        // Pour chaque item, récupérer l'image du service en cherchant par nom
+        const itemsWithImages = await Promise.all(
+          (items || []).map(async (item) => {
+            // Chercher le service par nom (name_fr ou name_en)
+            const { data: services } = await supabase
+              .from('services')
+              .select('id, name_fr, name_en, images')
+              .or(`name_fr.eq.${item.service_name},name_en.eq.${item.service_name}`)
+              .limit(1);
+
+            const service = services && services.length > 0 ? services[0] : null;
+            const firstImage = service?.images && service.images.length > 0 ? service.images[0] : null;
+
+            return {
+              ...item,
+              service_image: firstImage,
+            };
+          }),
+        );
+
         // Récupérer les infos du prestataire
         let providerData = null;
         if (booking.therapist_id) {
           const { data: therapist } = await supabase
             .from('therapists')
-            .select('id, profile_image, city')
+            .select('id, user_id, profile_image, city, rating')
             .eq('id', booking.therapist_id)
             .single();
 
@@ -143,7 +167,7 @@ export class BookingsService {
             const { data: user } = await supabase
               .from('users')
               .select('first_name, last_name')
-              .eq('id', therapist.id)
+              .eq('id', therapist.user_id)
               .single();
 
             providerData = { ...therapist, user };
@@ -151,7 +175,7 @@ export class BookingsService {
         } else if (booking.salon_id) {
           const { data: salon } = await supabase
             .from('salons')
-            .select('id, name_fr, name_en, logo, city')
+            .select('id, name_fr, name_en, logo, city, rating')
             .eq('id', booking.salon_id)
             .single();
           providerData = salon;
@@ -159,7 +183,7 @@ export class BookingsService {
 
         return {
           ...booking,
-          items: items || [],
+          items: itemsWithImages || [],
           provider: providerData,
         };
       }),
@@ -237,7 +261,7 @@ export class BookingsService {
     if (data.therapist_id) {
       const { data: therapist } = await supabase
         .from('therapists')
-        .select('id, profile_image, city, region, rating')
+        .select('id, user_id, profile_image, city, region, rating')
         .eq('id', data.therapist_id)
         .single();
 
@@ -245,7 +269,7 @@ export class BookingsService {
         const { data: user } = await supabase
           .from('users')
           .select('first_name, last_name, phone, email')
-          .eq('id', therapist.id)
+          .eq('id', therapist.user_id)
           .single();
 
         providerData = { ...therapist, user };
@@ -308,7 +332,7 @@ export class BookingsService {
     if (data.therapist_id) {
       const { data: therapist } = await supabase
         .from('therapists')
-        .select('id, profile_image, city, region, rating')
+        .select('id, user_id, profile_image, city, region, rating')
         .eq('id', data.therapist_id)
         .single();
 
@@ -316,7 +340,7 @@ export class BookingsService {
         const { data: user } = await supabase
           .from('users')
           .select('first_name, last_name, phone, email')
-          .eq('id', therapist.id)
+          .eq('id', therapist.user_id)
           .single();
 
         providerData = { ...therapist, user };
@@ -352,38 +376,35 @@ export class BookingsService {
     console.log('🔍 [BookingsService] Finding bookings for contractor:', contractorId);
     console.log('🔍 [BookingsService] Status filter:', status || 'none');
 
-    // Récupérer d'abord le user_id et therapist_id associés à ce contractor
-    const { data: contractorProfile, error: contractorError } = await supabase
-      .from('contractor_profiles')
-      .select('user_id')
+    // Check if it's a therapist
+    const { data: therapist } = await supabase
+      .from('therapists')
+      .select('id, user_id')
       .eq('id', contractorId)
       .single();
 
-    if (contractorError) {
-      console.error('❌ [BookingsService] Contractor profile not found:', contractorError);
-      throw new Error(`Contractor profile not found: ${contractorError.message}`);
-    }
-
-    console.log('✅ [BookingsService] Contractor user_id:', contractorProfile.user_id);
-
-    // Récupérer le therapist_id associé
-    const { data: therapist } = await supabase
-      .from('therapists')
+    // Check if it's a salon
+    const { data: salon } = await supabase
+      .from('salons')
       .select('id')
-      .eq('user_id', contractorProfile.user_id)
+      .eq('id', contractorId)
       .single();
 
-    const therapistId = therapist?.id;
-    console.log('🔍 [BookingsService] Associated therapist_id:', therapistId || 'none');
+    if (!therapist && !salon) {
+      console.warn('⚠️ [BookingsService] Provider not found in therapists or salons tables. Checking legacy contractor_profiles...');
+    }
 
-    // Construire la requête OR pour chercher dans les 3 champs possibles
+    // Build OR conditions
     const orConditions = [
-      `contractor_id.eq.${contractorId}`,
-      `salon_id.eq.${contractorId}`,
+      `contractor_id.eq.${contractorId}`, // Legacy support
     ];
 
-    if (therapistId) {
-      orConditions.push(`therapist_id.eq.${therapistId}`);
+    if (therapist) {
+      orConditions.push(`therapist_id.eq.${contractorId}`);
+    }
+
+    if (salon) {
+      orConditions.push(`salon_id.eq.${contractorId}`);
     }
 
     console.log('🔍 [BookingsService] OR conditions:', orConditions.join(' OR '));
@@ -488,6 +509,25 @@ export class BookingsService {
     }
 
     console.log('✅ [BookingsService] Booking confirmed successfully');
+
+    // Emit event for credit debit
+    // Determine provider type and ID
+    let providerId = data.therapist_id;
+    let providerType = 'therapist';
+
+    if (data.salon_id) {
+      providerId = data.salon_id;
+      providerType = 'salon';
+    }
+
+    if (providerId) {
+      this.eventEmitter.emit('booking.confirmed', {
+        providerId,
+        providerType,
+        bookingId: id,
+      });
+    }
+
     return data;
   }
 
@@ -536,6 +576,28 @@ export class BookingsService {
     }
 
     console.log('✅ [BookingsService] Booking completed successfully');
+    return data;
+  }
+  async startBooking(id: string) {
+    const supabase = this.supabaseService.getClient();
+
+    console.log('✅ [BookingsService] Starting booking:', id);
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'IN_PROGRESS',
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('❌ [BookingsService] Error starting booking:', error);
+      throw new Error(`Failed to start booking: ${error.message}`);
+    }
+
+    console.log('✅ [BookingsService] Booking started successfully');
     return data;
   }
 }

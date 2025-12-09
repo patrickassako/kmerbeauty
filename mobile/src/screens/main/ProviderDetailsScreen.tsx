@@ -15,6 +15,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTherapist, useTherapistServices } from '../../hooks/useTherapists';
 import { useSalon, useSalonServices } from '../../hooks/useSalons';
 import { useTherapistReviews, useSalonReviews } from '../../hooks/useReviews';
@@ -41,23 +42,33 @@ export const ProviderDetailsScreen: React.FC = () => {
 
   const isTherapist = providerType === 'therapist';
 
-  // TODO: Remplacer par le vrai userId depuis le contexte d'authentification
-  // Pour l'instant, on utilise un userId de test depuis le seed
-  const currentUserId = '56811604-9372-479f-a3ee-35056e5812dd'; // Elyna Des Sui
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
   // Gérer les favoris
   const {
     isFavorite: isTherapistFavorite,
     toggleFavorite: toggleTherapistFavorite,
-  } = useTherapistFavorite(currentUserId, isTherapist ? providerId : undefined);
+  } = useTherapistFavorite(currentUserId || '', isTherapist ? providerId : undefined);
 
   const {
     isFavorite: isSalonFavorite,
     toggleFavorite: toggleSalonFavorite,
-  } = useSalonFavorite(currentUserId, !isTherapist ? providerId : undefined);
+  } = useSalonFavorite(currentUserId || '', !isTherapist ? providerId : undefined);
 
   const isFavorite = isTherapist ? isTherapistFavorite : isSalonFavorite;
-  const toggleFavorite = isTherapist ? toggleTherapistFavorite : toggleSalonFavorite;
+  const toggleFavorite = async () => {
+    if (!currentUserId) {
+      // TODO: Show login modal or navigate to login
+      console.warn('User not logged in');
+      return;
+    }
+    if (isTherapist) {
+      await toggleTherapistFavorite();
+    } else {
+      await toggleSalonFavorite();
+    }
+  };
 
   // Charger les détails du thérapeute ou salon
   const { therapist, loading: loadingTherapist } = useTherapist(isTherapist ? providerId : undefined);
@@ -193,10 +204,10 @@ export const ProviderDetailsScreen: React.FC = () => {
         <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
           {!loading && providerData && (
             isTherapist ? (
-              // Thérapeute: profile_image ou première image du portfolio
-              (therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
+              // Thérapeute: profile_image ou user.avatar ou première image du portfolio
+              ((therapist as any)?.profile_image || therapist?.user?.avatar || (therapist?.portfolio_images && therapist.portfolio_images.length > 0)) ? (
                 <Image
-                  source={{ uri: therapist?.profile_image || therapist.portfolio_images[0] }}
+                  source={{ uri: (therapist as any)?.profile_image || therapist?.user?.avatar || therapist?.portfolio_images?.[0] }}
                   style={styles.headerImage}
                   resizeMode="cover"
                 />
@@ -224,12 +235,12 @@ export const ProviderDetailsScreen: React.FC = () => {
               )
             )
           ) || (
-            <View style={styles.headerImagePlaceholder}>
-              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
-                Provider Image
-              </Text>
-            </View>
-          )}
+              <View style={styles.headerImagePlaceholder}>
+                <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(16) }]}>
+                  Provider Image
+                </Text>
+              </View>
+            )}
         </View>
         <View style={[styles.contentInner, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}>
           {loading ? (
@@ -265,10 +276,10 @@ export const ProviderDetailsScreen: React.FC = () => {
                     <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>✓ Licensed</Text>
                   </View>
                 )}
-                {!isTherapist && salon?.years_experience && (
+                {!isTherapist && (salon as any)?.years_experience && (
                   <View style={[styles.badge, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
                     <Text style={[styles.badgeText, { fontSize: normalizeFontSize(12) }]}>
-                      📅 {salon.years_experience} Years Experience
+                      📅 {(salon as any).years_experience} Years Experience
                     </Text>
                   </View>
                 )}
@@ -353,52 +364,52 @@ export const ProviderDetailsScreen: React.FC = () => {
                           onPress={() => {
                             if (fullService) {
                               navigation.navigate('ServiceDetails', {
-                                service: fullService,
+                                service: fullService as any,
                                 providerId: providerId,
                                 providerType: providerType,
                               });
                             }
                           }}
                         >
-                        {/* Service Image */}
-                        {serviceItem.images && serviceItem.images.length > 0 && serviceItem.images[0] && (
-                          <View style={[styles.serviceCardImageContainer, { height: spacing(20), marginBottom: spacing(1.5) }]}>
-                            <Image
-                              source={{ uri: serviceItem.images[0] }}
-                              style={styles.serviceCardImage}
-                              resizeMode="cover"
-                            />
-                          </View>
-                        )}
-
-                        <View style={{ padding: spacing(2) }}>
-                          <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
-                            <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
-                              {serviceItem.name}
-                            </Text>
-                            <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
-                              {formatCurrency(serviceItem.price, countryCode)}
-                            </Text>
-                          </View>
-                          {serviceItem.description && (
-                            <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
-                              {serviceItem.description}
-                            </Text>
+                          {/* Service Image */}
+                          {serviceItem.images && serviceItem.images.length > 0 && serviceItem.images[0] && (
+                            <View style={[styles.serviceCardImageContainer, { height: spacing(20), marginBottom: spacing(1.5) }]}>
+                              <Image
+                                source={{ uri: serviceItem.images[0] }}
+                                style={styles.serviceCardImage}
+                                resizeMode="cover"
+                              />
+                            </View>
                           )}
-                          <View style={styles.serviceCardFooter}>
-                            <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
-                              ⏰ {serviceItem.duration} min
-                            </Text>
-                            <TouchableOpacity
-                              style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
-                            >
-                              <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
-                                Réserver
+
+                          <View style={{ padding: spacing(2) }}>
+                            <View style={[styles.serviceCardHeader, { marginBottom: spacing(1) }]}>
+                              <Text style={[styles.serviceCardName, { fontSize: normalizeFontSize(16) }]}>
+                                {serviceItem.name}
                               </Text>
-                            </TouchableOpacity>
+                              <Text style={[styles.serviceCardPrice, { fontSize: normalizeFontSize(16) }]}>
+                                {formatCurrency(serviceItem.price, countryCode)}
+                              </Text>
+                            </View>
+                            {serviceItem.description && (
+                              <Text style={[styles.serviceCardDescription, { fontSize: normalizeFontSize(13), marginBottom: spacing(0.5) }]}>
+                                {serviceItem.description}
+                              </Text>
+                            )}
+                            <View style={styles.serviceCardFooter}>
+                              <Text style={[styles.serviceCardDuration, { fontSize: normalizeFontSize(12) }]}>
+                                ⏰ {serviceItem.duration} min
+                              </Text>
+                              <TouchableOpacity
+                                style={[styles.bookButton, { paddingHorizontal: spacing(2), paddingVertical: spacing(0.75), borderRadius: spacing(2) }]}
+                              >
+                                <Text style={[styles.bookButtonText, { fontSize: normalizeFontSize(12) }]}>
+                                  Réserver
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
                           </View>
-                        </View>
-                      </TouchableOpacity>
+                        </TouchableOpacity>
                       );
                     })
                   )}
@@ -522,10 +533,10 @@ export const ProviderDetailsScreen: React.FC = () => {
           onPress={() => {
             // Navigate to Chat screen
             const providerImage = isTherapist
-              ? therapist?.profile_image || (therapist?.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : undefined)
+              ? (therapist as any)?.profile_image || therapist?.user?.avatar || (therapist?.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : undefined)
               : salon?.cover_image || (salon?.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : undefined);
 
-            navigation.navigate('Chat', {
+            navigation.navigate('ConversationDetails', {
               providerId: providerId,
               providerName: providerData
                 ? (isTherapist

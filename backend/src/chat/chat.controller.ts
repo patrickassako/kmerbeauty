@@ -35,7 +35,7 @@ export interface RespondToOfferDto {
 
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(private readonly chatService: ChatService) { }
 
   /**
    * Get or create a chat for a booking
@@ -43,6 +43,14 @@ export class ChatController {
   @Get('booking/:bookingId')
   async getOrCreateChatByBooking(@Param('bookingId') bookingId: string) {
     return this.chatService.getOrCreateChatByBooking(bookingId);
+  }
+
+  /**
+   * Get a specific chat by ID
+   */
+  @Get('details/:chatId')
+  async getChatById(@Param('chatId') chatId: string) {
+    return this.chatService.getChatById(chatId);
   }
 
   /**

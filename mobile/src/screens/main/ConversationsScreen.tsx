@@ -59,7 +59,7 @@ export const ConversationsScreen = () => {
     // Navigate to chat with proper parameters
     if (chat.booking_id) {
       // Chat from a booking
-      navigation.navigate('Chat', {
+      navigation.navigate('ConversationDetails', {
         bookingId: chat.booking_id,
         providerId: otherUser?.id,
         providerName: getFullName(otherUser),
@@ -68,7 +68,7 @@ export const ConversationsScreen = () => {
       });
     } else {
       // Direct chat - pass chatId to load existing conversation
-      navigation.navigate('Chat', {
+      navigation.navigate('ConversationDetails', {
         chatId: chat.id,
         providerId: otherUser?.id,
         providerName: getFullName(otherUser),

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
@@ -14,6 +16,11 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ContractorModule } from './contractor/contractor.module';
 import { ProposalModule } from './proposal/proposal.module';
+import { CreditsModule } from './credits/credits.module';
+import { PaymentsModule } from './payments/payments.module';
+
+import { MarketplaceModule } from './marketplace/marketplace.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -21,6 +28,8 @@ import { ProposalModule } from './proposal/proposal.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     SupabaseModule,
     AuthModule,
     ServicesModule,
@@ -33,8 +42,12 @@ import { ProposalModule } from './proposal/proposal.module';
     FavoritesModule,
     ContractorModule,
     ProposalModule,
+    CreditsModule,
+    PaymentsModule,
+    MarketplaceModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

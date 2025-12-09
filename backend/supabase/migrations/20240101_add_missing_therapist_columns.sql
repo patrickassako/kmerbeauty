@@ -1,0 +1,20 @@
+-- Add missing columns to therapists table
+ALTER TABLE therapists
+ADD COLUMN IF NOT EXISTS business_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS professional_experience TEXT,
+ADD COLUMN IF NOT EXISTS profile_image TEXT,
+ADD COLUMN IF NOT EXISTS service_zones JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS siret_number VARCHAR(100),
+ADD COLUMN IF NOT EXISTS legal_status VARCHAR(100),
+ADD COLUMN IF NOT EXISTS qualifications_proof TEXT[],
+ADD COLUMN IF NOT EXISTS id_card_url JSONB,
+ADD COLUMN IF NOT EXISTS insurance_url TEXT,
+ADD COLUMN IF NOT EXISTS training_certificates TEXT[],
+ADD COLUMN IF NOT EXISTS confidentiality_accepted BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS terms_accepted BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS languages_spoken TEXT[] DEFAULT ARRAY['fr'],
+ADD COLUMN IF NOT EXISTS available_transportation TEXT[],
+ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS total_bookings INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS total_revenue DECIMAL(10, 2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS average_rating DECIMAL(3, 2) DEFAULT 0;

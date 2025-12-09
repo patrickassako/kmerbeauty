@@ -31,6 +31,13 @@ model User {
   bookings      Booking[]
   reviews       Review[]
   favorites     Favorite[]
+  
+  // Support
+  supportConversations SupportConversation[] @relation("UserConversations")
+  assignedConversations SupportConversation[] @relation("AgentConversations")
+  
+  reportsMade   Report[]  @relation("ReportedBy")
+  reportsReceived Report[] @relation("ReportedUser")
 
   // Prestataire info (si role = PROVIDER)
   therapist     Therapist?
@@ -51,6 +58,7 @@ model User {
   // Metadata
   isVerified    Boolean   @default(false)
   isActive      Boolean   @default(true)
+  isOnline      Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -61,6 +69,82 @@ enum UserRole {
   CLIENT
   PROVIDER
   ADMIN
+  SUPPORT
+  MODERATOR
+}
+
+model SupportConversation {
+  id          String   @id @default(uuid())
+  userId      String   // The client/provider needing help
+  user        User     @relation("UserConversations", fields: [userId], references: [id])
+  
+  agentId     String?  // The support agent
+  agent       User?    @relation("AgentConversations", fields: [agentId], references: [id])
+  
+  status      ConversationStatus @default(OPEN)
+  
+  messages    SupportMessage[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("support_conversations")
+}
+
+model SupportMessage {
+  id              String   @id @default(uuid())
+  conversationId  String
+  conversation    SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId        String
+  content         String
+  isRead          Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("support_messages")
+}
+
+enum ConversationStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporterId  String
+  reporter    User     @relation("ReportedBy", fields: [reporterId], references: [id])
+  
+  targetUserId String?
+  targetUser   User?   @relation("ReportedUser", fields: [targetUserId], references: [id])
+  
+  reason      String
+  status      ReportStatus @default(PENDING)
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reports")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  target    String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@map("admin_logs")
 }
 
 enum Language {
@@ -107,8 +191,12 @@ model Therapist {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Info professionnelle
-  bio               String?
-  experience        Int       // Années d'expérience
+  bio               String?   // Maps to bio_fr/bio_en in older schema, now likely just bio_fr or handled by backend logic
+  bio_fr            String?
+  bio_en            String?
+  experience        Int       // Années d'expérience (integer not null)
+  professionalExperience String? // professional_experience text null
+
   isLicensed        Boolean   @default(false)
   licenseNumber     String?
 
@@ -123,9 +211,36 @@ model Therapist {
   longitude         Float
   city              String
   region            String
+  country           String    @default("Cameroun")
 
-  // Portfolio
+  // Portfolio & Images
   portfolioImages   String[]
+  profileImage      String?
+
+  // Business Info
+  businessName      String?
+  siretNumber       String?
+  legalStatus       String?
+  qualificationsProof String[]
+  typesOfServices   String[]
+  idCardUrl         Json?
+  insuranceUrl      String?
+  trainingCertificates String[]
+  
+  // Agreements
+  confidentialityAccepted Boolean @default(false)
+  termsAccepted     Boolean   @default(false)
+  
+  // Preferences
+  languagesSpoken   String[]  @default(["fr"])
+  availableTransportation String[]
+  
+  // Stats
+  totalBookings     Int       @default(0)
+  totalRevenue      Float     @default(0)
+  averageRating     Float     @default(0)
+  profileCompleted  Boolean   @default(false)
+  serviceZones      Json?     @default("[]")
 
   // Salon affilié (optionnel)
   salonId           String?
@@ -142,7 +257,7 @@ model Therapist {
   reviews           Review[]
   education         Education[]
 
-  // Stats
+  // Stats (Legacy/Duplicate?)
   rating            Float     @default(0)
   reviewCount       Int       @default(0)
   bookingCount      Int       @default(0)
@@ -556,6 +671,7 @@ model Message {
 enum MessageType {
   TEXT
   IMAGE
+  VOICE
   SERVICE_SUGGESTION
   SYSTEM
 }

@@ -5,16 +5,25 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
+import { colors } from '../../design-system/colors';
+import { space as spacing } from '../../design-system/spacing';
+import { radius } from '../../design-system/radius';
+import { typography } from '../../design-system/typography';
+import { shadows } from '../../design-system/shadows';
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, signOut } = useAuth();
-  const { normalizeFontSize, spacing } = useResponsive();
+  const { user, signOut, switchRole, userMode } = useAuth();
+  const { normalizeFontSize } = useResponsive();
   const { language } = useI18n();
 
   const handleSignOut = async () => {
@@ -25,107 +34,155 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const MenuOption = ({ icon, label, onPress, color = colors.black, showChevron = true }: any) => (
+    <TouchableOpacity
+      style={styles.menuOption}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.iconContainer, { backgroundColor: color === colors.error ? colors.error + '10' : colors.gray50 }]}>
+        <Ionicons name={icon} size={20} color={color} />
+      </View>
+      <Text style={[styles.menuLabel, { color: color }]}>{label}</Text>
+      {showChevron && <Ionicons name="chevron-forward" size={20} color={colors.gray400} />}
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
-        <Text style={[styles.title, { fontSize: normalizeFontSize(20) }]}>Profile</Text>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {language === 'fr' ? 'Mon Profil' : 'My Profile'}
+        </Text>
       </View>
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { paddingHorizontal: spacing(2.5), paddingTop: spacing(3) }]}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Profile Picture */}
-        <View style={styles.profileSection}>
-          <View style={[styles.profilePicture, { width: spacing(15), height: spacing(15), borderRadius: spacing(7.5) }]}>
-            <Text style={[styles.profileInitial, { fontSize: normalizeFontSize(40) }]}>
-              {user?.firstName?.charAt(0).toUpperCase()}
-            </Text>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>
+                {user?.firstName?.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editAvatarButton}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
+              <Ionicons name="pencil" size={14} color={colors.white} />
+            </TouchableOpacity>
           </View>
-          <Text style={[styles.userName, { fontSize: normalizeFontSize(24), marginTop: spacing(2) }]}>
+
+          <Text style={styles.userName}>
             {user?.firstName} {user?.lastName}
           </Text>
-          <Text style={[styles.userEmail, { fontSize: normalizeFontSize(14), marginTop: spacing(0.5) }]}>
-            {user?.email}
-          </Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
+
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleText}>
+              {user?.role === 'client' ? 'Client' : 'Provider'}
+            </Text>
+          </View>
         </View>
 
-        {/* User Info */}
-        <View style={[styles.infoSection, { marginTop: spacing(4) }]}>
-          <View style={[styles.infoItem, { paddingVertical: spacing(2) }]}>
-            <Text style={[styles.infoLabel, { fontSize: normalizeFontSize(14) }]}>Phone</Text>
-            <Text style={[styles.infoValue, { fontSize: normalizeFontSize(16) }]}>{user?.phone || 'Not set'}</Text>
+        {/* Account Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {language === 'fr' ? 'Compte' : 'Account'}
+          </Text>
+          <View style={styles.menuContainer}>
+            <MenuOption
+              icon="person-outline"
+              label={language === 'fr' ? 'Informations personnelles' : 'Personal Information'}
+              onPress={() => navigation.navigate('EditProfile')}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="bag-handle-outline"
+              label={language === 'fr' ? 'Mes Commandes' : 'My Orders'}
+              onPress={() => navigation.navigate('Market', { screen: 'ClientOrders' })}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="location-outline"
+              label={language === 'fr' ? 'Mes Adresses' : 'My Addresses'}
+              onPress={() => { }}
+            />
           </View>
+        </View>
 
-          <View style={[styles.infoItem, { paddingVertical: spacing(2) }]}>
-            <Text style={[styles.infoLabel, { fontSize: normalizeFontSize(14) }]}>Role</Text>
-            <Text style={[styles.infoValue, { fontSize: normalizeFontSize(16) }]}>
-              {user?.role === 'CLIENT' ? 'Client' : 'Provider'}
-            </Text>
-          </View>
-
-          <View style={[styles.infoItem, { paddingVertical: spacing(2) }]}>
-            <Text style={[styles.infoLabel, { fontSize: normalizeFontSize(14) }]}>Language</Text>
-            <Text style={[styles.infoValue, { fontSize: normalizeFontSize(16) }]}>
-              {user?.language === 'FRENCH' ? 'Français' : 'English'}
-            </Text>
-          </View>
-
-          <View style={[styles.infoItem, { paddingVertical: spacing(2) }]}>
-            <Text style={[styles.infoLabel, { fontSize: normalizeFontSize(14) }]}>Location</Text>
-            <Text style={[styles.infoValue, { fontSize: normalizeFontSize(16) }]}>
-              {user?.city || 'Not set'}, {user?.region || 'Not set'}
-            </Text>
+        {/* App Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {language === 'fr' ? 'Application' : 'Application'}
+          </Text>
+          <View style={styles.menuContainer}>
+            <MenuOption
+              icon="notifications-outline"
+              label={language === 'fr' ? 'Notifications' : 'Notifications'}
+              onPress={() => { }}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="language-outline"
+              label={language === 'fr' ? 'Langue' : 'Language'}
+              onPress={() => { }}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="help-circle-outline"
+              label={language === 'fr' ? 'Aide & Support' : 'Help & Support'}
+              onPress={() => { }}
+            />
           </View>
         </View>
 
         {/* Actions */}
-        <View style={[styles.actionsSection, { marginTop: spacing(4) }]}>
-          <TouchableOpacity
-            style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
-            onPress={() => navigation.navigate('Conversations')}
-          >
-            <View style={styles.actionButtonContent}>
-              <Text style={{ fontSize: normalizeFontSize(20), marginRight: spacing(1.5) }}>💬</Text>
-              <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
-                {language === 'fr' ? 'Mes conversations' : 'My Conversations'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
-          >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
-              {language === 'fr' ? 'Modifier le profil' : 'Edit Profile'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
-          >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
-              {language === 'fr' ? 'Paramètres' : 'Settings'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}
-          >
-            <Text style={[styles.actionButtonText, { fontSize: normalizeFontSize(16) }]}>
-              {language === 'fr' ? 'Aide & Support' : 'Help & Support'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.signOutButton, { paddingVertical: spacing(2), borderRadius: spacing(1.5), marginTop: spacing(3) }]}
-            onPress={handleSignOut}
-          >
-            <Text style={[styles.signOutButtonText, { fontSize: normalizeFontSize(16) }]}>
-              {language === 'fr' ? 'Déconnexion' : 'Sign Out'}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.section}>
+          <View style={styles.menuContainer}>
+            <MenuOption
+              icon="swap-horizontal-outline"
+              label={
+                user?.role === 'provider'
+                  ? (userMode === 'client'
+                    ? (language === 'fr' ? 'Passer en mode Prestataire' : 'Switch to Provider Mode')
+                    : (language === 'fr' ? 'Passer en mode Client' : 'Switch to Client Mode'))
+                  : (user?.therapist
+                    ? (language === 'fr' ? 'Candidature en cours' : 'Application Pending')
+                    : (language === 'fr' ? 'Devenir Prestataire' : 'Become a Provider'))
+              }
+              onPress={() => {
+                if (user?.role === 'provider') {
+                  switchRole();
+                } else if (user?.therapist) {
+                  alert(language === 'fr' ? 'Votre candidature est en cours d\'examen.' : 'Your application is under review.');
+                } else {
+                  navigation.navigate('BecomeProvider');
+                }
+              }}
+              color={colors.info}
+              showChevron={user?.role === 'client' && !user?.therapist}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="log-out-outline"
+              label={language === 'fr' ? 'Déconnexion' : 'Sign Out'}
+              onPress={handleSignOut}
+              color={colors.error}
+              showChevron={false}
+            />
+          </View>
         </View>
+
+        <Text style={styles.versionText}>Version 1.0.0</Text>
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -134,73 +191,138 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundSecondary,
   },
   header: {
+    backgroundColor: colors.white,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.borderLight,
   },
-  title: {
-    fontWeight: '700',
-    color: '#2D2D2D',
+  headerTitle: {
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: typography.fontWeight.bold,
+    color: colors.black,
   },
   content: {
     flex: 1,
   },
-  contentContainer: {},
-  profileSection: {
-    alignItems: 'center',
-    paddingTop: 20,
+  scrollContent: {
+    padding: spacing.lg,
   },
-  profilePicture: {
-    backgroundColor: '#F5F5F5',
+  profileCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+    ...shadows.sm,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: spacing.md,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.gray100,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileInitial: {
-    fontWeight: '700',
-    color: '#2D2D2D',
+  avatarInitial: {
+    fontSize: 40,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.gray500,
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.black,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.white,
   },
   userName: {
-    fontWeight: '700',
-    color: '#2D2D2D',
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.black,
+    marginBottom: spacing.xs,
   },
   userEmail: {
-    color: '#666',
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
   },
-  infoSection: {},
-  infoItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+  roleBadge: {
+    backgroundColor: colors.gray100,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
   },
-  infoLabel: {
-    color: '#999',
-    marginBottom: 4,
+  roleText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
   },
-  infoValue: {
-    color: '#2D2D2D',
-    fontWeight: '600',
+  section: {
+    marginBottom: spacing.xl,
   },
-  actionsSection: {},
-  actionButton: {
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
+  sectionTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+    textTransform: 'uppercase',
   },
-  actionButtonContent: {
+  menuContainer: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  menuOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.white,
   },
-  actionButtonText: {
-    color: '#2D2D2D',
-    fontWeight: '600',
-  },
-  signOutButton: {
-    backgroundColor: '#FF6B6B',
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
-  signOutButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+  menuLabel: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginLeft: 56, // Align with text start
+  },
+  versionText: {
+    textAlign: 'center',
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: spacing.sm,
   },
 });

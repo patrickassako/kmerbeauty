@@ -4,8 +4,14 @@ import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
+import { json, urlencoded } from 'express';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Increase payload limit
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // Global exception filter
   app.useGlobalFilters(new AllExceptionsFilter());

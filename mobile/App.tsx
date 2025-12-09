@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider } from './src/i18n/I18nContext';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { GeolocationProvider } from './src/contexts/GeolocationContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 // Create a client
@@ -24,8 +25,10 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <I18nProvider>
             <AuthProvider>
-              <StatusBar barStyle="light-content" />
-              <AppNavigator />
+              <GeolocationProvider>
+                <StatusBar barStyle="light-content" />
+                <AppNavigator />
+              </GeolocationProvider>
             </AuthProvider>
           </I18nProvider>
         </QueryClientProvider>

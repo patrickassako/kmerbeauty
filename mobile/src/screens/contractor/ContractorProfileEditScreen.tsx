@@ -11,7 +11,7 @@ import {
   Switch,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
@@ -29,6 +29,7 @@ export const ContractorProfileEditScreen = () => {
   const { language, t } = useI18n();
   const { user } = useAuth();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,9 +47,9 @@ export const ContractorProfileEditScreen = () => {
     service_zones: [],
     confidentiality_accepted: false,
     terms_accepted: false,
-    profile_picture: null,
-    id_card_url: null,
-    insurance_url: null,
+    profile_image: undefined,
+    id_card_url: undefined,
+    insurance_url: undefined,
     training_certificates: [],
     portfolio_images: [],
   });
@@ -60,8 +61,22 @@ export const ContractorProfileEditScreen = () => {
   const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
 
   // New state for trusted zones
-  const [trustedZones, setTrustedZones] = useState<string[]>([]);
+  const [trustedZones, setTrustedZones] = useState<{ city: string; district: string }[]>([]);
   const [newZone, setNewZone] = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+
+  // New state for Provider Address
+  const [providerAddressQuery, setProviderAddressQuery] = useState('');
+  const [providerLocation, setProviderLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    city: string;
+    region: string;
+    address: string;
+  } | null>(null);
+  const [providerAddressSuggestions, setProviderAddressSuggestions] = useState<any[]>([]);
+  const [isSearchingProviderAddress, setIsSearchingProviderAddress] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -93,7 +108,7 @@ export const ContractorProfileEditScreen = () => {
       const existingProfile = await contractorApi.getProfileByUserId(user?.id || '');
       if (existingProfile) {
         setProfile(existingProfile);
-        setProfilePicture(existingProfile.profile_picture || null);
+        setProfilePicture(existingProfile.profile_image || null);
         // Handle ID card (could be object with front/back or just string)
         if (typeof existingProfile.id_card_url === 'object') {
           setIdCardFront(existingProfile.id_card_url?.front || null);
@@ -104,16 +119,36 @@ export const ContractorProfileEditScreen = () => {
         setPortfolioImages(existingProfile.portfolio_images || []);
 
         // Handle service_zones (could be array of strings or array of objects)
-        if (existingProfile.service_zones) {
-          if (typeof existingProfile.service_zones[0] === 'string') {
-            setTrustedZones(existingProfile.service_zones as string[]);
+        if (existingProfile.service_zones && existingProfile.service_zones.length > 0) {
+          const firstZone = existingProfile.service_zones[0];
+          if (typeof firstZone === 'string') {
+            // Legacy: array of strings
+            const zones = (existingProfile.service_zones as string[]).map(z => ({ city: 'Unknown', district: z }));
+            setTrustedZones(zones);
           } else {
-            // Extract neighborhood names from location objects
-            const zones = (existingProfile.service_zones as any[]).map(
-              (zone: any) => zone?.location?.address || zone
-            );
+            // Objects: could be new format {city, district} or old ServiceZone {location, radius}
+            const zones = (existingProfile.service_zones as any[]).map((zone: any) => {
+              if (zone.city && zone.district) {
+                return { city: zone.city, district: zone.district };
+              }
+              // Try to extract from location address if available
+              const address = zone.location?.address || '';
+              return { city: 'Unknown', district: address || 'Unknown' };
+            });
             setTrustedZones(zones);
           }
+        }
+
+        // Handle provider location
+        if (existingProfile.latitude && existingProfile.longitude) {
+          setProviderLocation({
+            latitude: existingProfile.latitude,
+            longitude: existingProfile.longitude,
+            city: existingProfile.city || 'Unknown',
+            region: existingProfile.region || 'Unknown',
+            address: `${existingProfile.city || ''} ${existingProfile.region || ''}`.trim(),
+          });
+          setProviderAddressQuery(`${existingProfile.city || ''} ${existingProfile.region || ''}`.trim());
         }
       }
     } catch (error) {
@@ -137,7 +172,7 @@ export const ContractorProfileEditScreen = () => {
 
         if (type === 'profile') {
           setProfilePicture(imageUri);
-          setProfile({ ...profile, profile_picture: imageUri });
+          setProfile({ ...profile, profile_image: imageUri });
         } else if (type === 'id_front') {
           setIdCardFront(imageUri);
           const updatedIdCard = { front: imageUri, back: idCardBack };
@@ -155,7 +190,7 @@ export const ContractorProfileEditScreen = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t.common.error, 'Failed to pick image');
     }
   };
 
@@ -165,36 +200,166 @@ export const ContractorProfileEditScreen = () => {
     setProfile({ ...profile, portfolio_images: updated });
   };
 
-  const addTrustedZone = () => {
-    if (newZone.trim()) {
-      const updated = [...trustedZones, newZone.trim()];
-      setTrustedZones(updated);
-      setProfile({ ...profile, service_zones: updated });
-      setNewZone('');
+  const searchAddress = async (query: string) => {
+    setNewZone(query);
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      return;
     }
+
+    try {
+      setIsSearchingAddress(true);
+      // Use Nominatim for free geocoding (limited to Cameroon)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cm&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'User-Agent': 'KMR-Beauty-App/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      setAddressSuggestions(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const selectAddress = (item: any) => {
+    const city = item.address?.city || item.address?.town || item.address?.village || item.address?.state || 'Unknown';
+    const district = item.address?.suburb || item.address?.neighbourhood || item.address?.quarter || item.name;
+
+    if (city && district) {
+      const newZoneObj = { city, district };
+      // Check for duplicates
+      const exists = trustedZones.some(z => z.city === newZoneObj.city && z.district === newZoneObj.district);
+      if (!exists) {
+        const updated = [...trustedZones, newZoneObj];
+        setTrustedZones(updated);
+        setProfile({ ...profile, service_zones: updated as any });
+      }
+    }
+
+    setNewZone('');
+    setAddressSuggestions([]);
   };
 
   const removeTrustedZone = (index: number) => {
     const updated = trustedZones.filter((_, i) => i !== index);
     setTrustedZones(updated);
-    setProfile({ ...profile, service_zones: updated });
+    setProfile({ ...profile, service_zones: updated as any });
+  };
+
+  const searchProviderAddress = async (query: string) => {
+    setProviderAddressQuery(query);
+    if (query.length < 3) {
+      setProviderAddressSuggestions([]);
+      return;
+    }
+
+    try {
+      setIsSearchingProviderAddress(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cm&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'User-Agent': 'KMR-Beauty-App/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      setProviderAddressSuggestions(data);
+    } catch (error) {
+      console.error('Error searching provider address:', error);
+    } finally {
+      setIsSearchingProviderAddress(false);
+    }
+  };
+
+  const selectProviderAddress = (item: any) => {
+    console.log('📍 Selected Address Item:', JSON.stringify(item, null, 2));
+
+    const addr = item.address || {};
+    // More robust extraction
+    const city = addr.city || addr.town || addr.village || addr.municipality || addr.hamlet || addr.county || 'Unknown';
+    const region = addr.state || addr.region || addr.province || addr['ISO3166-2-lvl4'] || 'Unknown';
+
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+
+    console.log('✅ Extracted Location:', { lat, lon, city, region });
+
+    setProviderLocation({
+      latitude: lat,
+      longitude: lon,
+      city,
+      region,
+      address: item.display_name,
+    });
+    setProviderAddressQuery(item.display_name);
+    setProviderAddressSuggestions([]);
   };
 
   const saveProfile = async () => {
     try {
       // Validation
+      if (!profile.business_name) {
+        Alert.alert(t.common.error, 'Veuillez entrer le nom de votre entreprise ou votre nom commercial');
+        return;
+      }
+
+      if (!profile.professional_experience) {
+        Alert.alert(t.common.error, 'Veuillez décrire votre expérience professionnelle');
+        return;
+      }
+
       if (!profile.legal_status) {
         Alert.alert(
-          language === 'fr' ? 'Erreur' : 'Error',
-          language === 'fr' ? 'Veuillez sélectionner votre statut légal' : 'Please select your legal status'
+          t.common.error,
+          t.contractorProfile.selectLegalStatus
         );
         return;
       }
 
       if (!profile.confidentiality_accepted || !profile.terms_accepted) {
         Alert.alert(
-          language === 'fr' ? 'Erreur' : 'Error',
-          language === 'fr' ? 'Veuillez accepter les conditions' : 'Please accept the terms'
+          t.common.error,
+          t.contractorProfile.acceptTerms
+        );
+        return;
+      }
+
+      // Mandatory fields validation
+      if (!profilePicture && !profile.profile_image) {
+        Alert.alert(
+          t.common.error,
+          t.contractorProfile.requiredFields
+        );
+        return;
+      }
+
+      if (!profile.types_of_services || profile.types_of_services.length === 0) {
+        Alert.alert(
+          t.common.error,
+          t.contractorProfile.requiredFields
+        );
+        return;
+      }
+
+      if (!trustedZones || trustedZones.length === 0) {
+        Alert.alert(
+          t.common.error,
+          t.contractorProfile.requiredFields
+        );
+        return;
+      }
+
+      if (!providerLocation) {
+        Alert.alert(
+          t.common.error,
+          'Veuillez définir votre adresse principale'
         );
         return;
       }
@@ -207,9 +372,9 @@ export const ContractorProfileEditScreen = () => {
       // Upload profile picture
       if (profilePicture && profilePicture.startsWith('file://')) {
         const result = await contractorApi.uploadFile(profilePicture, user?.id || '', 'profile');
-        profileData.profile_picture = result.url;
+        profileData.profile_image = result.url;
       } else if (profilePicture) {
-        profileData.profile_picture = profilePicture;
+        profileData.profile_image = profilePicture;
       }
 
       // Upload ID card front and back
@@ -246,6 +411,18 @@ export const ContractorProfileEditScreen = () => {
         profileData.portfolio_images = uploadedPortfolio;
       }
 
+      if (uploadedPortfolio.length > 0) {
+        profileData.portfolio_images = uploadedPortfolio;
+      }
+
+      // Add location data
+      if (providerLocation) {
+        profileData.latitude = providerLocation.latitude;
+        profileData.longitude = providerLocation.longitude;
+        profileData.city = providerLocation.city;
+        profileData.region = providerLocation.region;
+      }
+
       profileData.profile_completed = true;
 
       // Ensure user_id is set
@@ -262,17 +439,18 @@ export const ContractorProfileEditScreen = () => {
       }
 
       Alert.alert(
-        language === 'fr' ? 'Succès' : 'Success',
-        language === 'fr'
-          ? 'Profil enregistré avec succès. Votre compte est en attente de validation par un administrateur. Ajoutez maintenant les services que vous proposez.'
-          : 'Profile saved successfully. Your account is pending admin validation. Now add the services you provide.',
+        t.common.success,
+        t.contractorProfile.profileSaved,
         [
           {
             text: 'OK',
             onPress: () => {
-              if (isNewProfile) {
-                // Navigate to services screen for new profiles
-                navigation.replace('ContractorServices');
+              // @ts-ignore
+              const isSetupFlow = route.params?.isSetupFlow;
+
+              if (isNewProfile || isSetupFlow) {
+                // Navigate to services screen for new profiles or setup flow
+                navigation.navigate('ContractorServices');
               } else {
                 navigation.goBack();
               }
@@ -285,7 +463,7 @@ export const ContractorProfileEditScreen = () => {
     } catch (error: any) {
       console.error('Error saving profile:', error);
       Alert.alert(
-        'Error',
+        t.common.error,
         error.message || 'Failed to save profile'
       );
     } finally {
@@ -333,9 +511,9 @@ export const ContractorProfileEditScreen = () => {
   ];
 
   const transportOptions = [
-    { label: language === 'fr' ? 'Voiture' : 'Car', value: 'car' },
-    { label: language === 'fr' ? 'Vélo' : 'Bike', value: 'bike' },
-    { label: language === 'fr' ? 'Transport public' : 'Public Transport', value: 'public_transport' },
+    { label: t.contractorProfile.car, value: 'car' },
+    { label: t.contractorProfile.bike, value: 'bike' },
+    { label: t.contractorProfile.publicTransport, value: 'public_transport' },
   ];
 
   return (
@@ -346,7 +524,7 @@ export const ContractorProfileEditScreen = () => {
           <Text style={{ fontSize: normalizeFontSize(24) }}>←</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { fontSize: normalizeFontSize(18) }]}>
-          {language === 'fr' ? 'Modifier le profil' : 'Edit Profile'}
+          {t.contractorProfile.editProfile}
         </Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={{ fontSize: normalizeFontSize(18) }}>✕</Text>
@@ -357,7 +535,7 @@ export const ContractorProfileEditScreen = () => {
         <View style={{ padding: spacing(2.5) }}>
           {/* Full Name (from user) */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            {language === 'fr' ? 'Nom complet' : 'Full Name'}
+            {t.contractorProfile.fullName}
           </Text>
           <Text style={[styles.infoText, { fontSize: normalizeFontSize(14), padding: spacing(1.5) }]}>
             {user?.firstName && user?.lastName
@@ -367,7 +545,7 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Profile Picture */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(2) }]}>
-            {language === 'fr' ? 'Photo de profil' : 'Profile Picture'}
+            {t.contractorProfile.profilePicture}
           </Text>
           <TouchableOpacity
             style={[styles.imageUpload, { padding: spacing(3) }]}
@@ -377,14 +555,14 @@ export const ContractorProfileEditScreen = () => {
               <Image source={{ uri: profilePicture }} style={styles.uploadedImage} />
             ) : (
               <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-                {language === 'fr' ? 'Appuyez pour télécharger' : 'Tap to upload'}
+                {t.contractorProfile.tapToUpload}
               </Text>
             )}
           </TouchableOpacity>
 
           {/* Contact Information */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Informations de contact' : 'Contact Information'}
+            {t.contractorProfile.contactInfo}
           </Text>
 
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
@@ -395,15 +573,85 @@ export const ContractorProfileEditScreen = () => {
           </Text>
 
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
-            {language === 'fr' ? 'Téléphone' : 'Phone'}
+            {t.auth.phone}
           </Text>
           <Text style={[styles.infoText, { fontSize: normalizeFontSize(14), padding: spacing(1.5) }]}>
             {user?.phone || 'Not set'}
           </Text>
 
+          {/* Provider Address */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {t.contractorProfile.address || 'Adresse Principale'}
+          </Text>
+          <View style={[styles.addZoneContainer, { marginTop: spacing(1), flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput
+                style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), flex: 1 }]}
+                placeholder="Rechercher votre adresse..."
+                placeholderTextColor="#999"
+                value={providerAddressQuery}
+                onChangeText={searchProviderAddress}
+              />
+              {isSearchingProviderAddress && (
+                <ActivityIndicator size="small" color="#2D2D2D" style={{ marginLeft: spacing(1) }} />
+              )}
+            </View>
+
+            {/* Address Suggestions */}
+            {providerAddressSuggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {providerAddressSuggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => selectProviderAddress(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.display_name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Business Name */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {t.auth.businessName || 'Nom Commercial / Entreprise'}
+          </Text>
+          <TextInput
+            style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) }]}
+            placeholder={t.auth.businessNamePlaceholder || 'Votre nom commercial'}
+            value={profile.business_name}
+            onChangeText={(text) => setProfile({ ...profile, business_name: text })}
+          />
+
+          {/* Bio / Professional Experience */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {t.auth.bio || 'Biographie / Expérience'}
+          </Text>
+          <TextInput
+            style={[styles.zoneInput, { padding: spacing(1.5), marginTop: spacing(1), height: 100, textAlignVertical: 'top' }]}
+            placeholder={t.auth.bioPlaceholder || 'Décrivez votre expérience et vos services...'}
+            value={profile.professional_experience}
+            onChangeText={(text) => setProfile({ ...profile, professional_experience: text })}
+            multiline
+            numberOfLines={4}
+          />
+
+          {/* Years of Experience */}
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
+            {t.auth.experience || "Années d'expérience"}
+          </Text>
+          <TextInput
+            style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), marginTop: spacing(1) }]}
+            placeholder="Ex: 5"
+            value={profile.experience?.toString()}
+            onChangeText={(text) => setProfile({ ...profile, experience: parseInt(text) || 0 })}
+            keyboardType="numeric"
+          />
+
           {/* Legal Status */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Statut légal' : 'Legal Status'}
+            {t.contractorProfile.legalStatus}
           </Text>
           <View style={[styles.radioGroup, { marginTop: spacing(1) }]}>
             <TouchableOpacity
@@ -414,7 +662,7 @@ export const ContractorProfileEditScreen = () => {
                 {profile.legal_status === 'independant' && <View style={styles.radioSelected} />}
               </View>
               <Text style={[styles.radioLabel, { fontSize: normalizeFontSize(14) }]}>
-                {language === 'fr' ? 'Prestataire libre' : 'Independent Provider'}
+                {t.contractorProfile.independent}
               </Text>
             </TouchableOpacity>
 
@@ -435,22 +683,22 @@ export const ContractorProfileEditScreen = () => {
           {profile.legal_status === 'salon' && (
             <>
               <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                {language === 'fr' ? 'Registre du commerce' : 'Business Registration'}
+                {t.contractorProfile.businessRegistration}
               </Text>
               <TextInput
                 style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-                placeholder={language === 'fr' ? 'Numéro registre du commerce' : 'Business registration number'}
+                placeholder={t.contractorProfile.businessRegistrationNumber}
                 placeholderTextColor="#999"
                 value={profile.siret_number}
                 onChangeText={(text) => setProfile({ ...profile, siret_number: text })}
               />
 
               <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2) }]}>
-                {language === 'fr' ? 'Nom de l\'entreprise' : 'Business Name'}
+                {t.contractorProfile.businessName}
               </Text>
               <TextInput
                 style={[styles.input, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-                placeholder={language === 'fr' ? 'Nom du salon' : 'Salon name'}
+                placeholder={t.contractorProfile.salonName}
                 placeholderTextColor="#999"
                 value={profile.business_name}
                 onChangeText={(text) => setProfile({ ...profile, business_name: text })}
@@ -460,11 +708,11 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Professional Experience */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Expérience professionnelle' : 'Professional Experience'}
+            {t.contractorProfile.professionalExperience}
           </Text>
           <TextInput
             style={[styles.textArea, { padding: spacing(1.5), fontSize: normalizeFontSize(14) }]}
-            placeholder={language === 'fr' ? 'Décrivez votre expérience...' : 'Describe your experience...'}
+            placeholder={t.contractorProfile.describeExperience}
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
@@ -478,7 +726,7 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Type of Services */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Types de services proposés' : 'Type of Services Provided'}
+            {t.contractorProfile.servicesProvided}
           </Text>
           <View style={{ marginTop: spacing(1) }}>
             {categories.map((cat) => (
@@ -501,33 +749,47 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Trusted Zones */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Zones de confiance (Quartiers)' : 'Trusted Zones (Neighborhoods)'}
+            {t.contractorProfile.trustedZones}
           </Text>
 
           {/* Add Zone Input */}
-          <View style={[styles.addZoneContainer, { marginTop: spacing(1) }]}>
-            <TextInput
-              style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), flex: 1 }]}
-              placeholder={language === 'fr' ? 'Nom du quartier...' : 'Neighborhood name...'}
-              placeholderTextColor="#999"
-              value={newZone}
-              onChangeText={setNewZone}
-            />
-            <TouchableOpacity
-              style={[styles.addZoneButton, { padding: spacing(1.5) }]}
-              onPress={addTrustedZone}
-            >
-              <Text style={[styles.addZoneButtonText, { fontSize: normalizeFontSize(14) }]}>
-                {language === 'fr' ? 'Ajouter' : 'Add'}
-              </Text>
-            </TouchableOpacity>
+          <View style={[styles.addZoneContainer, { marginTop: spacing(1), flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput
+                style={[styles.zoneInput, { padding: spacing(1.5), fontSize: normalizeFontSize(14), flex: 1 }]}
+                placeholder={t.contractorProfile.searchNeighborhood}
+                placeholderTextColor="#999"
+                value={newZone}
+                onChangeText={searchAddress}
+              />
+              {isSearchingAddress && (
+                <ActivityIndicator size="small" color="#2D2D2D" style={{ marginLeft: spacing(1) }} />
+              )}
+            </View>
+
+            {/* Address Suggestions */}
+            {addressSuggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {addressSuggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => selectAddress(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.display_name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* List of Zones */}
           <View style={[styles.zonesList, { marginTop: spacing(1.5) }]}>
             {trustedZones.map((zone, index) => (
               <View key={index} style={[styles.zoneChip, { padding: spacing(1), marginBottom: spacing(1) }]}>
-                <Text style={[styles.zoneText, { fontSize: normalizeFontSize(14) }]}>{zone}</Text>
+                <Text style={[styles.zoneText, { fontSize: normalizeFontSize(14) }]}>
+                  {zone.district}{zone.city !== 'Unknown' ? `, ${zone.city}` : ''}
+                </Text>
                 <TouchableOpacity onPress={() => removeTrustedZone(index)}>
                   <Text style={[styles.zoneRemove, { fontSize: normalizeFontSize(16) }]}>✕</Text>
                 </TouchableOpacity>
@@ -535,7 +797,7 @@ export const ContractorProfileEditScreen = () => {
             ))}
             {trustedZones.length === 0 && (
               <Text style={[styles.emptyText, { fontSize: normalizeFontSize(12), color: '#999' }]}>
-                {language === 'fr' ? 'Aucun quartier ajouté' : 'No neighborhoods added'}
+                {t.contractorProfile.noZonesAdded}
               </Text>
             )}
           </View>
@@ -543,13 +805,13 @@ export const ContractorProfileEditScreen = () => {
           {/* ID Card Recto/Verso */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
             {profile.legal_status === 'salon'
-              ? (language === 'fr' ? 'Carte d\'identité du responsable' : 'Manager\'s ID Card')
-              : (language === 'fr' ? 'Carte d\'identité' : 'ID Card')}
+              ? t.contractorProfile.managerIdCard
+              : t.contractorProfile.idCard}
           </Text>
 
           {/* ID Card Front */}
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
-            {language === 'fr' ? 'Recto' : 'Front'}
+            {t.contractorProfile.front}
           </Text>
           <TouchableOpacity
             style={[styles.imageUpload, { padding: spacing(3) }]}
@@ -559,14 +821,14 @@ export const ContractorProfileEditScreen = () => {
               <Image source={{ uri: idCardFront }} style={styles.uploadedImage} />
             ) : (
               <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-                {language === 'fr' ? 'Appuyez pour télécharger le recto' : 'Tap to upload front'}
+                {t.contractorProfile.tapToUploadFront}
               </Text>
             )}
           </TouchableOpacity>
 
           {/* ID Card Back */}
           <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(1.5) }]}>
-            {language === 'fr' ? 'Verso' : 'Back'}
+            {t.contractorProfile.back}
           </Text>
           <TouchableOpacity
             style={[styles.imageUpload, { padding: spacing(3) }]}
@@ -576,14 +838,14 @@ export const ContractorProfileEditScreen = () => {
               <Image source={{ uri: idCardBack }} style={styles.uploadedImage} />
             ) : (
               <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
-                {language === 'fr' ? 'Appuyez pour télécharger le verso' : 'Tap to upload back'}
+                {t.contractorProfile.tapToUploadBack}
               </Text>
             )}
           </TouchableOpacity>
 
           {/* Training Certificates (Optional) */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Certificats de formation (Optionnel)' : 'Training Certificates (Optional)'}
+            {t.contractorProfile.trainingCertificates}
           </Text>
           <TouchableOpacity style={[styles.imageUpload, { padding: spacing(3) }]}>
             <Text style={{ fontSize: normalizeFontSize(14), color: '#666' }}>
@@ -619,7 +881,7 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Languages */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Langues parlées' : 'Languages Spoken'}
+            {t.contractorProfile.languagesSpoken}
           </Text>
           <View style={{ marginTop: spacing(1) }}>
             {languages.map((lang) => (
@@ -642,7 +904,7 @@ export const ContractorProfileEditScreen = () => {
 
           {/* Transportation */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
-            {language === 'fr' ? 'Moyens de transport disponibles' : 'Available Transportation'}
+            {t.contractorProfile.availableTransportation}
           </Text>
           <View style={{ marginTop: spacing(1) }}>
             {transportOptions.map((trans) => (
@@ -666,7 +928,7 @@ export const ContractorProfileEditScreen = () => {
           {/* Legal Agreements */}
           <View style={[styles.switchRow, { marginTop: spacing(3) }]}>
             <Text style={[styles.switchLabel, { fontSize: normalizeFontSize(14), flex: 1 }]}>
-              {language === 'fr' ? 'Accord de confidentialité' : 'Confidentiality Agreement'}
+              {t.contractorProfile.confidentialityAgreement}
             </Text>
             <Switch
               value={profile.confidentiality_accepted}
@@ -676,7 +938,7 @@ export const ContractorProfileEditScreen = () => {
 
           <View style={[styles.switchRow, { marginTop: spacing(1.5) }]}>
             <Text style={[styles.switchLabel, { fontSize: normalizeFontSize(14), flex: 1 }]}>
-              {language === 'fr' ? 'Conditions générales' : 'Terms and Conditions'}
+              {t.contractorProfile.termsAndConditions}
             </Text>
             <Switch
               value={profile.terms_accepted}
@@ -694,7 +956,7 @@ export const ContractorProfileEditScreen = () => {
               <ActivityIndicator color="#FFF" />
             ) : (
               <Text style={[styles.saveButtonText, { fontSize: normalizeFontSize(16) }]}>
-                {language === 'fr' ? 'Enregistrer' : 'Save'}
+                {t.contractorProfile.save}
               </Text>
             )}
           </TouchableOpacity>
@@ -888,7 +1150,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addZoneContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 8,
   },
   zoneInput: {
@@ -897,24 +1159,33 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 8,
   },
-  addZoneButton: {
-    backgroundColor: '#2D2D2D',
+  suggestionsContainer: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    marginTop: 4,
+    maxHeight: 200,
+    zIndex: 1000,
   },
-  addZoneButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
   },
   zonesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
     gap: 8,
   },
   zoneChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#F0F0F0',
     borderRadius: 20,
     paddingHorizontal: 12,

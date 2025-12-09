@@ -3,7 +3,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   async findAll(category?: string) {
     const supabase = this.supabaseService.getClient();
@@ -41,8 +41,33 @@ export class ServicesService {
       throw new Error(`Failed to fetch service: ${error.message}`);
     }
 
-    // provider_count is now denormalized and auto-maintained by triggers
     // No need for additional COUNT queries
+    return data;
+  }
+
+  async findNearbyProviders(
+    serviceId: string | null,
+    lat: number,
+    lng: number,
+    radius: number = 50000,
+    city?: string,
+    district?: string,
+  ) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase.rpc('get_nearby_providers', {
+      lat,
+      lng,
+      radius_meters: radius,
+      client_city: city,
+      client_district: district,
+      filter_service_id: serviceId,
+    });
+
+    if (error) {
+      throw new Error(`Failed to fetch nearby providers: ${error.message}`);
+    }
+
     return data;
   }
 }

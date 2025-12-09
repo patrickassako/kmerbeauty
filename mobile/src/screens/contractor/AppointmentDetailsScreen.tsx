@@ -204,10 +204,10 @@ export const AppointmentDetailsScreen = () => {
             {
               backgroundColor:
                 appointment.status === 'COMPLETED' ? '#4CAF50' :
-                appointment.status === 'CONFIRMED' ? '#2196F3' :
-                appointment.status === 'IN_PROGRESS' ? '#FF9800' :
-                appointment.status === 'PENDING' ? '#FFC107' :
-                appointment.status === 'CANCELLED' ? '#F44336' : '#999',
+                  appointment.status === 'CONFIRMED' ? '#2196F3' :
+                    appointment.status === 'IN_PROGRESS' ? '#FF9800' :
+                      appointment.status === 'PENDING' ? '#FFC107' :
+                        appointment.status === 'CANCELLED' ? '#F44336' : '#999',
               paddingHorizontal: spacing(2),
               paddingVertical: spacing(1),
               borderRadius: spacing(1),
@@ -250,7 +250,7 @@ export const AppointmentDetailsScreen = () => {
           <View style={styles.locationRow}>
             <Text style={{ fontSize: normalizeFontSize(18) }}>📍</Text>
             <Text style={[styles.locationText, { fontSize: normalizeFontSize(14) }]}>
-              {appointment.location?.address || '6 Parvis Notre-Dame - 754 Paris, France (1km away)'}
+              {appointment.location?.address || 'Adresse non disponible'}
             </Text>
           </View>
         </View>

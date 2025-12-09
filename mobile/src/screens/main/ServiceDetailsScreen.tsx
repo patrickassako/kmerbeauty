@@ -15,8 +15,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useService } from '../../hooks/useServices';
-import { useTherapists } from '../../hooks/useTherapists';
-import { useSalons } from '../../hooks/useSalons';
+import { useGeolocation } from '../../hooks/useGeolocation';
+import { useServiceProviders } from '../../hooks/useServiceProviders';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 
@@ -45,17 +45,25 @@ export const ServiceDetailsScreen: React.FC = () => {
   // Charger les détails du service
   const { service: serviceData, loading: loadingService } = useService(serviceParam.id);
 
-  // Charger les prestataires pour ce service
-  const { therapists, loading: loadingTherapists, refetch: refetchTherapists } = useTherapists({ serviceId: serviceParam.id });
-  const { salons, loading: loadingSalons, refetch: refetchSalons } = useSalons({ serviceId: serviceParam.id });
+  // Géolocalisation pour le tri intelligent
+  const { location, city, district } = useGeolocation();
 
-  const loading = loadingService || loadingTherapists || loadingSalons;
+  // Charger les prestataires unifiés et triés
+  const { providers, loading: loadingProviders, refetch: refetchProviders } = useServiceProviders({
+    serviceId: serviceParam.id,
+    lat: location?.latitude,
+    lng: location?.longitude,
+    city,
+    district
+  });
+
+  const loading = loadingService || loadingProviders;
   const service = serviceData || serviceParam;
-  const totalProviders = therapists.length + salons.length;
+  const totalProviders = providers.length;
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchTherapists(), refetchSalons()]);
+    await refetchProviders();
     setRefreshing(false);
   };
 
@@ -64,7 +72,6 @@ export const ServiceDetailsScreen: React.FC = () => {
   };
 
   const handleSelectProvider = (providerId: string, providerType: 'therapist' | 'salon', providerName: string, price: number) => {
-    // Si le même prestataire est cliqué, le désélectionner
     if (selectedProvider?.id === providerId) {
       setSelectedProvider(null);
     } else {
@@ -82,16 +89,16 @@ export const ServiceDetailsScreen: React.FC = () => {
   };
 
   const handleViewProviders = () => {
-    navigation.navigate('ServiceProviders', { service });
+    navigation.navigate('ServiceProviders', { service: service as any });
   };
 
   const handleBookNow = () => {
     if (!selectedProvider) {
-      return; // Ne rien faire si aucun prestataire n'est sélectionné
+      return;
     }
 
     navigation.navigate('Booking', {
-      service,
+      service: service as any,
       providerId: selectedProvider.id,
       providerType: selectedProvider.type,
       providerName: selectedProvider.name,
@@ -99,7 +106,6 @@ export const ServiceDetailsScreen: React.FC = () => {
     });
   };
 
-  // Mock data for components/steps (peut être enrichi depuis la BDD plus tard)
   const components = service.components || [
     'Consultation et analyse des besoins',
     'Préparation et nettoyage',
@@ -127,7 +133,6 @@ export const ServiceDetailsScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Back Button */}
         <TouchableOpacity
           style={[styles.backButton, { top: spacing(6), left: spacing(2), width: spacing(5), height: spacing(5) }]}
           onPress={() => navigation.goBack()}
@@ -135,7 +140,6 @@ export const ServiceDetailsScreen: React.FC = () => {
           <Text style={[styles.backIcon, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
 
-        {/* Close Button */}
         <TouchableOpacity
           style={[styles.closeButton, { top: spacing(6), right: spacing(2), width: spacing(5), height: spacing(5) }]}
           onPress={() => navigation.goBack()}
@@ -206,10 +210,10 @@ export const ServiceDetailsScreen: React.FC = () => {
                         DISPONIBLE CHEZ
                       </Text>
                       <Text style={[styles.providerCount, { fontSize: normalizeFontSize(16), marginTop: spacing(0.5) }]}>
-                        {totalProviders} prestataire{totalProviders > 1 ? 's' : ''}
+                        {totalProviders} prestataire{totalProviders > 1 ? 's' : ''} à proximité
                       </Text>
                     </View>
-                    {totalProviders > 3 && (
+                    {totalProviders > 5 && (
                       <TouchableOpacity onPress={handleViewProviders}>
                         <Text style={[styles.viewAllButton, { fontSize: normalizeFontSize(14) }]}>
                           Voir tous →
@@ -218,105 +222,42 @@ export const ServiceDetailsScreen: React.FC = () => {
                     )}
                   </View>
 
-                  {/* Therapists */}
-                  {therapists.slice(0, 3).map((therapist) => {
-                    const therapistName = `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute';
-                    const avatar = therapist.profile_image || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null);
-                    const isSelected = selectedProvider?.id === therapist.id;
-                    const price = therapist.service_price || service.base_price;
+                  {/* Unified Providers List */}
+                  {providers.slice(0, 5).map((provider) => {
+                    const isSelected = selectedProvider?.id === provider.id;
+                    const price = provider.service_price || service.base_price;
+                    const isSalon = provider.type === 'salon';
+
+                    // Badges de matching
+                    let matchBadge = null;
+                    if (provider.match_type === 'district_match') {
+                      matchBadge = { text: 'Quartier', color: '#4CAF50', bg: '#E8F5E9' };
+                    } else if (provider.match_type === 'city_match') {
+                      matchBadge = { text: 'Ville', color: '#2196F3', bg: '#E3F2FD' };
+                    }
 
                     return (
-                      <View key={therapist.id} style={[{ marginBottom: spacing(2) }]}>
+                      <View key={provider.id} style={[{ marginBottom: spacing(2) }]}>
                         <TouchableOpacity
                           style={[
                             styles.providerCard,
                             { padding: spacing(2), borderRadius: spacing(2) },
                             isSelected && styles.providerCardSelected,
                           ]}
-                          onPress={() => handleSelectProvider(therapist.id, 'therapist', therapistName, price)}
+                          onPress={() => handleSelectProvider(provider.id, isSalon ? 'salon' : 'therapist', provider.name, price)}
                         >
                           <View style={styles.providerCardContent}>
                             <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                              {avatar ? (
+                              {provider.image ? (
                                 <Image
-                                  source={{ uri: avatar }}
+                                  source={{ uri: provider.image }}
                                   style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
                                   resizeMode="cover"
                                 />
                               ) : (
-                                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>👤</Text>
-                              )}
-                              {isSelected && (
-                                <View style={[styles.selectedBadge, { position: 'absolute', top: 0, right: 0, width: spacing(3), height: spacing(3), borderRadius: spacing(1.5) }]}>
-                                  <Text style={[styles.selectedBadgeText, { fontSize: normalizeFontSize(12) }]}>✓</Text>
-                                </View>
-                              )}
-                            </View>
-                            <View style={styles.providerCardInfo}>
-                              <View style={styles.providerCardNameRow}>
-                                <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
-                                  {therapistName}
+                                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
+                                  {isSalon ? '🏪' : '👤'}
                                 </Text>
-                                {isSelected && (
-                                  <View style={[styles.selectedLabel, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
-                                    <Text style={[styles.selectedLabelText, { fontSize: normalizeFontSize(10) }]}>Sélectionné</Text>
-                                  </View>
-                                )}
-                              </View>
-                              <View style={styles.providerCardMeta}>
-                                <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
-                                  ⭐ {therapist.rating != null ? therapist.rating.toFixed(1) : '5.0'}
-                                </Text>
-                                <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
-                                <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
-                                  {therapist.city || 'Ville inconnue'}
-                                </Text>
-                              </View>
-                              <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
-                                {formatCurrency(price, countryCode)}
-                              </Text>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.viewDetailsLink, { paddingVertical: spacing(0.5), paddingLeft: spacing(2), marginTop: spacing(0.5) }]}
-                          onPress={() => handleViewProviderDetails(therapist.id, 'therapist')}
-                        >
-                          <Text style={[styles.viewDetailsLinkText, { fontSize: normalizeFontSize(12) }]}>
-                            Voir les détails →
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-
-                  {/* Salons */}
-                  {salons.slice(0, 3 - therapists.slice(0, 3).length).map((salon) => {
-                    const salonName = (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut';
-                    const avatar = salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null);
-                    const isSelected = selectedProvider?.id === salon.id;
-                    const price = salon.service_price || service.base_price;
-
-                    return (
-                      <View key={salon.id} style={[{ marginBottom: spacing(2) }]}>
-                        <TouchableOpacity
-                          style={[
-                            styles.providerCard,
-                            { padding: spacing(2), borderRadius: spacing(2) },
-                            isSelected && styles.providerCardSelected,
-                          ]}
-                          onPress={() => handleSelectProvider(salon.id, 'salon', salonName, price)}
-                        >
-                          <View style={styles.providerCardContent}>
-                            <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                              {avatar ? (
-                                <Image
-                                  source={{ uri: avatar }}
-                                  style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
-                                  resizeMode="cover"
-                                />
-                              ) : (
-                                <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>🏪</Text>
                               )}
                               {isSelected && (
                                 <View style={[styles.selectedBadge, { position: 'absolute', top: 0, right: 0, width: spacing(3), height: spacing(3), borderRadius: spacing(1.5) }]}>
@@ -327,26 +268,41 @@ export const ServiceDetailsScreen: React.FC = () => {
                             <View style={styles.providerCardInfo}>
                               <View style={styles.providerCardNameRow}>
                                 <Text style={[styles.providerCardName, { fontSize: normalizeFontSize(16), flex: 1 }]} numberOfLines={1}>
-                                  {salonName}
+                                  {provider.name}
                                 </Text>
-                                <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
-                                  <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
-                                </View>
-                                {isSelected && (
-                                  <View style={[styles.selectedLabel, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
-                                    <Text style={[styles.selectedLabelText, { fontSize: normalizeFontSize(10) }]}>Sélectionné</Text>
+
+                                {matchBadge && (
+                                  <View style={{
+                                    backgroundColor: matchBadge.bg,
+                                    paddingHorizontal: spacing(1),
+                                    paddingVertical: spacing(0.3),
+                                    borderRadius: spacing(1),
+                                    marginLeft: spacing(1)
+                                  }}>
+                                    <Text style={{ color: matchBadge.color, fontSize: normalizeFontSize(10), fontWeight: '600' }}>
+                                      {matchBadge.text}
+                                    </Text>
+                                  </View>
+                                )}
+
+                                {isSalon && (
+                                  <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1), marginLeft: spacing(1) }]}>
+                                    <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
                                   </View>
                                 )}
                               </View>
+
                               <View style={styles.providerCardMeta}>
                                 <Text style={[styles.providerCardRating, { fontSize: normalizeFontSize(12) }]}>
-                                  ⭐ {salon.rating != null ? salon.rating.toFixed(1) : '5.0'}
+                                  ⭐ {provider.rating != null ? Number(provider.rating).toFixed(1) : '5.0'} ({provider.review_count || 0})
                                 </Text>
                                 <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
                                 <Text style={[styles.providerCardLocation, { fontSize: normalizeFontSize(12) }]}>
-                                  {salon.city || 'Ville inconnue'}
+                                  {provider.city || 'Ville inconnue'}
+                                  {provider.distance_meters < 999999 ? ` (${(provider.distance_meters / 1000).toFixed(1)} km)` : ''}
                                 </Text>
                               </View>
+
                               <Text style={[styles.providerCardPrice, { fontSize: normalizeFontSize(14) }]}>
                                 {formatCurrency(price, countryCode)}
                               </Text>
@@ -355,7 +311,7 @@ export const ServiceDetailsScreen: React.FC = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.viewDetailsLink, { paddingVertical: spacing(0.5), paddingLeft: spacing(2), marginTop: spacing(0.5) }]}
-                          onPress={() => handleViewProviderDetails(salon.id, 'salon')}
+                          onPress={() => handleViewProviderDetails(provider.id, isSalon ? 'salon' : 'therapist')}
                         >
                           <Text style={[styles.viewDetailsLinkText, { fontSize: normalizeFontSize(12) }]}>
                             Voir les détails →
@@ -365,7 +321,7 @@ export const ServiceDetailsScreen: React.FC = () => {
                     );
                   })}
 
-                  {totalProviders > 3 && (
+                  {totalProviders > 5 && (
                     <TouchableOpacity
                       style={[styles.viewAllProvidersButton, { padding: spacing(2), borderRadius: spacing(2), borderWidth: 1 }]}
                       onPress={handleViewProviders}
@@ -406,7 +362,7 @@ export const ServiceDetailsScreen: React.FC = () => {
 
                 {expandedSection === 'whatsIncluded' && (
                   <View style={[styles.sectionContent, { marginTop: spacing(2) }]}>
-                    {components.map((item, index) => (
+                    {components.map((item: string, index: number) => (
                       <View key={index} style={[styles.listItem, { marginBottom: spacing(1.5) }]}>
                         <Text style={[styles.checkmark, { fontSize: normalizeFontSize(14) }]}>✓</Text>
                         <Text style={[styles.listItemText, { fontSize: normalizeFontSize(14), lineHeight: normalizeFontSize(20) }]}>

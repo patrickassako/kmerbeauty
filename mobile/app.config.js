@@ -14,7 +14,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     extra: {
       eas: {
-        projectId: 'kmerservice-d178f',
+        projectId: 'bb6b83aa-5e11-4da0-b7cc-7349e4e86e08',
       },
     },
     ios: {

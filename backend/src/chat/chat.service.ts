@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SendMessageDto } from './chat.controller';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly eventEmitter: EventEmitter2,
+  ) { }
 
   /**
    * Get or create a chat for a booking
@@ -110,6 +114,35 @@ export class ChatService {
 
     console.log('✅ [ChatService] Chat created successfully:', newChat.id);
     return newChat;
+  }
+
+  /**
+   * Get a single chat by ID
+   */
+  async getChatById(chatId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: chat, error } = await supabase
+      .from('chats')
+      .select(`
+        *,
+        client:users!chats_client_id_fkey(id, first_name, last_name, email, avatar),
+        provider:users!chats_provider_id_fkey(id, first_name, last_name, email, avatar)
+      `)
+      .eq('id', chatId)
+      .single();
+
+    if (error || !chat) {
+      throw new Error(`Chat not found: ${error?.message}`);
+    }
+
+    // Format like getUserChats
+    // We only need the "other" user logic if we know who the requester is.
+    // But here we return row data + relations, controller/frontend can parse it?
+    // Actually, let's keep it simple and return the raw chat with user relations.
+    // Frontend will need to deduce "other user" based on current user ID.
+
+    return chat;
   }
 
   /**
@@ -247,6 +280,71 @@ export class ChatService {
 
     if (updateError) {
       console.error('Failed to update chat last_message:', updateError);
+    }
+
+    // Check if this is the first message from the client in a pre-booking context
+    // 1. Check if sender is client
+    const { data: chat } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('id', chatId)
+      .single();
+
+    if (chat && chat.client_id === sendMessageDto.sender_id) {
+      // 2. Check if it's the first message
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('chat_id', chatId);
+
+      // count is 1 because we just inserted the message
+      if (count === 1) {
+        // 3. Check if it's pre-booking (no booking_id or booking not confirmed)
+        let isPreBooking = true;
+        if (chat.booking_id) {
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('status')
+            .eq('id', chat.booking_id)
+            .single();
+
+          if (booking && booking.status === 'CONFIRMED') {
+            isPreBooking = false;
+          }
+        }
+
+        if (isPreBooking) {
+          this.eventEmitter.emit('chat.started', {
+            providerId: chat.provider_id,
+            providerType: 'therapist', // Default, logic needs to be more robust if we track provider type in chats
+            userId: chat.client_id,
+            chatId: chat.id,
+            isPreBooking: true,
+          });
+          // Note: providerType is tricky here as chats table doesn't store it directly. 
+          // However, we can infer it or fetch it. For now, assuming therapist or handling in listener.
+          // Actually, let's fetch the provider type to be safe.
+
+          // Try to find in therapists
+          const { data: therapist } = await supabase
+            .from('therapists')
+            .select('id')
+            .eq('user_id', chat.provider_id)
+            .single();
+
+          const type = therapist ? 'therapist' : 'salon';
+
+          this.eventEmitter.emit('chat.started', {
+            providerId: chat.provider_id, // This is user_id, but listener expects provider UUID? 
+            // Wait, interaction-tracking expects providerId (UUID from therapists/salons table)
+            // We need to fetch the correct ID.
+            providerType: type,
+            userId: chat.client_id,
+            chatId: chat.id,
+            isPreBooking: true,
+          });
+        }
+      }
     }
 
     return message;

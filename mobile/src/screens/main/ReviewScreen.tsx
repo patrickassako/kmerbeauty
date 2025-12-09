@@ -11,16 +11,11 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../design-system/colors';
-import { spacing } from '../../design-system/spacing';
-import { radius } from '../../design-system/radius';
-import { shadows } from '../../design-system/shadows';
-import { typography } from '../../design-system/typography';
+import { useResponsive } from '../../hooks/useResponsive';
+import { useI18n } from '../../i18n/I18nContext';
 import { reviewsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -32,6 +27,8 @@ interface ReviewScreenProps {
 const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
   const { booking } = route.params || {};
   const { user } = useAuth();
+  const { normalizeFontSize, spacing } = useResponsive();
+  const { language } = useI18n();
 
   const [overallRating, setOverallRating] = useState(0);
   const [cleanlinessRating, setCleanlinessRating] = useState(0);
@@ -42,17 +39,26 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
 
   const handleSubmit = async () => {
     if (overallRating === 0) {
-      Alert.alert('Erreur', 'Veuillez donner une note globale');
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr' ? 'Veuillez donner une note globale' : 'Please provide an overall rating'
+      );
       return;
     }
 
     if (!user?.id) {
-      Alert.alert('Erreur', 'Vous devez être connecté pour laisser un avis');
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr' ? 'Vous devez être connecté pour laisser un avis' : 'You must be logged in to leave a review'
+      );
       return;
     }
 
     if (!booking?.therapist_id && !booking?.salon_id) {
-      Alert.alert('Erreur', 'Impossible de déterminer le prestataire à noter');
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        language === 'fr' ? 'Impossible de déterminer le prestataire à noter' : 'Unable to determine provider to review'
+      );
       return;
     }
 
@@ -70,15 +76,22 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
         value: valueRating > 0 ? valueRating : undefined,
       });
 
-      Alert.alert('Merci !', 'Votre avis a été publié avec succès', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      Alert.alert(
+        language === 'fr' ? 'Merci !' : 'Thank you!',
+        language === 'fr' ? 'Votre avis a été publié avec succès' : 'Your review has been published successfully',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     } catch (error: any) {
       console.error('Error submitting review:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de publier votre avis');
+      Alert.alert(
+        language === 'fr' ? 'Erreur' : 'Error',
+        error.message || (language === 'fr' ? 'Impossible de publier votre avis' : 'Failed to publish your review')
+      );
     } finally {
       setSubmitting(false);
     }
@@ -96,104 +109,105 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
     return (
       <View style={styles.starContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <TouchableOpacity key={star} onPress={() => onRate(star)}>
-            <Ionicons
-              name={star <= rating ? 'star' : 'star-outline'}
-              size={size}
-              color={star <= rating ? colors.gold : colors.gray300}
-            />
+          <TouchableOpacity key={star} onPress={() => onRate(star)} activeOpacity={0.7}>
+            <Text style={{ fontSize: size, color: star <= rating ? '#FFD700' : '#E0E0E0' }}>
+              {star <= rating ? '★' : '☆'}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
     );
   };
 
+  const getProviderName = () => {
+    if (!booking?.provider) return '';
+    if (booking.therapist_id) {
+      const firstName = booking.provider.user?.first_name;
+      const lastName = booking.provider.user?.last_name;
+      return `${firstName || ''} ${lastName || ''}`.trim() || (language === 'fr' ? 'Thérapeute' : 'Therapist');
+    } else if (booking.salon_id) {
+      return (language === 'fr' ? booking.provider.name_fr : booking.provider.name_en) || booking.provider.name_fr || (language === 'fr' ? 'Institut' : 'Salon');
+    }
+    return language === 'fr' ? 'Prestataire' : 'Provider';
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.black} />
+      <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { width: spacing(5), height: spacing(5) }]}>
+          <Text style={[styles.backButtonText, { fontSize: normalizeFontSize(24) }]}>←</Text>
         </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Laisser un avis</Text>
-
-        <View style={styles.headerButton} />
+        <Text style={[styles.headerTitle, { fontSize: normalizeFontSize(18) }]}>
+          {language === 'fr' ? 'Laisser un avis' : 'Leave a review'}
+        </Text>
+        <View style={{ width: spacing(5) }} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing(2.5), paddingBottom: spacing(10) }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Service/Booking Info */}
+        {/* Provider Info */}
         {booking && (
-          <View style={styles.bookingCard}>
-            <Image
-              source={{ uri: booking.service?.image }}
-              style={styles.bookingImage}
-            />
-            <View style={styles.bookingInfo}>
-              <Text style={styles.bookingServiceName}>
-                {booking.service?.name}
-              </Text>
-              <Text style={styles.bookingSalonName}>
-                {booking.salon?.name || booking.therapist?.name}
-              </Text>
-              <Text style={styles.bookingDate}>
-                {new Date(booking.scheduledAt).toLocaleDateString('fr-FR')}
-              </Text>
-            </View>
+          <View style={[styles.providerCard, { padding: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(3) }]}>
+            <Text style={[styles.providerName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]}>
+              {getProviderName()}
+            </Text>
+            <Text style={[styles.providerType, { fontSize: normalizeFontSize(14) }]}>
+              {booking.therapist_id ? '👤 ' : '🏢 '}
+              {booking.therapist_id ? (language === 'fr' ? 'Thérapeute' : 'Therapist') : (language === 'fr' ? 'Institut' : 'Salon')}
+            </Text>
           </View>
         )}
 
         {/* Overall Rating */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Note globale *</Text>
-          <View style={styles.overallRatingContainer}>
+        <View style={[styles.section, { marginBottom: spacing(3) }]}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(1.5) }]}>
+            {language === 'fr' ? 'Note globale' : 'Overall rating'} *
+          </Text>
+          <View style={[styles.overallRatingContainer, { paddingVertical: spacing(3), borderRadius: spacing(1.5) }]}>
             <StarRating rating={overallRating} onRate={setOverallRating} size={40} />
-            <Text style={styles.ratingValue}>
-              {overallRating > 0 ? `${overallRating}.0` : 'Non noté'}
+            <Text style={[styles.ratingValue, { fontSize: normalizeFontSize(24), marginTop: spacing(1.5) }]}>
+              {overallRating > 0 ? `${overallRating}.0` : (language === 'fr' ? 'Non noté' : 'Not rated')}
             </Text>
           </View>
         </View>
 
         {/* Detailed Ratings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes détaillées (optionnel)</Text>
+        <View style={[styles.section, { marginBottom: spacing(3) }]}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(1.5) }]}>
+            {language === 'fr' ? 'Notes détaillées (optionnel)' : 'Detailed ratings (optional)'}
+          </Text>
 
           <View style={styles.detailedRating}>
-            <View style={styles.ratingRow}>
+            <View style={[styles.ratingRow, { padding: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
               <View style={styles.ratingLabelContainer}>
-                <Ionicons name="sparkles" size={20} color={colors.textSecondary} />
-                <Text style={styles.ratingLabel}>Propreté</Text>
+                <Text style={[styles.ratingIcon, { fontSize: normalizeFontSize(20) }]}>✨</Text>
+                <Text style={[styles.ratingLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {language === 'fr' ? 'Propreté' : 'Cleanliness'}
+                </Text>
               </View>
-              <StarRating
-                rating={cleanlinessRating}
-                onRate={setCleanlinessRating}
-                size={24}
-              />
+              <StarRating rating={cleanlinessRating} onRate={setCleanlinessRating} size={24} />
             </View>
 
-            <View style={styles.ratingRow}>
+            <View style={[styles.ratingRow, { padding: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
               <View style={styles.ratingLabelContainer}>
-                <Ionicons name="briefcase" size={20} color={colors.textSecondary} />
-                <Text style={styles.ratingLabel}>Professionnalisme</Text>
+                <Text style={[styles.ratingIcon, { fontSize: normalizeFontSize(20) }]}>💼</Text>
+                <Text style={[styles.ratingLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {language === 'fr' ? 'Professionnalisme' : 'Professionalism'}
+                </Text>
               </View>
-              <StarRating
-                rating={professionalismRating}
-                onRate={setProfessionalismRating}
-                size={24}
-              />
+              <StarRating rating={professionalismRating} onRate={setProfessionalismRating} size={24} />
             </View>
 
-            <View style={styles.ratingRow}>
+            <View style={[styles.ratingRow, { padding: spacing(2), borderRadius: spacing(1.5) }]}>
               <View style={styles.ratingLabelContainer}>
-                <Ionicons name="cash" size={20} color={colors.textSecondary} />
-                <Text style={styles.ratingLabel}>Rapport qualité/prix</Text>
+                <Text style={[styles.ratingIcon, { fontSize: normalizeFontSize(20) }]}>💰</Text>
+                <Text style={[styles.ratingLabel, { fontSize: normalizeFontSize(14) }]}>
+                  {language === 'fr' ? 'Rapport qualité/prix' : 'Value for money'}
+                </Text>
               </View>
               <StarRating rating={valueRating} onRate={setValueRating} size={24} />
             </View>
@@ -201,52 +215,60 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
         </View>
 
         {/* Comment */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Votre commentaire (optionnel)</Text>
+        <View style={[styles.section, { marginBottom: spacing(3) }]}>
+          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginBottom: spacing(1.5) }]}>
+            {language === 'fr' ? 'Votre commentaire (optionnel)' : 'Your comment (optional)'}
+          </Text>
           <TextInput
-            style={styles.commentInput}
-            placeholder="Partagez votre expérience..."
+            style={[styles.commentInput, { padding: spacing(2), borderRadius: spacing(1.5), fontSize: normalizeFontSize(14), minHeight: spacing(15) }]}
+            placeholder={language === 'fr' ? 'Partagez votre expérience...' : 'Share your experience...'}
             value={comment}
             onChangeText={setComment}
             multiline
             numberOfLines={6}
             textAlignVertical="top"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor="#999"
+            maxLength={500}
           />
-          <Text style={styles.commentHint}>
-            Minimum 10 caractères • {comment.length}/500
+          <Text style={[styles.commentHint, { fontSize: normalizeFontSize(12), marginTop: spacing(1) }]}>
+            {comment.length}/500
           </Text>
         </View>
 
         {/* Tips */}
-        <View style={styles.tipsCard}>
-          <Ionicons name="bulb" size={20} color={colors.coral} />
-          <View style={styles.tipsContent}>
-            <Text style={styles.tipsTitle}>Conseils pour un bon avis</Text>
-            <Text style={styles.tipsText}>
-              • Soyez honnête et constructif{'\n'}
-              • Mentionnez ce qui vous a plu{'\n'}
-              • Expliquez ce qui pourrait être amélioré{'\n'}
-              • Restez respectueux
-            </Text>
-          </View>
+        <View style={[styles.tipsCard, { padding: spacing(2), borderRadius: spacing(1.5), marginBottom: spacing(2) }]}>
+          <Text style={[styles.tipsIcon, { fontSize: normalizeFontSize(20), marginBottom: spacing(1) }]}>💡</Text>
+          <Text style={[styles.tipsTitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+            {language === 'fr' ? 'Conseils pour un bon avis' : 'Tips for a good review'}
+          </Text>
+          <Text style={[styles.tipsText, { fontSize: normalizeFontSize(12), lineHeight: normalizeFontSize(18) }]}>
+            {language === 'fr' ? (
+              '• Soyez honnête et constructif\n• Mentionnez ce qui vous a plu\n• Expliquez ce qui pourrait être amélioré\n• Restez respectueux'
+            ) : (
+              '• Be honest and constructive\n• Mention what you liked\n• Explain what could be improved\n• Stay respectful'
+            )}
+          </Text>
         </View>
-
-        {/* Bottom Spacing */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Bottom Action */}
-      <View style={styles.bottomActions}>
+      <View style={[styles.bottomActions, { padding: spacing(2.5) }]}>
         <TouchableOpacity
-          style={[styles.submitButton, (overallRating === 0 || submitting) && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            { paddingVertical: spacing(2), borderRadius: spacing(1.5) },
+            (overallRating === 0 || submitting) && styles.submitButtonDisabled
+          ]}
           onPress={handleSubmit}
           disabled={overallRating === 0 || submitting}
+          activeOpacity={0.7}
         >
           {submitting ? (
-            <ActivityIndicator color={colors.white} />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Publier l'avis</Text>
+            <Text style={[styles.submitButtonText, { fontSize: normalizeFontSize(16) }]}>
+              {language === 'fr' ? "Publier l'avis" : 'Publish review'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -257,169 +279,113 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#F0F0F0',
   },
-  headerButton: {
-    width: 40,
-    height: 40,
+  backButton: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backButtonText: {
+    color: '#2D2D2D',
+    fontWeight: '600',
+  },
   headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.black,
+    fontWeight: '600',
+    color: '#2D2D2D',
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+  scrollContent: {},
+  providerCard: {
+    backgroundColor: '#F5F5F5',
   },
-  bookingCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.gray50,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing['2xl'],
-    gap: spacing.md,
+  providerName: {
+    fontWeight: '700',
+    color: '#2D2D2D',
   },
-  bookingImage: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.sm,
+  providerType: {
+    color: '#666',
   },
-  bookingInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  bookingServiceName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.black,
-    marginBottom: spacing.xs,
-  },
-  bookingSalonName: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  bookingDate: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-  },
-  section: {
-    marginBottom: spacing['3xl'],
-  },
+  section: {},
   sectionTitle: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.black,
-    marginBottom: spacing.lg,
+    fontWeight: '700',
+    color: '#2D2D2D',
   },
   overallRatingContainer: {
     alignItems: 'center',
-    backgroundColor: colors.gray50,
-    borderRadius: radius.md,
-    paddingVertical: spacing['2xl'],
-    gap: spacing.md,
+    backgroundColor: '#F5F5F5',
   },
   starContainer: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: 8,
   },
   ratingValue: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.black,
+    fontWeight: '700',
+    color: '#2D2D2D',
   },
-  detailedRating: {
-    gap: spacing.lg,
-  },
+  detailedRating: {},
   ratingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.gray50,
-    borderRadius: radius.md,
-    padding: spacing.lg,
+    backgroundColor: '#F5F5F5',
   },
   ratingLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 8,
     flex: 1,
+  },
+  ratingIcon: {
+    color: '#666',
   },
   ratingLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.black,
+    color: '#2D2D2D',
+    fontWeight: '600',
   },
   commentInput: {
-    backgroundColor: colors.gray50,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    fontSize: typography.fontSize.base,
-    color: colors.black,
-    minHeight: 120,
+    backgroundColor: '#F5F5F5',
+    color: '#2D2D2D',
   },
   commentHint: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
+    color: '#999',
   },
   tipsCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.coral + '10',
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    gap: spacing.md,
+    backgroundColor: '#FFF9E6',
   },
-  tipsContent: {
-    flex: 1,
-  },
+  tipsIcon: {},
   tipsTitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.coral,
-    marginBottom: spacing.sm,
+    fontWeight: '700',
+    color: '#2D2D2D',
   },
   tipsText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    lineHeight: typography.lineHeight.relaxed * typography.fontSize.xs,
+    color: '#666',
   },
   bottomActions: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    backgroundColor: colors.white,
+    borderTopColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
   },
   submitButton: {
-    paddingVertical: spacing.lg,
+    backgroundColor: '#2D2D2D',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.pill,
-    backgroundColor: colors.charcoal,
-    ...shadows.sm,
   },
   submitButtonDisabled: {
-    backgroundColor: colors.gray300,
+    backgroundColor: '#CCC',
   },
   submitButtonText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.white,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });
 

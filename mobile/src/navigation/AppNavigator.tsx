@@ -6,7 +6,10 @@ import { SplashScreen } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { SignInScreen } from '../screens/SignInScreen';
+import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
+import { ResetPasswordScreen } from '../screens/ResetPasswordScreen';
 import { MainTabNavigator } from './MainTabNavigator';
+import * as Linking from 'expo-linking';
 import { ContractorNavigator } from './ContractorNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
@@ -16,12 +19,27 @@ export type AuthStackParamList = {
   Onboarding: undefined;
   SignUp: undefined;
   SignIn: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
+};
+
+const prefix = Linking.createURL('/');
+
+const linking = {
+  prefixes: [prefix, 'kmerservices://'],
+  config: {
+    screens: {
+      ResetPassword: 'reset-password',
+      SignIn: 'sign-in',
+      SignUp: 'sign-up',
+    },
+  },
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, loading: authLoading, signUp, signIn, user } = useAuth();
+  const { isAuthenticated, loading: authLoading, signUp, signIn, user, userMode } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
@@ -56,18 +74,18 @@ export const AppNavigator: React.FC = () => {
 
   // If user is authenticated, show main app
   if (isAuthenticated) {
-    // Check if user is a contractor/provider
-    const isContractor = user?.role === 'PROVIDER' || user?.role === 'CONTRACTOR';
+    // Check if user is in provider mode
+    const isProviderMode = userMode === 'provider';
 
     return (
       <NavigationContainer>
-        {isContractor ? <ContractorNavigator /> : <MainTabNavigator />}
+        {isProviderMode ? <ContractorNavigator /> : <MainTabNavigator />}
       </NavigationContainer>
     );
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName={showOnboarding ? 'Splash' : 'SignUp'}
         screenOptions={{
@@ -129,13 +147,13 @@ export const AppNavigator: React.FC = () => {
                 }
               }}
               onSignUp={() => props.navigation.navigate('SignUp')}
-              onForgotPassword={() => {
-                // TODO: Implement forgot password flow
-                alert('Forgot password feature coming soon!');
-              }}
+              onForgotPassword={() => props.navigation.navigate('ForgotPassword')}
             />
           )}
         </Stack.Screen>
+
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,0 +1,947 @@
+# 💳 Système de Crédits et Parrainage - Spécifications Complètes
+
+## 📋 Vue d'Ensemble
+
+Le système de crédits permet aux prestataires (thérapeutes et salons) de maintenir leur visibilité sur la plateforme. Les crédits sont consommés en fonction des interactions des clients avec leur profil.
+
+---
+
+## 💰 Attribution des Crédits
+
+### Crédits Initiaux
+- **20 crédits gratuits** à l'inscription et validation du compte prestataire
+
+### Crédits Mensuels
+- **+5 crédits automatiques** chaque mois (même jour que l'inscription)
+- Attribution via cron job le 1er de chaque mois à 00:00
+
+### Règles Générales
+- ✅ Les crédits **n'expirent jamais**
+- ❌ Les crédits **négatifs ne sont pas autorisés**
+- ✅ Pas de différence entre thérapeutes et salons
+
+---
+
+## 📊 Coût des Interactions
+
+| Interaction | Coût (crédits) | Déclencheur | Notes |
+|-------------|----------------|-------------|-------|
+| **Visite de profil** | 0.1 | Client consulte le profil | Première visite uniquement |
+| **Chat pré-commande** | 1.0 | Client envoie 1er message | Avant toute réservation |
+| **Chat post-commande** | 0.0 | Client envoie message | Après une réservation (gratuit) |
+| **Réservation confirmée** | 3.0 | Statut passe à CONFIRMED | Consomme le plus |
+| **Avis laissé** | 0.5 | Client publie un avis | Feedback précieux |
+| **Favori ajouté** | 0.3 | Client ajoute aux favoris | Intérêt marqué |
+
+### Règles Spéciales
+
+#### Réservations en cours
+- Si un prestataire a **0 crédit** pendant une réservation **déjà confirmée**, la réservation continue normalement
+- Les nouvelles réservations sont **bloquées** si crédits = 0
+
+#### Annulation de réservation
+- **Remboursement de 60%** des crédits débités
+- **Arrondi inférieur** (ex: 3 crédits → 1.8 → **1 crédit** remboursé)
+- Remboursement uniquement si annulation avant la date prévue
+
+---
+
+## 🛒 Packs de Crédits
+
+### Tarification
+
+| Pack | Crédits | Prix (FCFA) | Prix/crédit | Économie |
+|------|---------|-------------|-------------|----------|
+| **Light** | 20 | 2,000 | 100 | 0% (prix de base) |
+| **Starter** | 50 | 4,500 | 90 | 10% |
+| **Pro** | 100 | 8,000 | 80 | 20% |
+| **Business** | 250 | 18,000 | 72 | 28% |
+| **Premium** | 500 | 35,000 | 70 | 30% |
+
+### Méthode de Paiement
+
+**Flutterwave** - Intégration complète
+- 💳 Cartes bancaires (Visa, Mastercard)
+- 📱 Mobile Money (Orange Money, MTN Money)
+- 🏦 Virements bancaires
+- 🌍 Support multi-devises (FCFA prioritaire)
+
+#### Configuration Flutterwave
+```typescript
+// Variables d'environnement
+FLUTTERWAVE_PUBLIC_KEY=FLWPUBK-xxxxx
+FLUTTERWAVE_SECRET_KEY=FLWSECK-xxxxx
+FLUTTERWAVE_ENCRYPTION_KEY=FLWSECK-xxxxx
+FLUTTERWAVE_WEBHOOK_SECRET=xxxxx
+```
+
+---
+
+## 👁️ Système de Visibilité
+
+### Règle Principale
+- **Crédits > 0** : Profil **visible** dans les résultats de recherche
+- **Crédits = 0** : Profil **complètement caché** (non visible du tout)
+
+### Ordre d'Affichage (sans boost)
+1. Providers avec crédits > 0
+2. Tri par note (rating) décroissant
+3. Tri par nombre d'avis
+
+---
+
+## 🚀 Boost de Positionnement
+
+### Principe
+Les prestataires peuvent acheter une position dans le **Top 5** des résultats de recherche pour leur zone géographique (ville + quartier).
+
+### Tarifs Fixes (7 jours)
+
+| Position | Crédits/7 jours | Visibilité |
+|----------|-----------------|------------|
+| **#1** | 60 | Maximum |
+| **#2** | 50 | Très haute |
+| **#3** | 40 | Haute |
+| **#4** | 30 | Bonne |
+| **#5** | 20 | Moyenne |
+
+### Système Hybride : Prix Fixe vs Enchères
+
+#### Prix Fixe (≤ 4 demandes)
+- Si **4 demandes ou moins** pour une position dans la même zone : **prix fixe**
+- Attribution : premier arrivé, premier servi
+- Paiement immédiat
+
+#### Enchères (> 4 demandes)
+- Si **plus de 4 demandes** pour une position dans la même zone : **système d'enchères**
+- Enchère minimale = prix fixe de la position
+- Durée d'enchères : **24 heures**
+- Attribution au **plus offrant**
+- Notification aux participants
+
+#### Définition de "Zone"
+- **Ville** + **Quartier** du prestataire
+- Exemple : "Yaoundé - Bastos" est une zone distincte de "Yaoundé - Melen"
+
+### Affichage des Positions Boostées
+- Badge **"Top 1"**, **"Top 2"**, etc. sur la carte du prestataire
+- Icône spéciale (⭐ ou 🔥)
+- Couleur distinctive dans les résultats
+
+---
+
+## 🎁 Système de Parrainage
+
+### Principe
+Les prestataires peuvent inviter d'autres prestataires à rejoindre la plateforme via un code de parrainage unique.
+
+### Récompenses
+
+#### Pour le Filleul (invité)
+- **+5 crédits bonus** à l'inscription validée
+- **Total : 25 crédits** au départ (20 de base + 5 bonus)
+
+#### Pour le Parrain (qui invite)
+| Événement | Bonus |
+|-----------|-------|
+| Filleul inscrit et validé | +10 crédits |
+| Première réservation du filleul | +5 crédits |
+| **Total possible** | **+15 crédits** |
+
+### Règles et Limites
+
+#### Limite de Parrainage
+- **Maximum 10 parrainages par mois** par prestataire
+- Compteur remis à zéro le 1er de chaque mois
+- Protection contre les abus
+
+#### Code de Parrainage
+- Format : `KMER-XXXXX` (8 caractères alphanumériques)
+- Unique par prestataire
+- Généré automatiquement à la validation du compte
+- Partageable via lien ou code
+
+#### Validation
+1. Filleul entre le code lors de l'inscription
+2. Compte filleul doit être **validé** par admin
+3. Attribution des bonus au parrain après validation
+4. Bonus supplémentaire après 1ère réservation confirmée du filleul
+
+### Suivi et Statistiques
+- Nombre de filleuls actifs
+- Crédits gagnés via parrainage
+- Historique des parrainages
+- Statut de chaque filleul (en attente, validé, actif)
+
+---
+
+## 🔔 Notifications et Alertes
+
+### Alertes Automatiques
+
+#### Crédits Faibles
+- **Seuil : < 5 crédits**
+- Notification push + email
+- Fréquence : quotidienne (10h00)
+- Message : "Vos crédits sont faibles. Rechargez pour rester visible !"
+
+#### Crédits Épuisés
+- **Seuil : = 0 crédit**
+- Notification push + email immédiate
+- Message : "Votre profil est maintenant caché. Achetez des crédits pour redevenir visible."
+
+#### Boost Expiré
+- **24h avant expiration** du boost
+- Notification push
+- Message : "Votre boost position #X expire dans 24h. Renouvelez maintenant !"
+
+#### Parrainage Validé
+- Notification au parrain quand filleul est validé
+- Notification au parrain à la 1ère réservation du filleul
+
+---
+
+## 🗄️ Architecture Base de Données
+
+### Tables Principales
+
+#### 1. `provider_credits`
+```sql
+CREATE TABLE provider_credits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL, -- 'therapist' | 'salon'
+  balance DECIMAL(10,2) DEFAULT 20.00,
+  total_earned DECIMAL(10,2) DEFAULT 20.00,
+  total_spent DECIMAL(10,2) DEFAULT 0.00,
+  monthly_credits_last_given TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(provider_id, provider_type)
+);
+```
+
+#### 2. `credit_transactions`
+```sql
+CREATE TABLE credit_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL, -- + gain, - débit
+  transaction_type VARCHAR(50) NOT NULL,
+  -- Types: 'initial_bonus', 'monthly_bonus', 'purchase', 'profile_view', 
+  --        'chat_pre_booking', 'booking_confirmed', 'review', 'favorite',
+  --        'referral_signup', 'referral_first_booking', 'boost_position',
+  --        'refund_cancellation'
+  reference_id UUID, -- booking_id, purchase_id, referral_id, etc.
+  balance_before DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  metadata JSONB, -- Données supplémentaires
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_credit_transactions_provider ON credit_transactions(provider_id, provider_type);
+CREATE INDEX idx_credit_transactions_type ON credit_transactions(transaction_type);
+CREATE INDEX idx_credit_transactions_date ON credit_transactions(created_at);
+```
+
+#### 3. `interaction_costs`
+```sql
+CREATE TABLE interaction_costs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  interaction_type VARCHAR(50) UNIQUE NOT NULL,
+  cost DECIMAL(10,2) NOT NULL,
+  description TEXT,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Données initiales
+INSERT INTO interaction_costs (interaction_type, cost, description) VALUES
+  ('profile_view', 0.1, 'Visite du profil prestataire'),
+  ('chat_pre_booking', 1.0, 'Chat avant réservation'),
+  ('booking_confirmed', 3.0, 'Réservation confirmée'),
+  ('review_created', 0.5, 'Avis client publié'),
+  ('favorite_added', 0.3, 'Ajout aux favoris');
+```
+
+#### 4. `credit_packs`
+```sql
+CREATE TABLE credit_packs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL,
+  credits INTEGER NOT NULL,
+  price_fcfa INTEGER NOT NULL,
+  discount_percentage INTEGER DEFAULT 0,
+  display_order INTEGER DEFAULT 0,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Données initiales
+INSERT INTO credit_packs (name, credits, price_fcfa, discount_percentage, display_order) VALUES
+  ('Light', 20, 2000, 0, 1),
+  ('Starter', 50, 4500, 10, 2),
+  ('Pro', 100, 8000, 20, 3),
+  ('Business', 250, 18000, 28, 4),
+  ('Premium', 500, 35000, 30, 5);
+```
+
+#### 5. `credit_purchases`
+```sql
+CREATE TABLE credit_purchases (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL,
+  pack_id UUID REFERENCES credit_packs(id),
+  credits_amount INTEGER NOT NULL,
+  price_paid INTEGER NOT NULL,
+  payment_method VARCHAR(50), -- 'card', 'mobile_money', 'bank_transfer'
+  payment_provider VARCHAR(50) DEFAULT 'flutterwave',
+  flutterwave_transaction_id VARCHAR(255),
+  flutterwave_tx_ref VARCHAR(255) UNIQUE,
+  payment_status VARCHAR(50) DEFAULT 'pending',
+  -- Status: 'pending', 'processing', 'successful', 'failed', 'cancelled'
+  payment_data JSONB, -- Réponse complète Flutterwave
+  created_at TIMESTAMP DEFAULT NOW(),
+  completed_at TIMESTAMP
+);
+
+CREATE INDEX idx_credit_purchases_provider ON credit_purchases(provider_id, provider_type);
+CREATE INDEX idx_credit_purchases_status ON credit_purchases(payment_status);
+```
+
+#### 6. `referrals`
+```sql
+CREATE TABLE referrals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  referrer_id UUID NOT NULL, -- Parrain
+  referrer_type VARCHAR(20) NOT NULL,
+  referee_id UUID, -- Filleul (NULL si pas encore inscrit)
+  referee_type VARCHAR(20),
+  referral_code VARCHAR(20) UNIQUE NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  -- Status: 'pending', 'signup_completed', 'validated', 'first_booking_done'
+  credits_earned DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  signup_completed_at TIMESTAMP,
+  validated_at TIMESTAMP,
+  first_booking_at TIMESTAMP
+);
+
+CREATE INDEX idx_referrals_code ON referrals(referral_code);
+CREATE INDEX idx_referrals_referrer ON referrals(referrer_id, referrer_type);
+CREATE INDEX idx_referrals_referee ON referrals(referee_id, referee_type);
+```
+
+#### 7. `referral_monthly_limits`
+```sql
+CREATE TABLE referral_monthly_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL,
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL, -- 1-12
+  referral_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(provider_id, provider_type, year, month)
+);
+```
+
+#### 8. `position_boosts`
+```sql
+CREATE TABLE position_boosts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL,
+  position INTEGER NOT NULL CHECK (position BETWEEN 1 AND 5),
+  city VARCHAR(100) NOT NULL,
+  district VARCHAR(100) NOT NULL, -- Quartier
+  duration_days INTEGER DEFAULT 7,
+  credits_cost DECIMAL(10,2) NOT NULL,
+  start_date TIMESTAMP NOT NULL,
+  end_date TIMESTAMP NOT NULL,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_position_boosts_zone ON position_boosts(city, district, position, active);
+CREATE INDEX idx_position_boosts_provider ON position_boosts(provider_id, provider_type);
+CREATE INDEX idx_position_boosts_dates ON position_boosts(start_date, end_date);
+```
+
+#### 9. `position_boost_bids`
+```sql
+CREATE TABLE position_boost_bids (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  provider_id UUID NOT NULL,
+  provider_type VARCHAR(20) NOT NULL,
+  position INTEGER NOT NULL CHECK (position BETWEEN 1 AND 5),
+  city VARCHAR(100) NOT NULL,
+  district VARCHAR(100) NOT NULL,
+  bid_amount DECIMAL(10,2) NOT NULL, -- En crédits
+  auction_end_date TIMESTAMP NOT NULL,
+  status VARCHAR(50) DEFAULT 'active',
+  -- Status: 'active', 'won', 'lost', 'cancelled'
+  created_at TIMESTAMP DEFAULT NOW(),
+  resolved_at TIMESTAMP
+);
+
+CREATE INDEX idx_boost_bids_zone ON position_boost_bids(city, district, position, status);
+CREATE INDEX idx_boost_bids_provider ON position_boost_bids(provider_id, provider_type);
+```
+
+---
+
+## 🔧 Backend - Services NestJS
+
+### Module Structure
+
+```
+src/
+├── credits/
+│   ├── credits.module.ts
+│   ├── credits.service.ts
+│   ├── transactions.service.ts
+│   ├── interaction-tracking.service.ts
+│   ├── monthly-credits.service.ts
+│   ├── visibility.service.ts
+│   └── credits.controller.ts
+├── payments/
+│   ├── payments.module.ts
+│   ├── flutterwave.service.ts
+│   ├── purchase.service.ts
+│   ├── webhook.controller.ts
+│   └── payments.controller.ts
+├── referrals/
+│   ├── referrals.module.ts
+│   ├── referrals.service.ts
+│   ├── referral-code.service.ts
+│   └── referrals.controller.ts
+└── boosts/
+    ├── boosts.module.ts
+    ├── position-boost.service.ts
+    ├── bid.service.ts
+    ├── zone-analysis.service.ts
+    └── boosts.controller.ts
+```
+
+### Endpoints API Principaux
+
+#### Crédits
+```typescript
+GET    /api/v1/credits/balance
+GET    /api/v1/credits/transactions?page=1&limit=20
+GET    /api/v1/credits/stats
+POST   /api/v1/credits/debit (admin only)
+POST   /api/v1/credits/credit (admin only)
+```
+
+#### Packs & Achats
+```typescript
+GET    /api/v1/credits/packs
+POST   /api/v1/credits/purchase
+GET    /api/v1/credits/purchases/history
+GET    /api/v1/credits/purchases/:id
+```
+
+#### Parrainage
+```typescript
+GET    /api/v1/referrals/my-code
+POST   /api/v1/referrals/validate-code
+GET    /api/v1/referrals/stats
+GET    /api/v1/referrals/history
+GET    /api/v1/referrals/monthly-limit
+```
+
+#### Boost de Position
+```typescript
+GET    /api/v1/boosts/available-positions?city=Yaoundé&district=Bastos
+POST   /api/v1/boosts/purchase
+POST   /api/v1/boosts/bid
+GET    /api/v1/boosts/my-active
+GET    /api/v1/boosts/auction-status?position=1&city=Yaoundé&district=Bastos
+```
+
+#### Webhooks Flutterwave
+```typescript
+POST   /api/v1/payments/webhook/flutterwave
+```
+
+---
+
+## ⚙️ Automatisations (Cron Jobs)
+
+### 1. Attribution Mensuelle de Crédits
+```typescript
+@Cron('0 0 1 * *') // 1er de chaque mois à 00:00
+async giveMonthlyCredits() {
+  // Pour chaque prestataire actif
+  // +5 crédits
+  // Créer transaction 'monthly_bonus'
+  // Mettre à jour monthly_credits_last_given
+}
+```
+
+### 2. Traitement des Enchères
+```typescript
+@Cron('0 * * * *') // Toutes les heures
+async processBoostBids() {
+  // Récupérer enchères terminées (auction_end_date < now)
+  // Déterminer gagnant (bid_amount max)
+  // Créer position_boost pour le gagnant
+  // Débiter crédits
+  // Notifier participants (gagnant + perdants)
+  // Marquer enchères comme 'won' ou 'lost'
+}
+```
+
+### 3. Nettoyage Boosts Expirés
+```typescript
+@Cron('0 2 * * *') // Tous les jours à 02:00
+async cleanExpiredBoosts() {
+  // Désactiver boosts avec end_date < now
+  // Notifier prestataires
+}
+```
+
+### 4. Alertes Crédits Faibles
+```typescript
+@Cron('0 10 * * *') // Tous les jours à 10:00
+async sendLowCreditAlerts() {
+  // Récupérer providers avec balance < 5
+  // Envoyer notification push + email
+  // Logger l'alerte
+}
+```
+
+### 5. Rappel Boost Expiration
+```typescript
+@Cron('0 12 * * *') // Tous les jours à 12:00
+async sendBoostExpirationReminders() {
+  // Récupérer boosts expirant dans 24h
+  // Notifier prestataires
+}
+```
+
+---
+
+## 🎯 Event Listeners (Débit Automatique)
+
+### Configuration
+```typescript
+// Dans chaque service concerné
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+constructor(
+  private eventEmitter: EventEmitter2,
+  private interactionTrackingService: InteractionTrackingService
+) {}
+```
+
+### Événements à Écouter
+
+#### 1. Visite de Profil
+```typescript
+@OnEvent('profile.viewed')
+async handleProfileView(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  userId: string;
+}) {
+  await this.interactionTrackingService.debitCredits(
+    payload.providerId,
+    payload.providerType,
+    'profile_view',
+    payload.userId
+  );
+}
+```
+
+#### 2. Chat Initié
+```typescript
+@OnEvent('chat.started')
+async handleChatStarted(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  userId: string;
+  chatId: string;
+  isPreBooking: boolean; // true si aucune réservation confirmée
+}) {
+  if (payload.isPreBooking) {
+    await this.interactionTrackingService.debitCredits(
+      payload.providerId,
+      payload.providerType,
+      'chat_pre_booking',
+      payload.chatId
+    );
+  }
+}
+```
+
+#### 3. Réservation Confirmée
+```typescript
+@OnEvent('booking.confirmed')
+async handleBookingConfirmed(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  bookingId: string;
+}) {
+  await this.interactionTrackingService.debitCredits(
+    payload.providerId,
+    payload.providerType,
+    'booking_confirmed',
+    payload.bookingId
+  );
+}
+```
+
+#### 4. Avis Créé
+```typescript
+@OnEvent('review.created')
+async handleReviewCreated(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  reviewId: string;
+}) {
+  await this.interactionTrackingService.debitCredits(
+    payload.providerId,
+    payload.providerType,
+    'review_created',
+    payload.reviewId
+  );
+}
+```
+
+#### 5. Favori Ajouté
+```typescript
+@OnEvent('favorite.added')
+async handleFavoriteAdded(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  userId: string;
+}) {
+  await this.interactionTrackingService.debitCredits(
+    payload.providerId,
+    payload.providerType,
+    'favorite_added',
+    payload.userId
+  );
+}
+```
+
+#### 6. Réservation Annulée
+```typescript
+@OnEvent('booking.cancelled')
+async handleBookingCancelled(payload: {
+  providerId: string;
+  providerType: 'therapist' | 'salon';
+  bookingId: string;
+  creditsDebited: number; // Crédits débités lors de la confirmation
+}) {
+  // Remboursement 60% arrondi inférieur
+  const refundAmount = Math.floor(payload.creditsDebited * 0.6);
+  
+  await this.interactionTrackingService.creditRefund(
+    payload.providerId,
+    payload.providerType,
+    refundAmount,
+    'refund_cancellation',
+    payload.bookingId
+  );
+}
+```
+
+---
+
+## 📱 Frontend Mobile - Écrans
+
+### 1. Dashboard Crédits (`CreditsDashboardScreen`)
+**Affichage :**
+- Solde actuel (grand, visible)
+- Graphique dépenses 7 derniers jours
+- Bouton "Acheter des crédits"
+- Bouton "Mon code de parrainage"
+- Liste des 5 dernières transactions
+
+**Navigation :**
+- → `PurchaseCreditsScreen`
+- → `CreditTransactionsScreen` (historique complet)
+- → `ReferralScreen`
+- → `CreditStatsScreen`
+
+### 2. Achat de Crédits (`PurchaseCreditsScreen`)
+**Affichage :**
+- Liste des packs (cartes avec badge "Meilleure offre")
+- Sélection du pack
+- Choix méthode de paiement (Flutterwave)
+- Bouton "Acheter maintenant"
+
+**Flow :**
+1. Sélection pack
+2. Confirmation montant
+3. Redirection Flutterwave
+4. Paiement (Mobile Money / Carte)
+5. Callback → Crédit du compte
+6. Notification succès
+
+### 3. Parrainage (`ReferralScreen`)
+**Affichage :**
+- Mon code de parrainage (grand, copiable)
+- Bouton "Partager le code"
+- Statistiques :
+  - Filleuls actifs
+  - Crédits gagnés ce mois
+  - Crédits gagnés total
+- Liste des filleuls avec statut
+- Compteur : "X/10 parrainages ce mois"
+
+**Actions :**
+- Copier le code
+- Partager via WhatsApp, SMS, Email
+- Voir détails d'un filleul
+
+### 4. Boost de Position (`BoostPositionScreen`)
+**Affichage :**
+- Carte interactive avec positions 1-5
+- Prix de chaque position
+- Indicateur "Enchères actives" si > 4 demandes
+- Formulaire d'achat/enchère
+- Mes boosts actifs
+
+**Flow Achat (≤ 4 demandes) :**
+1. Sélection position
+2. Confirmation prix (crédits)
+3. Achat immédiat
+4. Activation du boost
+
+**Flow Enchères (> 4 demandes) :**
+1. Sélection position
+2. Saisie montant enchère (≥ prix fixe)
+3. Confirmation
+4. Attente 24h
+5. Notification résultat
+
+### 5. Statistiques Crédits (`CreditStatsScreen`)
+**Affichage :**
+- Graphiques :
+  - Dépenses par type d'interaction (camembert)
+  - Évolution du solde (courbe)
+  - Prévisions (tendance)
+- Tableaux :
+  - Top interactions consommatrices
+  - Moyenne dépenses/jour
+  - Projection épuisement crédits
+
+### 6. Historique Transactions (`CreditTransactionsScreen`)
+**Affichage :**
+- Liste paginée des transactions
+- Filtres : type, période
+- Détails par transaction :
+  - Date/heure
+  - Type
+  - Montant (+ ou -)
+  - Solde après
+  - Référence (booking, chat, etc.)
+
+---
+
+## 🔍 Intégration dans l'App Existante
+
+### Modifications Nécessaires
+
+#### 1. Recherche de Prestataires
+**Fichiers :** `SearchResults`, [HomeScreen](file:///Users/apple/Documents/kmerservices/mobile/src/screens/main/HomeScreen.tsx#28-818), `ServicesScreen`
+
+```typescript
+// Filtrer providers avec crédits > 0
+const visibleProviders = await VisibilityService.filterVisible(allProviders);
+
+// Ordre d'affichage :
+// 1. Providers avec boost actif (position 1-5)
+// 2. Providers sans boost, triés par rating
+const sortedProviders = [
+  ...boostedProviders.sort((a, b) => a.boostPosition - b.boostPosition),
+  ...regularProviders.sort((a, b) => b.rating - a.rating)
+];
+```
+
+#### 2. Profil Prestataire
+**Fichier :** [ProviderDetailsScreen](file:///Users/apple/Documents/kmerservices/mobile/src/screens/main/ProviderDetailsScreen.tsx#30-579)
+
+```typescript
+// Au montage du composant
+useEffect(() => {
+  // Émettre événement de visite
+  eventEmitter.emit('profile.viewed', {
+    providerId: provider.id,
+    providerType: provider.type,
+    userId: currentUser.id
+  });
+}, [provider.id]);
+
+// Afficher badge si boost actif
+{provider.boostPosition && (
+  <Badge>Top {provider.boostPosition}</Badge>
+)}
+```
+
+#### 3. Chat
+**Fichier :** `ChatScreen`
+
+```typescript
+// Lors de l'envoi du 1er message
+const sendFirstMessage = async () => {
+  // Vérifier si pré-commande
+  const hasConfirmedBooking = await checkConfirmedBooking(
+    currentUser.id,
+    provider.id
+  );
+  
+  // Émettre événement
+  eventEmitter.emit('chat.started', {
+    providerId: provider.id,
+    providerType: provider.type,
+    userId: currentUser.id,
+    chatId: chat.id,
+    isPreBooking: !hasConfirmedBooking
+  });
+  
+  // Envoyer message
+  await sendMessage(messageContent);
+};
+```
+
+#### 4. Réservations
+**Fichier :** [BookingDetailsScreen](file:///Users/apple/Documents/kmerservices/mobile/src/screens/main/BookingDetailsScreen.tsx#24-559)
+
+```typescript
+// Lors de la confirmation
+const confirmBooking = async () => {
+  // Confirmer la réservation
+  await bookingsApi.confirm(booking.id);
+  
+  // Émettre événement
+  eventEmitter.emit('booking.confirmed', {
+    providerId: booking.providerId,
+    providerType: booking.providerType,
+    bookingId: booking.id
+  });
+};
+
+// Lors de l'annulation
+const cancelBooking = async () => {
+  // Récupérer crédits débités
+  const transaction = await getBookingTransaction(booking.id);
+  
+  // Annuler
+  await bookingsApi.cancel(booking.id);
+  
+  // Émettre événement
+  eventEmitter.emit('booking.cancelled', {
+    providerId: booking.providerId,
+    providerType: booking.providerType,
+    bookingId: booking.id,
+    creditsDebited: Math.abs(transaction.amount)
+  });
+};
+```
+
+#### 5. Avis
+**Fichier :** [ReviewScreen](file:///Users/apple/Documents/kmerservices/mobile/src/screens/main/ReviewScreen.tsx#27-278)
+
+```typescript
+// Après soumission avis
+const submitReview = async () => {
+  // Créer l'avis
+  const review = await reviewsApi.create(reviewData);
+  
+  // Émettre événement
+  eventEmitter.emit('review.created', {
+    providerId: booking.providerId,
+    providerType: booking.providerType,
+    reviewId: review.id
+  });
+};
+```
+
+#### 6. Favoris
+**Fichier :** `FavoritesScreen`, [ProviderDetailsScreen](file:///Users/apple/Documents/kmerservices/mobile/src/screens/main/ProviderDetailsScreen.tsx#30-579)
+
+```typescript
+// Lors de l'ajout aux favoris
+const addToFavorites = async () => {
+  // Ajouter
+  await favoritesApi.add(provider.id, provider.type);
+  
+  // Émettre événement
+  eventEmitter.emit('favorite.added', {
+    providerId: provider.id,
+    providerType: provider.type,
+    userId: currentUser.id
+  });
+};
+```
+
+---
+
+## ✅ Checklist de Validation
+
+### Backend
+- [ ] Migrations DB créées et testées
+- [ ] Services crédits implémentés
+- [ ] Event listeners configurés
+- [ ] Cron jobs programmés
+- [ ] Intégration Flutterwave complète
+- [ ] Webhooks Flutterwave sécurisés
+- [ ] Système de parrainage fonctionnel
+- [ ] Boost de position (fixe + enchères)
+- [ ] Tests unitaires (>80% coverage)
+- [ ] Tests d'intégration
+
+### Frontend
+- [ ] Dashboard crédits
+- [ ] Écran achat de crédits
+- [ ] Intégration Flutterwave SDK
+- [ ] Écran parrainage
+- [ ] Écran boost de position
+- [ ] Statistiques et graphiques
+- [ ] Notifications push configurées
+- [ ] Filtrage visibilité dans recherche
+- [ ] Badges boost affichés
+- [ ] Tests E2E
+
+### Fonctionnel
+- [ ] 20 crédits initiaux attribués
+- [ ] +5 crédits mensuels automatiques
+- [ ] Débit sur chaque interaction
+- [ ] Visibilité = 0 si crédits = 0
+- [ ] Paiement Flutterwave OK
+- [ ] Parrainage limité à 10/mois
+- [ ] Boost prix fixe/enchères selon zone
+- [ ] Remboursement 60% arrondi inférieur
+- [ ] Notifications < 5 crédits
+- [ ] Réservations en cours protégées
+
+---
+
+## 📚 Documentation Complémentaire
+
+### Flutterwave Integration
+- [Documentation officielle](https://developer.flutterwave.com/docs)
+- [React Native SDK](https://github.com/Flutterwave/react-native-flutterwave)
+- [Webhook Security](https://developer.flutterwave.com/docs/integration-guides/webhooks)
+
+### Ressources
+- Diagrammes de flux (à créer)
+- Postman collection (à créer)
+- Guide d'utilisation prestataires (à créer)
+
+---
+
+**Document créé le :** 24 novembre 2025  
+**Version :** 1.0  
+**Auteur :** Équipe Technique KmerServices

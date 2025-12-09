@@ -14,7 +14,7 @@ import {
 
 @Injectable()
 export class ContractorService implements OnModuleInit {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   async onModuleInit() {
     // Create contractor-files bucket if it doesn't exist
@@ -54,19 +54,54 @@ export class ContractorService implements OnModuleInit {
   async createProfile(dto: CreateContractorProfileDto) {
     const supabase = this.supabaseService.getClient();
 
-    console.log('🆕 Creating new contractor profile');
-    console.log('📦 DTO received:', JSON.stringify(dto, null, 2));
+    console.log('🆕 Creating new contractor profile (in therapists table)');
+    console.log('📦 DTO received raw:', JSON.stringify(dto, null, 2));
+    console.log('📸 Profile Image in DTO:', dto.profile_image);
+    console.log('🏢 Business Name in DTO:', dto.business_name);
+    console.log('📝 Experience in DTO:', dto.professional_experience);
+    console.log('📍 Location in DTO:', { lat: dto.latitude, lng: dto.longitude, city: dto.city, region: dto.region });
 
-    // Force is_active to false for new profiles (requires admin validation)
-    const profileData = {
-      ...dto,
+    // Map DTO to therapists table fields
+    const therapistData = {
+      user_id: dto.user_id,
+      business_name: dto.business_name,
+      siret_number: dto.siret_number,
+      legal_status: dto.legal_status,
+      qualifications_proof: dto.qualifications_proof,
+      professional_experience: dto.professional_experience,
+      types_of_services: dto.types_of_services,
+      id_card_url: dto.id_card_url,
+      insurance_url: dto.insurance_url,
+      training_certificates: dto.training_certificates,
+      portfolio_images: dto.portfolio_images,
+      confidentiality_accepted: dto.confidentiality_accepted,
+      terms_accepted: dto.terms_accepted,
+      languages_spoken: dto.languages_spoken,
+      available_transportation: dto.available_transportation,
+      service_zones: dto.service_zones, // JSONB
+      profile_image: dto.profile_image,
+
+      // Default fields for Therapist model
+      experience: dto.experience || 0,
+      bio_fr: dto.professional_experience, // Map to bio_fr as well
+      bio_en: dto.professional_experience, // Map to bio_en as fallback
+      is_mobile: true,
+      location: dto.latitude && dto.longitude ? `POINT(${dto.longitude} ${dto.latitude})` : `POINT(0 0)`,
+      latitude: dto.latitude || 0,
+      longitude: dto.longitude || 0,
+      city: dto.city || 'Unknown',
+      region: dto.region || 'Unknown',
       is_active: false,
-      is_verified: false,
+      is_licensed: false,
+      is_online: dto.is_online || false,
+      profile_completed: dto.profile_completed || false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
-      .from('contractor_profiles')
-      .insert(profileData)
+      .from('therapists')
+      .insert(therapistData)
       .select()
       .single();
 
@@ -83,10 +118,6 @@ export class ContractorService implements OnModuleInit {
       .update({ role: 'PROVIDER' })
       .eq('id', dto.user_id);
 
-    // Sync to therapists table is now handled by PostgreSQL trigger
-    // with SECURITY DEFINER to bypass RLS policies
-    console.log('✅ Sync to therapists will be handled by trigger');
-
     return data;
   }
 
@@ -94,7 +125,7 @@ export class ContractorService implements OnModuleInit {
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase
-      .from('contractor_profiles')
+      .from('therapists')
       .select('*')
       .eq('user_id', userId)
       .single();
@@ -111,37 +142,19 @@ export class ContractorService implements OnModuleInit {
 
     console.log('🔍 Checking if user has services:', userId);
 
-    // First, verify contractor profile exists
-    const { data: contractor, error: contractorError } = await supabase
-      .from('contractor_profiles')
-      .select('id, user_id, is_active')
-      .eq('user_id', userId)
-      .single();
-
-    if (contractorError || !contractor) {
-      console.log('❌ No contractor profile found for user:', userId);
-      return false;
-    }
-
-    console.log('✓ Contractor profile found:', contractor.id);
-
     // Get the therapist_id from therapists table using user_id
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
-      .select('id')
+      .select('id, is_active')
       .eq('user_id', userId)
       .single();
 
     if (therapistError || !therapist) {
-      console.error('❌ CRITICAL: No therapist record found for user:', userId);
-      console.error('   Contractor exists but therapist missing - sync trigger may have failed');
-      console.error('   Use /contractor/diagnose-sync/:userId endpoint to investigate');
-      // Return false immediately - don't try to fix sync issues in a getter method
-      // Sync should be handled by database triggers automatically
+      console.log('❌ No therapist profile found for user:', userId);
       return false;
     }
 
-    console.log('✓ Therapist record found:', therapist.id);
+    console.log('✓ Therapist profile found:', therapist.id);
 
     // Check if this therapist has any active services in therapist_services
     const { data: services, error: servicesError } = await supabase
@@ -172,27 +185,11 @@ export class ContractorService implements OnModuleInit {
     const diagnosis = {
       userId,
       timestamp: new Date().toISOString(),
-      contractor: null,
       therapist: null,
       services: [],
       issues: [],
       status: 'unknown',
     };
-
-    // Check contractor profile
-    const { data: contractor, error: contractorError } = await supabase
-      .from('contractor_profiles')
-      .select('id, user_id, is_active, created_at, updated_at')
-      .eq('user_id', userId)
-      .single();
-
-    if (contractorError || !contractor) {
-      diagnosis.issues.push('Contractor profile not found');
-      diagnosis.status = 'CRITICAL';
-      return diagnosis;
-    }
-
-    diagnosis.contractor = contractor;
 
     // Check therapist record
     const { data: therapist, error: therapistError } = await supabase
@@ -202,7 +199,7 @@ export class ContractorService implements OnModuleInit {
       .single();
 
     if (therapistError || !therapist) {
-      diagnosis.issues.push('Therapist record missing - sync failed');
+      diagnosis.issues.push('Therapist record missing');
       diagnosis.status = 'ERROR';
       return diagnosis;
     }
@@ -248,7 +245,7 @@ export class ContractorService implements OnModuleInit {
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase
-      .from('contractor_profiles')
+      .from('therapists')
       .select(`
         *,
         user:users(id, first_name, last_name, email, phone, avatar, city, region)
@@ -266,9 +263,22 @@ export class ContractorService implements OnModuleInit {
     console.log('🔄 Updating profile for user:', userId);
     console.log('📦 Profile data:', JSON.stringify(dto, null, 2));
 
+    // Prepare update data
+    const updateData: any = {
+      ...dto,
+      bio_fr: dto.professional_experience, // Map to bio_fr
+      bio_en: dto.professional_experience, // Map to bio_en
+      is_online: dto.is_online,
+    };
+
+    // Handle location update if lat/lng provided
+    if (dto.latitude && dto.longitude) {
+      updateData.location = `POINT(${dto.longitude} ${dto.latitude})`;
+    }
+
     const { data, error } = await supabase
-      .from('contractor_profiles')
-      .update(dto)
+      .from('therapists')
+      .update(updateData)
       .eq('user_id', userId)
       .select()
       .single();
@@ -279,105 +289,9 @@ export class ContractorService implements OnModuleInit {
     }
 
     console.log('✅ Profile updated successfully');
-
-    // Sync to therapists table is now handled by PostgreSQL trigger
-    // with SECURITY DEFINER to bypass RLS policies
-    console.log('✅ Sync to therapists will be handled by trigger');
-
     return data;
   }
 
-  private async syncToTherapists(contractorProfile: any) {
-    const supabase = this.supabaseService.getClient();
-
-    try {
-      // Extract location from first service zone if available
-      let latitude = 0;
-      let longitude = 0;
-      let city = 'Unknown';
-      let region = 'Unknown';
-
-      if (contractorProfile.service_zones && Array.isArray(contractorProfile.service_zones)) {
-        const firstZone = contractorProfile.service_zones[0];
-        if (typeof firstZone === 'string') {
-          // If it's just a string (neighborhood name), use it as city
-          city = firstZone;
-          region = firstZone;
-        } else if (firstZone?.location) {
-          // If it's an object with location data
-          latitude = firstZone.location.lat || 0;
-          longitude = firstZone.location.lng || 0;
-          city = firstZone.location.address || 'Unknown';
-          region = firstZone.location.address || 'Unknown';
-        }
-      }
-
-      // Calculate experience (years) from bio length (rough estimate)
-      const experience = contractorProfile.professional_experience
-        ? Math.max(1, Math.floor(contractorProfile.professional_experience.length / 100))
-        : 1;
-
-      // Check if therapist already exists
-      const { data: existingTherapist } = await supabase
-        .from('therapists')
-        .select('id')
-        .eq('user_id', contractorProfile.user_id)
-        .single();
-
-      const therapistData = {
-        user_id: contractorProfile.user_id,
-        bio_fr: contractorProfile.professional_experience || '',
-        bio_en: contractorProfile.professional_experience || '',
-        experience: experience,
-        is_licensed: contractorProfile.qualifications_proof?.length > 0 || false,
-        license_number: contractorProfile.siret_number || null,
-        is_mobile: true,
-        travel_radius: 20,
-        travel_fee: 0,
-        latitude: latitude,
-        longitude: longitude,
-        city: city,
-        region: region,
-        portfolio_images: contractorProfile.portfolio_images || [],
-        profile_image: contractorProfile.profile_picture || null,
-        is_active: contractorProfile.is_active ?? true,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (existingTherapist) {
-        // Update existing therapist
-        const { error } = await supabase
-          .from('therapists')
-          .update(therapistData)
-          .eq('user_id', contractorProfile.user_id);
-
-        if (error) {
-          console.error('❌ Error updating therapist:', error);
-          throw error;
-        }
-      } else {
-        // Create new therapist with location geometry
-        const { error } = await supabase
-          .from('therapists')
-          .insert({
-            ...therapistData,
-            location: `POINT(${longitude} ${latitude})`,
-            created_at: new Date().toISOString(),
-          });
-
-        if (error) {
-          console.error('❌ Error creating therapist:', error);
-          throw error;
-        }
-      }
-
-      console.log('✅ Therapist record synced for user:', contractorProfile.user_id);
-    } catch (error) {
-      console.error('❌ Error syncing to therapists table:', error);
-      // Don't throw - we don't want to fail the contractor profile operation
-      // if therapist sync fails
-    }
-  }
 
   async listContractors(filters?: {
     types_of_services?: string[];
@@ -387,7 +301,7 @@ export class ContractorService implements OnModuleInit {
     const supabase = this.supabaseService.getClient();
 
     let query = supabase
-      .from('contractor_profiles')
+      .from('therapists')
       .select(`
         *,
         user:users(id, first_name, last_name, email, phone, avatar, city, region)
@@ -395,7 +309,9 @@ export class ContractorService implements OnModuleInit {
       .eq('is_active', true);
 
     if (filters?.is_verified !== undefined) {
-      query = query.eq('is_verified', filters.is_verified);
+      // therapists table doesn't have is_verified, but we can check profile_completed or user.isVerified if needed
+      // For now, ignoring or mapping to profile_completed
+      // query = query.eq('profile_completed', filters.is_verified);
     }
 
     if (filters?.types_of_services && filters.types_of_services.length > 0) {
@@ -634,33 +550,22 @@ export class ContractorService implements OnModuleInit {
   async addService(dto: CreateContractorServiceDto) {
     const supabase = this.supabaseService.getClient();
 
-    // First, get the contractor_profile to get the user_id
-    const { data: contractorProfile, error: profileError } = await supabase
-      .from('contractor_profiles')
-      .select('user_id')
-      .eq('id', dto.contractor_id)
-      .single();
-
-    if (profileError || !contractorProfile) {
-      throw new Error('Contractor profile not found.');
-    }
-
-    // Then, get therapist_id from the user_id
+    // Verify therapist exists
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
       .select('id')
-      .eq('user_id', contractorProfile.user_id)
+      .eq('id', dto.contractor_id)
       .single();
 
     if (therapistError || !therapist) {
-      throw new Error('Therapist profile not found. Please complete your profile first.');
+      throw new Error('Therapist profile not found.');
     }
 
     // Insert into therapist_services
     const { data, error } = await supabase
       .from('therapist_services')
       .insert({
-        therapist_id: therapist.id,
+        therapist_id: dto.contractor_id,
         service_id: dto.service_id,
         price: dto.price,
         duration: dto.duration,
@@ -679,37 +584,13 @@ export class ContractorService implements OnModuleInit {
   async getServices(contractorId: string) {
     const supabase = this.supabaseService.getClient();
 
-    // First, get the contractor_profile to get the user_id
-    const { data: contractorProfile, error: profileError } = await supabase
-      .from('contractor_profiles')
-      .select('user_id')
-      .eq('id', contractorId)
-      .single();
-
-    if (profileError || !contractorProfile) {
-      // Return empty array if contractor profile not found
-      return [];
-    }
-
-    // Then, get therapist_id from the user_id
-    const { data: therapist, error: therapistError } = await supabase
-      .from('therapists')
-      .select('id')
-      .eq('user_id', contractorProfile.user_id)
-      .single();
-
-    if (therapistError || !therapist) {
-      // Return empty array if therapist not found
-      return [];
-    }
-
     const { data, error } = await supabase
       .from('therapist_services')
       .select(`
         *,
         service:services(*)
       `)
-      .eq('therapist_id', therapist.id)
+      .eq('therapist_id', contractorId)
       .eq('is_active', true);
 
     if (error) throw new Error(error.message);
@@ -791,25 +672,25 @@ export class ContractorService implements OnModuleInit {
       upcoming_appointments: string;
     };
 
-    // Get earnings chart data (safely, return empty if table doesn't exist)
+    // Get earnings chart data from bookings (completed bookings = earnings)
     let earnings: any[] = [];
     try {
       const { data: earningsData, error: earningsError } = await supabase
-        .from('contractor_earnings')
-        .select('created_at, net_amount')
-        .eq('contractor_id', contractorId)
-        .eq('payment_status', 'PAID')
-        .gte('created_at', startDate || '2000-01-01')
-        .lte('created_at', endDate || '2100-01-01')
-        .order('created_at', { ascending: true });
+        .from('bookings')
+        .select('scheduled_at, total')
+        .or(`contractor_id.eq.${contractorId},therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
+        .eq('status', 'COMPLETED')
+        .gte('scheduled_at', startDate || '2000-01-01')
+        .lte('scheduled_at', endDate || '2100-01-01')
+        .order('scheduled_at', { ascending: true });
 
-      if (earningsError && !earningsError.message.includes('does not exist')) {
-        console.error('⚠️  Error fetching earnings chart:', earningsError.message);
+      if (earningsError) {
+        console.error('⚠️  Error fetching earnings chart from bookings:', earningsError.message);
       } else if (earningsData) {
         earnings = earningsData;
       }
     } catch (e) {
-      console.log('⚠️  Earnings table not available, using empty data');
+      console.log('⚠️  Error fetching earnings chart data');
     }
 
     // Get bookings chart data (safely, return empty if table doesn't exist)
@@ -818,7 +699,7 @@ export class ContractorService implements OnModuleInit {
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('scheduled_at, status')
-        .eq('contractor_id', contractorId)
+        .or(`contractor_id.eq.${contractorId},therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
         .eq('status', 'COMPLETED')
         .gte('scheduled_at', startDate || '2000-01-01')
         .lte('scheduled_at', endDate || '2100-01-01')
@@ -834,7 +715,7 @@ export class ContractorService implements OnModuleInit {
     }
 
     // Process chart data
-    const earningsChart = this.aggregateDataByDate(earnings, 'net_amount');
+    const earningsChart = this.aggregateDataByDate(earnings, 'total');
     const bookingsChart = this.aggregateDataByDate(bookings, 'count');
 
     return {
@@ -861,7 +742,7 @@ export class ContractorService implements OnModuleInit {
           user:users(id, first_name, last_name, email, phone, avatar),
           service:services(id, name_fr, name_en, category)
         `)
-        .eq('contractor_id', contractorId)
+        .or(`contractor_id.eq.${contractorId},therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
         .eq('status', 'CONFIRMED')
         .gte('scheduled_at', new Date().toISOString())
         .order('scheduled_at', { ascending: true });
@@ -895,43 +776,56 @@ export class ContractorService implements OnModuleInit {
   async getEarnings(contractorId: string, startDate?: string, endDate?: string) {
     const supabase = this.supabaseService.getClient();
 
-    console.log('💰 Getting earnings for contractor:', contractorId);
+    console.log('💰 Getting earnings (from bookings) for contractor:', contractorId);
 
     try {
       let query = supabase
-        .from('contractor_earnings')
+        .from('bookings')
         .select(`
           *,
-          booking:bookings(
-            scheduled_at,
-            service:services(name)
-          )
+          user:users(id, first_name, last_name, email, phone, avatar),
+          booking_items(service_name, price)
         `)
-        .eq('contractor_id', contractorId)
-        .order('created_at', { ascending: false });
+        .or(`contractor_id.eq.${contractorId},therapist_id.eq.${contractorId},salon_id.eq.${contractorId}`)
+        .eq('status', 'COMPLETED')
+        .order('scheduled_at', { ascending: false });
 
       if (startDate) {
-        query = query.gte('created_at', startDate);
+        query = query.gte('scheduled_at', startDate);
       }
 
       if (endDate) {
-        query = query.lte('created_at', endDate);
+        query = query.lte('scheduled_at', endDate);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error getting earnings:', error);
-        // Return empty array if table doesn't exist yet
-        if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          console.log('⚠️  Earnings table not ready yet, returning empty array');
-          return [];
-        }
+        console.error('❌ Error getting earnings from bookings:', error);
         throw new Error(error.message);
       }
 
-      console.log('✅ Found', data?.length || 0, 'earnings records');
-      return data || [];
+      // Map bookings to Earning structure
+      return (data || []).map(booking => ({
+        id: booking.id,
+        contractor_id: booking.contractor_id || booking.therapist_id || booking.salon_id || contractorId,
+        booking_id: booking.id,
+        amount: booking.total,
+        commission: 0, // Assuming 0 for now, or calculate based on logic
+        net_amount: booking.total,
+        payment_status: 'PAID',
+        payment_method: 'CASH', // Default or fetch if available
+        created_at: booking.scheduled_at, // Use scheduled date as earning date
+        booking: {
+          id: booking.id,
+          client: booking.user,
+          service: {
+            name: booking.booking_items?.[0]?.service_name || 'Service'
+          },
+          total_price: booking.total
+        }
+      }));
+
     } catch (error) {
       console.error('❌ Exception in getEarnings:', error);
       return [];
@@ -944,7 +838,7 @@ export class ContractorService implements OnModuleInit {
 
   private aggregateDataByDate(
     data: any[],
-    field: 'net_amount',
+    field: 'net_amount' | 'total',
   ): Array<{ date: string; amount: number }>;
   private aggregateDataByDate(
     data: any[],
@@ -952,7 +846,7 @@ export class ContractorService implements OnModuleInit {
   ): Array<{ date: string; count: number }>;
   private aggregateDataByDate(
     data: any[],
-    field: 'net_amount' | 'count',
+    field: 'net_amount' | 'count' | 'total',
   ): Array<{ date: string; amount: number } | { date: string; count: number }> {
     const aggregated: Record<string, number> = {};
 
@@ -968,15 +862,15 @@ export class ContractorService implements OnModuleInit {
         aggregated[dateKey] = 0;
       }
 
-      if (field === 'net_amount') {
-        aggregated[dateKey] += parseFloat(item.net_amount || 0);
+      if (field === 'net_amount' || field === 'total') {
+        aggregated[dateKey] += parseFloat(item[field] || 0);
       } else {
         aggregated[dateKey] += 1;
       }
     });
 
     return Object.entries(aggregated).map(([date, value]) => {
-      if (field === 'net_amount') {
+      if (field === 'net_amount' || field === 'total') {
         return { date, amount: value };
       } else {
         return { date, count: value };

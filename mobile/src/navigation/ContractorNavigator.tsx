@@ -13,17 +13,35 @@ import {
   ContractorAppointmentsScreen,
   ContractorEarningsScreen,
   AppointmentDetailsScreen,
+
   ProposalDetailsScreen,
+  ContractorMenuScreen,
+  ContractorSettingsScreen,
 } from '../screens/contractor';
+import { TermsScreen } from '../screens/common/TermsScreen';
+import {
+  ContractorProductsScreen,
+  ProductFormScreen,
+  ContractorSalesScreen,
+  ContractorMarketplaceScreen,
+  MarketplaceBrowseScreen,
+  ProductDetailsScreen,
+  CheckoutScreen,
+  ClientOrdersScreen,
+  ProductChatScreen,
+  ContractorMessagesScreen,
+} from '../screens/marketplace';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
+import { PurchaseCreditsScreen } from '../screens/credits/PurchaseCreditsScreen';
+import { PaymentVerificationScreen } from '../screens/credits/PaymentVerificationScreen';
 import { useNotifications } from '../hooks/useNotifications';
 
 // Stack navigators for each tab
 const HomeStack = createNativeStackNavigator();
 const ProposalStack = createNativeStackNavigator();
 const ChatStack = createNativeStackNavigator();
-const CalendarStack = createNativeStackNavigator();
+const MarketplaceStack = createNativeStackNavigator();
 const MoreStack = createNativeStackNavigator();
 
 // Home Stack
@@ -33,6 +51,9 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ContractorEarnings" component={ContractorEarningsScreen} />
     <HomeStack.Screen name="ContractorProfileEdit" component={ContractorProfileEditScreen} />
     <HomeStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
+    <HomeStack.Screen name="ContractorAvailability" component={ContractorAvailabilityScreen} />
+    <HomeStack.Screen name="PurchaseCredits" component={PurchaseCreditsScreen} />
+    <HomeStack.Screen name="PaymentVerification" component={PaymentVerificationScreen} />
   </HomeStack.Navigator>
 );
 
@@ -41,7 +62,7 @@ const ProposalStackNavigator = () => (
   <ProposalStack.Navigator screenOptions={{ headerShown: false }}>
     <ProposalStack.Screen name="ContractorProposalsList" component={ContractorProposalsScreen} />
     <ProposalStack.Screen name="ProposalDetails" component={ProposalDetailsScreen} />
-    <ProposalStack.Screen name="Chat" component={ChatScreen} />
+    <ProposalStack.Screen name="ConversationDetails" component={ChatScreen} />
   </ProposalStack.Navigator>
 );
 
@@ -49,71 +70,40 @@ const ProposalStackNavigator = () => (
 const ChatStackNavigator = () => (
   <ChatStack.Navigator screenOptions={{ headerShown: false }}>
     <ChatStack.Screen name="ConversationsList" component={ConversationsScreen} />
-    <ChatStack.Screen name="Chat" component={ChatScreen} />
+    <ChatStack.Screen name="ConversationDetails" component={ChatScreen} />
   </ChatStack.Navigator>
 );
 
-// Calendar Stack
-const CalendarStackNavigator = () => (
-  <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
-    <CalendarStack.Screen name="ContractorAppointmentsList" component={ContractorAppointmentsScreen} />
-    <CalendarStack.Screen name="AppointmentDetails" component={AppointmentDetailsScreen} />
-    <CalendarStack.Screen name="Chat" component={ChatScreen} />
-  </CalendarStack.Navigator>
+// Marketplace Stack
+const MarketplaceStackNavigator = () => (
+  <MarketplaceStack.Navigator screenOptions={{ headerShown: false }}>
+    <MarketplaceStack.Screen name="ContractorMarketplace" component={ContractorMarketplaceScreen} />
+    <MarketplaceStack.Screen name="ContractorMessages" component={ContractorMessagesScreen} />
+    <MarketplaceStack.Screen name="MarketplaceBrowse" component={MarketplaceBrowseScreen} />
+    <MarketplaceStack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+    <MarketplaceStack.Screen name="Checkout" component={CheckoutScreen} />
+    <MarketplaceStack.Screen name="ClientOrders" component={ClientOrdersScreen} />
+    <MarketplaceStack.Screen name="ProductChat" component={ProductChatScreen} />
+    <MarketplaceStack.Screen name="ContractorProducts" component={ContractorProductsScreen} />
+    <MarketplaceStack.Screen name="ProductForm" component={ProductFormScreen} />
+    <MarketplaceStack.Screen name="ContractorSales" component={ContractorSalesScreen} />
+  </MarketplaceStack.Navigator>
 );
 
 // More Stack (Settings, Profile, etc.)
 const MoreStackNavigator = () => (
   <MoreStack.Navigator screenOptions={{ headerShown: false }}>
-    <MoreStack.Screen name="ContractorMore" component={ContractorMoreScreen} />
+    <MoreStack.Screen name="ContractorMenu" component={ContractorMenuScreen} />
     <MoreStack.Screen name="ContractorAvailability" component={ContractorAvailabilityScreen} />
     <MoreStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
     <MoreStack.Screen name="ContractorProfile" component={ContractorProfileEditScreen} />
+    <MoreStack.Screen name="ContractorSettings" component={ContractorSettingsScreen} />
+    <MoreStack.Screen name="Terms" component={TermsScreen} />
+    <MoreStack.Screen name="ContractorProducts" component={ContractorProductsScreen} />
+    <MoreStack.Screen name="ProductForm" component={ProductFormScreen} />
+    <MoreStack.Screen name="ContractorSales" component={ContractorSalesScreen} />
   </MoreStack.Navigator>
 );
-
-// More Screen (placeholder)
-const ContractorMoreScreen = ({ navigation }: any) => {
-  const { signOut } = useAuth();
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>More</Text>
-      <View style={styles.menuList}>
-        <MenuButton title="Profile" onPress={() => navigation.navigate('ContractorProfile')} />
-        <MenuButton title="My Schedule" onPress={() => navigation.navigate('ContractorAvailability')} />
-        <MenuButton title="My Services" onPress={() => navigation.navigate('ContractorServices')} />
-        <MenuButton title="Settings" onPress={() => {}} />
-        <MenuButton title="Logout" onPress={handleSignOut} />
-      </View>
-    </View>
-  );
-};
 
 const MenuButton = ({ title, onPress }: { title: string; onPress: () => void }) => (
   <Text style={styles.menuButton} onPress={onPress}>
@@ -153,8 +143,8 @@ const ContractorTabNavigator = () => {
             iconText = '📋';
           } else if (route.name === 'Chat') {
             iconText = '💬';
-          } else if (route.name === 'Calendar') {
-            iconText = '📅';
+          } else if (route.name === 'Marketplace') {
+            iconText = '🛍️';
           } else if (route.name === 'More') {
             iconText = '☰';
           }
@@ -167,18 +157,34 @@ const ContractorTabNavigator = () => {
       <Tab.Screen
         name="Proposal"
         component={ProposalStackNavigator}
-        options={{ tabBarLabel: 'PROPOSAL' }}
+        options={{ tabBarLabel: 'BOOKING' }}
       />
       <Tab.Screen name="Chat" component={ChatStackNavigator} options={{ tabBarLabel: 'CHAT' }} />
       <Tab.Screen
-        name="Calendar"
-        component={CalendarStackNavigator}
-        options={{ tabBarLabel: 'CALENDAR' }}
+        name="Marketplace"
+        component={MarketplaceStackNavigator}
+        options={{ tabBarLabel: 'MARKET' }}
       />
       <Tab.Screen name="More" component={MoreStackNavigator} options={{ tabBarLabel: 'MORE' }} />
     </Tab.Navigator>
   );
 };
+
+// Setup Stack for new contractors
+const SetupStack = createNativeStackNavigator();
+
+const SetupNavigator = ({ onServiceAdded }: { onServiceAdded: () => void }) => (
+  <SetupStack.Navigator screenOptions={{ headerShown: false }}>
+    <SetupStack.Screen
+      name="ContractorProfileEdit"
+      component={ContractorProfileEditScreen}
+      initialParams={{ isSetupFlow: true }}
+    />
+    <SetupStack.Screen name="ContractorServices">
+      {(props) => <ContractorServicesScreen {...props} onServiceAdded={onServiceAdded} hideHeader={true} />}
+    </SetupStack.Screen>
+  </SetupStack.Navigator>
+);
 
 // Wrapper to check if contractor has services
 export const ContractorNavigator = () => {
@@ -214,36 +220,6 @@ export const ContractorNavigator = () => {
     setHasServices(true);
   };
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter?',
-      [
-        {
-          text: 'Annuler',
-          style: 'cancel',
-        },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-            } catch (error) {
-              console.error('Sign out error:', error);
-              Alert.alert('Erreur', 'Échec de la déconnexion. Veuillez réessayer.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleGoToHome = () => {
-    // Allow them to navigate back to main dashboard
-    setHasServices(true);
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -252,34 +228,9 @@ export const ContractorNavigator = () => {
     );
   }
 
-  // If contractor has no services, show services screen with options
+  // If contractor has no services, show setup flow starting with Profile Edit
   if (hasServices === false) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-        {/* Header with navigation options */}
-        <View style={styles.noServicesHeader}>
-          <Text style={styles.noServicesTitle}>Configuration initiale</Text>
-          <Text style={styles.noServicesDescription}>
-            Ajoutez au moins un service pour commencer à recevoir des demandes de clients
-          </Text>
-          <View style={styles.noServicesActions}>
-            <Text
-              style={styles.noServicesActionButton}
-              onPress={handleGoToHome}
-            >
-              Tableau de bord →
-            </Text>
-            <Text
-              style={[styles.noServicesActionButton, styles.logoutButton]}
-              onPress={handleSignOut}
-            >
-              Déconnexion
-            </Text>
-          </View>
-        </View>
-        <ContractorServicesScreen onServiceAdded={onServiceAdded} hideHeader={true} />
-      </View>
-    );
+    return <SetupNavigator onServiceAdded={onServiceAdded} />;
   }
 
   // Otherwise, show the normal tab navigator

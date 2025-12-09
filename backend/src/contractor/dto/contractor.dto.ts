@@ -29,6 +29,14 @@ export class CreateContractorProfileDto {
   languages_spoken?: string[];
   available_transportation?: string[];
   service_zones?: ServiceZone[] | string[];  // Support both formats
+  profile_image?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  region?: string;
+  experience?: number;
+  profile_completed?: boolean;
+  is_online?: boolean;
 }
 
 export class UpdateContractorProfileDto {
@@ -48,6 +56,12 @@ export class UpdateContractorProfileDto {
   available_transportation?: string[];
   service_zones?: ServiceZone[] | string[];  // Support both formats
   profile_completed?: boolean;
+  profile_image?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  region?: string;
+  is_online?: boolean;
 }
 
 export class CreateAvailabilityDto {

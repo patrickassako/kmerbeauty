@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class FavoritesService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly eventEmitter: EventEmitter2,
+  ) { }
 
   /**
    * Vérifier si un thérapeute est en favoris
@@ -65,6 +69,14 @@ export class FavoritesService {
       throw new Error(`Failed to add to favorites: ${error.message}`);
     }
 
+    if (data) {
+      this.eventEmitter.emit('favorite.added', {
+        providerId: therapistId,
+        providerType: 'therapist',
+        userId: userId,
+      });
+    }
+
     return data;
   }
 
@@ -85,6 +97,14 @@ export class FavoritesService {
 
     if (error) {
       throw new Error(`Failed to add to favorites: ${error.message}`);
+    }
+
+    if (data) {
+      this.eventEmitter.emit('favorite.added', {
+        providerId: salonId,
+        providerType: 'salon',
+        userId: userId,
+      });
     }
 
     return data;

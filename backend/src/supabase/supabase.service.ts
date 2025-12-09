@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export class SupabaseService implements OnModuleInit {
   private supabaseClient: SupabaseClient;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
@@ -45,5 +45,18 @@ export class SupabaseService implements OnModuleInit {
   // Pour les requêtes RPC (fonctions PostgreSQL)
   rpc(fn: string, params?: object) {
     return this.supabaseClient.rpc(fn, params);
+  }
+
+  // Créer une nouvelle instance client (pour éviter de partager l'état d'authentification)
+  createNewClient(): SupabaseClient {
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
   }
 }

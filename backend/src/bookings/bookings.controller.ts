@@ -33,7 +33,7 @@ export interface CreateBookingDto {
 
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(private readonly bookingsService: BookingsService) { }
 
   @Post()
   async create(@Body() createBookingDto: CreateBookingDto) {
@@ -89,5 +89,11 @@ export class BookingsController {
   async complete(@Param('id') id: string) {
     console.log('📥 [BookingsController] PATCH /bookings/' + id + '/complete');
     return this.bookingsService.completeBooking(id);
+  }
+
+  @Patch(':id/start')
+  async start(@Param('id') id: string) {
+    console.log('📥 [BookingsController] PATCH /bookings/' + id + '/start');
+    return this.bookingsService.startBooking(id);
   }
 }

@@ -155,6 +155,7 @@ CREATE TABLE therapists (
   bio_fr TEXT,
   bio_en TEXT,
   experience INTEGER NOT NULL, -- Années d'expérience
+  professional_experience TEXT,
   is_licensed BOOLEAN DEFAULT FALSE,
   license_number VARCHAR(100),
 
@@ -172,11 +173,37 @@ CREATE TABLE therapists (
 
   -- Portfolio
   portfolio_images TEXT[],
+  profile_image TEXT,
+
+  -- Business Info
+  business_name VARCHAR(255),
+  siret_number VARCHAR(100),
+  legal_status VARCHAR(100),
+  qualifications_proof TEXT[],
+  types_of_services TEXT[],
+  id_card_url JSONB,
+  insurance_url TEXT,
+  training_certificates TEXT[],
+  
+  -- Agreements
+  confidentiality_accepted BOOLEAN DEFAULT FALSE,
+  terms_accepted BOOLEAN DEFAULT FALSE,
+  
+  -- Preferences
+  languages_spoken TEXT[] DEFAULT ARRAY['fr'],
+  available_transportation TEXT[],
+  
+  -- Stats
+  total_bookings INTEGER DEFAULT 0,
+  total_revenue DECIMAL(10, 2) DEFAULT 0,
+  average_rating DECIMAL(3, 2) DEFAULT 0,
+  profile_completed BOOLEAN DEFAULT FALSE,
+  service_zones JSONB DEFAULT '[]'::jsonb,
 
   -- Salon affilié (optionnel) - sera ajouté après la création de la table salons
   salon_id UUID,
 
-  -- Stats
+  -- Stats (Legacy/Duplicate?)
   rating DECIMAL(3, 2) DEFAULT 0,
   review_count INTEGER DEFAULT 0,
   booking_count INTEGER DEFAULT 0,

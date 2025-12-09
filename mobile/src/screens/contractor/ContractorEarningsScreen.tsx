@@ -12,6 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi } from '../../services/api';
+import api from '../../services/api';
+import { useI18n } from '../../i18n/I18nContext';
 import { getFullName, getUserInitials } from '../../utils/userHelpers';
 
 interface Earning {
@@ -41,11 +43,14 @@ interface Earning {
 export const ContractorEarningsScreen = () => {
   const { normalizeFontSize, spacing } = useResponsive();
   const { user } = useAuth();
+  const { t } = useI18n();
   const navigation = useNavigation<any>();
 
   const [earnings, setEarnings] = useState<Earning[]>([]);
+  const [creditTransactions, setCreditTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [contractorId, setContractorId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'earnings' | 'credits'>('earnings');
 
   useEffect(() => {
     loadContractorProfile();
@@ -53,9 +58,13 @@ export const ContractorEarningsScreen = () => {
 
   useEffect(() => {
     if (contractorId) {
-      loadEarnings();
+      loadData();
     }
   }, [contractorId]);
+
+  const loadData = async () => {
+    await Promise.all([loadEarnings(), loadCreditTransactions()]);
+  };
 
   const loadContractorProfile = async () => {
     try {
@@ -76,9 +85,18 @@ export const ContractorEarningsScreen = () => {
       setEarnings(data);
     } catch (error: any) {
       console.error('Error loading earnings:', error);
-      Alert.alert('Error', error.message || 'Failed to load earnings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCreditTransactions = async () => {
+    try {
+      if (!contractorId) return;
+      const res = await api.get(`/credits/transactions/${contractorId}?type=therapist&limit=20`);
+      setCreditTransactions(res.data.data || []);
+    } catch (error) {
+      console.error('Error loading credit transactions:', error);
     }
   };
 
@@ -120,9 +138,7 @@ export const ContractorEarningsScreen = () => {
           <Text style={{ fontSize: normalizeFontSize(24) }}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.locationText, { fontSize: normalizeFontSize(12) }]}>
-            📍 Notre-Dame - 754 Paris, France
-          </Text>
+          {/* Location removed as requested */}
         </View>
         <View
           style={[
@@ -138,7 +154,23 @@ export const ContractorEarningsScreen = () => {
 
       {/* Title */}
       <View style={{ paddingHorizontal: spacing(2), paddingTop: spacing(2), paddingBottom: spacing(1) }}>
-        <Text style={[styles.title, { fontSize: normalizeFontSize(24) }]}>Transaction</Text>
+        <Text style={[styles.title, { fontSize: normalizeFontSize(24) }]}>Transactions</Text>
+      </View>
+
+      {/* Tabs */}
+      <View style={[styles.tabs, { paddingHorizontal: spacing(2), marginBottom: spacing(2) }]}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'earnings' && styles.tabActive]}
+          onPress={() => setActiveTab('earnings')}
+        >
+          <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive]}>Revenus</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'credits' && styles.tabActive]}
+          onPress={() => setActiveTab('credits')}
+        >
+          <Text style={[styles.tabText, activeTab === 'credits' && styles.tabTextActive]}>Crédits</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing(10) }}>
@@ -146,98 +178,152 @@ export const ContractorEarningsScreen = () => {
           <View style={{ padding: spacing(4), alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#2D2D2D" />
           </View>
-        ) : earnings.length === 0 ? (
-          <View style={{ padding: spacing(4), alignItems: 'center' }}>
-            <Text style={{ fontSize: normalizeFontSize(16), color: '#999' }}>No transactions found</Text>
-          </View>
+        ) : activeTab === 'earnings' ? (
+          earnings.length === 0 ? (
+            <View style={{ padding: spacing(4), alignItems: 'center' }}>
+              <Text style={{ fontSize: normalizeFontSize(16), color: '#999' }}>Aucun revenu trouvé</Text>
+            </View>
+          ) : (
+            <View style={{ paddingHorizontal: spacing(2), gap: spacing(2) }}>
+              {earnings.map((earning) => (
+                <View
+                  key={earning.id}
+                  style={[
+                    styles.transactionCard,
+                    {
+                      padding: spacing(2),
+                      borderRadius: spacing(1.5),
+                      gap: spacing(1.5),
+                    },
+                  ]}
+                >
+                  {/* Header Row */}
+                  <View style={styles.transactionHeader}>
+                    <View style={styles.paymentMethodSection}>
+                      <View
+                        style={[
+                          styles.paymentIcon,
+                          {
+                            width: spacing(5),
+                            height: spacing(5),
+                            borderRadius: spacing(1),
+                          },
+                        ]}
+                      >
+                        <Text style={{ fontSize: normalizeFontSize(20) }}>
+                          {getPaymentMethodIcon(earning.payment_method)}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={[styles.paymentType, { fontSize: normalizeFontSize(16) }]}>
+                          Cash-in
+                        </Text>
+                        <Text style={[styles.transactionId, { fontSize: normalizeFontSize(11) }]}>
+                          ID: {earning.id.substring(0, 8)}...
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.amountSection}>
+                      <Text style={[styles.amount, { fontSize: normalizeFontSize(24) }]}>
+                        {earning.net_amount.toLocaleString()} FCFA
+                      </Text>
+                      {earning.commission > 0 && (
+                        <Text style={[styles.commission, { fontSize: normalizeFontSize(11) }]}>
+                          {getCommissionPercentage(earning)}% Com.
+                        </Text>
+                      )}
+                      <Text style={[styles.dateTime, { fontSize: normalizeFontSize(11) }]}>
+                        {formatDate(earning.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Details Row */}
+                  <View style={styles.transactionDetails}>
+                    <View style={styles.detailItem}>
+                      <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(12) }]}>Client</Text>
+                      <Text style={[styles.detailValue, { fontSize: normalizeFontSize(13) }]}>
+                        {getFullName(earning.booking?.client)}
+                      </Text>
+                    </View>
+                    <View style={[styles.detailItem, { alignItems: 'flex-end' }]}>
+                      <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(12) }]}>Service</Text>
+                      <Text style={[styles.detailValue, { fontSize: normalizeFontSize(13) }]}>
+                        {earning.booking?.service?.name || 'Service'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )
         ) : (
-          <View style={{ paddingHorizontal: spacing(2), gap: spacing(2) }}>
-            {earnings.map((earning) => (
-              <View
-                key={earning.id}
-                style={[
-                  styles.transactionCard,
-                  {
-                    padding: spacing(2),
-                    borderRadius: spacing(1.5),
-                    gap: spacing(1.5),
-                  },
-                ]}
-              >
-                {/* Header Row */}
-                <View style={styles.transactionHeader}>
-                  <View style={styles.paymentMethodSection}>
-                    <View
-                      style={[
-                        styles.paymentIcon,
-                        {
-                          width: spacing(5),
-                          height: spacing(5),
-                          borderRadius: spacing(1),
-                        },
-                      ]}
-                    >
-                      <Text style={{ fontSize: normalizeFontSize(20) }}>
-                        {getPaymentMethodIcon(earning.payment_method)}
-                      </Text>
+          // Credits Tab
+          creditTransactions.length === 0 ? (
+            <View style={{ padding: spacing(4), alignItems: 'center' }}>
+              <Text style={{ fontSize: normalizeFontSize(16), color: '#999' }}>Aucune transaction de crédit</Text>
+            </View>
+          ) : (
+            <View style={{ paddingHorizontal: spacing(2), gap: spacing(2) }}>
+              {creditTransactions.map((transaction) => (
+                <View
+                  key={transaction.id}
+                  style={[
+                    styles.transactionCard,
+                    {
+                      padding: spacing(2),
+                      borderRadius: spacing(1.5),
+                      gap: spacing(1.5),
+                    },
+                  ]}
+                >
+                  <View style={styles.transactionHeader}>
+                    <View style={styles.paymentMethodSection}>
+                      <View
+                        style={[
+                          styles.paymentIcon,
+                          {
+                            width: spacing(5),
+                            height: spacing(5),
+                            borderRadius: spacing(1),
+                            backgroundColor: transaction.amount > 0 ? '#E8F5E9' : '#FFEBEE',
+                          },
+                        ]}
+                      >
+                        <Text style={{ fontSize: normalizeFontSize(20) }}>
+                          {transaction.amount > 0 ? '⬇️' : '⬆️'}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={[styles.paymentType, { fontSize: normalizeFontSize(16) }]}>
+                          {transaction.transaction_type.replace('_', ' ')}
+                        </Text>
+                        <Text style={[styles.transactionId, { fontSize: normalizeFontSize(11) }]}>
+                          {formatDate(transaction.created_at)}
+                        </Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text style={[styles.paymentType, { fontSize: normalizeFontSize(16) }]}>
-                        Cash-in
+                    <View style={styles.amountSection}>
+                      <Text
+                        style={[
+                          styles.amount,
+                          {
+                            fontSize: normalizeFontSize(24),
+                            color: transaction.amount > 0 ? '#4CAF50' : '#FF4444',
+                          },
+                        ]}
+                      >
+                        {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(1)}
                       </Text>
-                      <Text style={[styles.transactionId, { fontSize: normalizeFontSize(11) }]}>
-                        Transaction ID
-                      </Text>
-                      <Text style={[styles.transactionId, { fontSize: normalizeFontSize(11) }]}>
-                        {earning.id.substring(0, 13)}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.amountSection}>
-                    <Text style={[styles.amount, { fontSize: normalizeFontSize(24) }]}>
-                      ${earning.net_amount}
-                    </Text>
-                    {earning.commission > 0 && (
                       <Text style={[styles.commission, { fontSize: normalizeFontSize(11) }]}>
-                        {getCommissionPercentage(earning)}% Commission
+                        Solde: {transaction.balance_after.toFixed(1)}
                       </Text>
-                    )}
-                    <Text style={[styles.dateTime, { fontSize: normalizeFontSize(11) }]}>
-                      {formatDate(earning.created_at)}
-                    </Text>
-                    <Text style={[styles.dateTime, { fontSize: normalizeFontSize(11) }]}>
-                      {formatTime(earning.created_at)}
-                    </Text>
+                    </View>
                   </View>
                 </View>
-
-                {/* Details Row */}
-                <View style={styles.transactionDetails}>
-                  <View style={styles.detailItem}>
-                    <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(12) }]}>Client</Text>
-                    <Text style={[styles.detailValue, { fontSize: normalizeFontSize(13) }]}>
-                      {getFullName(earning.booking?.client)}
-                    </Text>
-                  </View>
-                  <View style={[styles.detailItem, { alignItems: 'flex-end' }]}>
-                    <Text style={[styles.detailLabel, { fontSize: normalizeFontSize(12) }]}>Service</Text>
-                    <Text style={[styles.detailValue, { fontSize: normalizeFontSize(13) }]}>
-                      {earning.booking?.service?.name || 'Service'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Tip Badge (if applicable) */}
-                {earning.amount > (earning.booking?.total_price || 0) && (
-                  <View style={styles.tipBadge}>
-                    <Text style={[styles.tipText, { fontSize: normalizeFontSize(11) }]}>
-                      ${(earning.amount - (earning.booking?.total_price || 0)).toFixed(0)} Tipped
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
     </View>
@@ -338,5 +424,25 @@ const styles = StyleSheet.create({
   tipText: {
     color: '#4CAF50',
     fontWeight: '600',
+  },
+  tabs: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+  },
+  tabActive: {
+    backgroundColor: '#2D2D2D',
+  },
+  tabText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#FFF',
   },
 });

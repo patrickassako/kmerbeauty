@@ -7,15 +7,24 @@ import { ServiceScreen } from '../screens/main/ServiceScreen';
 import { SalonScreen } from '../screens/main/SalonScreen';
 import { BookingsScreen } from '../screens/main/BookingsScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
+import EditProfileScreen from '../screens/main/EditProfileScreen';
+import BecomeProviderScreen from '../screens/main/BecomeProviderScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
+import {
+  MarketplaceBrowseScreen,
+  ProductDetailsScreen,
+  CheckoutScreen,
+  ClientOrdersScreen,
+  ProductChatScreen,
+} from '../screens/marketplace';
 import { useNotifications } from '../hooks/useNotifications';
 
 export type MainTabParamList = {
   Home: undefined;
   Service: undefined;
-  Salon: undefined;
+  Market: undefined;
   Bookings: undefined;
   Conversations: undefined;
   Profile: undefined;
@@ -23,14 +32,38 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const ChatStack = createNativeStackNavigator();
+const MarketStack = createNativeStackNavigator();
 
 // Chat Stack Navigator
 const ChatStackNavigator = () => (
   <ChatStack.Navigator screenOptions={{ headerShown: false }}>
     <ChatStack.Screen name="ConversationsList" component={ConversationsScreen} />
-    <ChatStack.Screen name="Chat" component={ChatScreen} />
+    <ChatStack.Screen name="ConversationDetails" component={ChatScreen} />
     <ChatStack.Screen name="BookingDetails" component={BookingDetailsScreen} />
   </ChatStack.Navigator>
+);
+
+// Marketplace Stack Navigator
+const MarketStackNavigator = () => (
+  <MarketStack.Navigator screenOptions={{ headerShown: false }}>
+    <MarketStack.Screen name="MarketplaceBrowse" component={MarketplaceBrowseScreen} />
+    <MarketStack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+    <MarketStack.Screen name="Checkout" component={CheckoutScreen} />
+    <MarketStack.Screen name="ClientOrders" component={ClientOrdersScreen} />
+    <MarketStack.Screen name="ProductChat" component={ProductChatScreen} />
+  </MarketStack.Navigator>
+);
+
+// Profile Stack Navigator
+const ProfileStack = createNativeStackNavigator();
+
+const ProfileStackNavigator = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+    <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
+    <ProfileStack.Screen name="BecomeProvider" component={BecomeProviderScreen} />
+    <ProfileStack.Screen name="Settings" component={ProfileScreen} />
+  </ProfileStack.Navigator>
 );
 
 export const MainTabNavigator: React.FC = () => {
@@ -77,12 +110,12 @@ export const MainTabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Salon"
-        component={SalonScreen}
+        name="Market"
+        component={MarketStackNavigator}
         options={{
-          tabBarLabel: 'SALON',
+          tabBarLabel: 'MARKET',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="business-outline" size={size} color={color} />
+            <Ionicons name="cart-outline" size={size} color={color} />
           ),
         }}
       />
@@ -108,7 +141,7 @@ export const MainTabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{
           tabBarLabel: 'PROFILE',
           tabBarIcon: ({ color, size }) => (

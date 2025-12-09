@@ -35,6 +35,10 @@ export interface SignUpData {
   firstName: string;
   lastName: string;
   role: 'client' | 'provider';
+  businessName?: string;
+  bio?: string;
+  experience?: string;
+  isMobile?: boolean;
 }
 
 export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }) => {
@@ -47,6 +51,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    role: 'client',
     role: 'client',
   });
   const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY);
@@ -242,7 +247,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                         styles.accountTypeButtonText,
                         { fontSize: normalizeFontSize(14) },
                         formData.role === 'client' &&
-                          styles.accountTypeButtonTextActive,
+                        styles.accountTypeButtonTextActive,
                       ]}
                     >
                       {t.auth.client}
@@ -262,7 +267,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                         styles.accountTypeButtonText,
                         { fontSize: normalizeFontSize(14) },
                         formData.role === 'provider' &&
-                          styles.accountTypeButtonTextActive,
+                        styles.accountTypeButtonTextActive,
                       ]}
                     >
                       {t.auth.provider}
@@ -270,6 +275,8 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* Provider-specific fields removed - moved to profile completion */}
 
               <TouchableOpacity
                 style={[styles.termsContainer, { marginBottom: spacing(3) }]}
@@ -372,6 +379,14 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  sectionTitle: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  sectionSubtitle: {
+    fontWeight: '400',
+    color: '#666',
+  },
   accountTypeContainer: {
   },
   accountTypeLabel: {
@@ -397,6 +412,8 @@ const styles = StyleSheet.create({
   },
   accountTypeButtonTextActive: {
     color: '#FFFFFF',
+  },
+  checkboxContainer: {
   },
   termsContainer: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../supabase/supabase.service';
-import { SignUpDto, SignInDto, AuthResponseDto } from './dto/auth.dto';
+import { SignUpDto, SignInDto, AuthResponseDto, UserRole } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class AuthService {
   constructor(
     private supabase: SupabaseService,
     private config: ConfigService,
-  ) {}
+  ) { }
 
   async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
     console.log('🔵 [SignUp] Starting signup process for:', dto.email);
@@ -38,19 +38,18 @@ export class AuthService {
       throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
     }
 
-    // 1. Créer l'utilisateur dans Supabase Auth (ceci crée aussi l'entrée dans auth.users)
-    console.log('🔵 [SignUp] Creating auth user...');
+    // 1. Créer l'utilisateur dans Supabase Auth via ADMIN API (évite de connecter le client admin)
+    console.log('🔵 [SignUp] Creating auth user via Admin API...');
     const { data: authData, error: authError } = await this.supabase
       .getClient()
-      .auth.signUp({
+      .auth.admin.createUser({
         email: dto.email,
         password: dto.password,
-        options: {
-          data: {
-            first_name: dto.firstName,
-            last_name: dto.lastName,
-            phone: dto.phone,
-          },
+        email_confirm: true, // Auto-confirm email since we are admin
+        user_metadata: {
+          first_name: dto.firstName,
+          last_name: dto.lastName,
+          phone: dto.phone,
         },
       });
 
@@ -60,7 +59,6 @@ export class AuthService {
     }
 
     console.log('✅ [SignUp] Auth user created:', authData.user.id);
-    console.log('🔵 [SignUp] Session status:', authData.session ? 'Session created' : 'No session (email confirmation may be required)');
 
     // 2. Hasher le mot de passe pour notre table
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -83,9 +81,6 @@ export class AuthService {
       id: userDataToInsert.id,
       email: userDataToInsert.email,
       role: userDataToInsert.role,
-      language: userDataToInsert.language,
-      city: userDataToInsert.city,
-      region: userDataToInsert.region,
     });
 
     const { data: user, error: insertError } = await this.supabase
@@ -96,7 +91,6 @@ export class AuthService {
 
     if (insertError) {
       console.log('🔴 [SignUp] Database insert failed:', insertError);
-      console.log('🔴 [SignUp] Error details:', JSON.stringify(insertError, null, 2));
 
       // Si l'insertion échoue, supprimer l'utilisateur de Supabase Auth
       console.log('🔵 [SignUp] Rolling back - deleting auth user...');
@@ -108,25 +102,87 @@ export class AuthService {
       }
 
       throw new ConflictException(
-        `Erreur lors de la création du profil: ${insertError.message || insertError.code || 'Unknown error'}. Details: ${JSON.stringify(insertError)}`
+        `Erreur lors de la création du profil: ${insertError.message}`
       );
     }
 
     console.log('✅ [SignUp] User inserted into database successfully');
 
-    // 4. Retourner les tokens et les données utilisateur
-    // Si pas de session (email confirmation requise), créer une réponse sans tokens
-    if (!authData.session) {
-      console.log('⚠️ [SignUp] No session - email confirmation may be required');
-      throw new ConflictException(
-        'Compte créé avec succès. Veuillez vérifier votre email pour confirmer votre compte avant de vous connecter.'
-      );
+    // 5. Si c'est un PROVIDER, créer l'entrée dans la table therapists
+    if (dto.role === UserRole.PROVIDER) {
+      console.log('🔵 [SignUp] User is a PROVIDER, creating therapist profile...');
+
+      const therapistData: any = {
+        user_id: user.id,
+        business_name: dto.businessName || `${dto.firstName} ${dto.lastName}`,
+        professional_experience: dto.experience ? `${dto.experience} years` : '',
+        experience: dto.experience || 0,
+        is_mobile: dto.isMobile ?? true,
+        latitude: dto.latitude || 0,
+        longitude: dto.longitude || 0,
+        city: dto.city || 'Unknown',
+        region: dto.region || 'Unknown',
+        service_zones: dto.city ? JSON.stringify([dto.city]) : JSON.stringify([]),
+        is_active: false,
+        profile_completed: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        country: 'Cameroun',
+        travel_radius: 20,
+        travel_fee: 0,
+      };
+
+      // Handle location geometry
+      if (dto.latitude && dto.longitude) {
+        therapistData.location = `POINT(${dto.longitude} ${dto.latitude})`;
+      } else {
+        therapistData.location = `POINT(0 0)`;
+      }
+
+      // Use the admin client (this.supabase.from) which should be clean
+      const { error: therapistError } = await this.supabase
+        .from('therapists')
+        .insert(therapistData);
+
+      if (therapistError) {
+        console.error('🔴 [SignUp] Failed to create therapist profile:', therapistError);
+      } else {
+        console.log('✅ [SignUp] Therapist profile created');
+      }
     }
 
-    console.log('✅ [SignUp] Signup completed successfully');
+    // 4. Retourner les tokens
+    // Pour cela, on doit se connecter. On utilise un client temporaire pour ne pas polluer le client admin.
+    console.log('🔵 [SignUp] Signing in to get tokens...');
+
+    const tempClient = this.supabase.createNewClient();
+    const { data: signInData, error: signInError } = await tempClient.auth.signInWithPassword({
+      email: dto.email,
+      password: dto.password,
+    });
+
+    if (signInError || !signInData.session) {
+      console.log('⚠️ [SignUp] Auto-login failed:', signInError);
+      // Fallback: return user without tokens (client will need to login)
+      return {
+        accessToken: '',
+        refreshToken: '',
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role,
+          language: user.language,
+        },
+      };
+    }
+
+    console.log('✅ [SignUp] Signup completed successfully with tokens');
     return {
-      accessToken: authData.session.access_token,
-      refreshToken: authData.session.refresh_token,
+      accessToken: signInData.session.access_token,
+      refreshToken: signInData.session.refresh_token,
       user: {
         id: user.id,
         email: user.email,
@@ -168,12 +224,12 @@ export class AuthService {
     }
 
     // Créer les tokens avec Supabase Auth
-    const { data: authData, error: authError } = await this.supabase
-      .getClient()
-      .auth.signInWithPassword({
-        email: user.email,
-        password: dto.password,
-      });
+    // Utiliser un client temporaire pour ne pas polluer le client admin
+    const tempClient = this.supabase.createNewClient();
+    const { data: authData, error: authError } = await tempClient.auth.signInWithPassword({
+      email: user.email,
+      password: dto.password,
+    });
 
     if (authError) {
       throw new UnauthorizedException('Erreur d\'authentification');
@@ -195,9 +251,8 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .auth.refreshSession({ refresh_token: refreshToken });
+    const tempClient = this.supabase.createNewClient();
+    const { data, error } = await tempClient.auth.refreshSession({ refresh_token: refreshToken });
 
     if (error) {
       throw new UnauthorizedException('Token invalide');
@@ -209,7 +264,8 @@ export class AuthService {
   }
 
   async signOut(accessToken: string): Promise<void> {
-    await this.supabase.getClient().auth.signOut();
+    const tempClient = this.supabase.createNewClient();
+    await tempClient.auth.signOut();
   }
 
   async getCurrentUser(userId: string) {
@@ -236,5 +292,64 @@ export class AuthService {
       region: user.region,
       isVerified: user.is_verified,
     };
+  }
+  async deleteAccount(userId: string): Promise<void> {
+    console.log('🗑️ [DeleteAccount] Request to delete user:', userId);
+
+    // 1. Delete from Supabase Auth (Admin API)
+    // This is the most critical step. If this succeeds, the user can't login.
+    const { error: authError } = await this.supabase.getClient().auth.admin.deleteUser(userId);
+
+    if (authError) {
+      console.error('🔴 [DeleteAccount] Failed to delete auth user:', authError);
+      throw new ConflictException('Impossible de supprimer le compte: ' + authError.message);
+    }
+
+    console.log('✅ [DeleteAccount] Auth user deleted');
+
+    // 2. Delete from public.users table
+    // Note: If you have ON DELETE CASCADE set up in your DB, this might happen automatically
+    // when the auth user is deleted (if linked) or you might need to do it manually.
+    // Assuming manual cleanup for safety.
+    const { error: dbError } = await this.supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (dbError) {
+      console.error('🔴 [DeleteAccount] Failed to delete user from DB:', dbError);
+      // We don't throw here because the auth user is already gone, so effectively the account is deleted.
+      // Just log it for manual cleanup if needed.
+    } else {
+      console.log('✅ [DeleteAccount] User deleted from DB');
+    }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    console.log('🔵 [ForgotPassword] Request for:', email);
+
+    // Check if user exists first
+    const { data: user } = await this.supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (!user) {
+      // Don't reveal if user exists or not for security, but log it
+      console.log('⚠️ [ForgotPassword] Email not found in DB');
+      return;
+    }
+
+    const { error } = await this.supabase.getClient().auth.resetPasswordForEmail(email, {
+      redirectTo: 'kmerservices://reset-password', // Deep link to app
+    });
+
+    if (error) {
+      console.error('🔴 [ForgotPassword] Supabase error:', error);
+      throw new ConflictException('Erreur lors de l\'envoi de l\'email: ' + error.message);
+    }
+
+    console.log('✅ [ForgotPassword] Reset email sent');
   }
 }

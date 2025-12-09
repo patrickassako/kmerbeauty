@@ -7,14 +7,14 @@ import { useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import notificationService from '../services/notificationService';
-import { supabaseClient } from '../lib/supabase';
+import { supabase as supabaseClient } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export function useNotifications() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
   useEffect(() => {
     // Configurer les canaux Android
@@ -44,10 +44,10 @@ export function useNotifications() {
     // Cleanup
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, [user?.id]);
@@ -118,6 +118,29 @@ export function useNotifications() {
           providerId: data.providerId,
           providerName: data.providerName || 'Chat',
           providerType: data.providerType || 'client',
+        },
+      });
+    } else if (data.type === 'marketplace_order') {
+      // Navigation Marketplace Commandes
+      if (data.isSeller) {
+        // Prestataire -> Mes Ventes
+        navigation.navigate('Contractor', {
+          screen: 'ContractorSales',
+        });
+      } else {
+        // Client -> Mes Commandes
+        navigation.navigate('Home', {
+          screen: 'ClientOrders',
+        });
+      }
+    } else if (data.type === 'marketplace_message') {
+      // Navigation Marketplace Chat
+      // On passe senderId comme "sellerId" car c'est à lui qu'on va répondre
+      navigation.navigate('Home', {
+        screen: 'ProductChat',
+        params: {
+          productId: data.productId,
+          sellerId: data.senderId,
         },
       });
     } else if (data.type === 'admin') {

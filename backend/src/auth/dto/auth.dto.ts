@@ -4,6 +4,8 @@ export enum UserRole {
   CLIENT = 'CLIENT',
   PROVIDER = 'PROVIDER',
   ADMIN = 'ADMIN',
+  SUPPORT = 'SUPPORT',
+  MODERATOR = 'MODERATOR',
 }
 
 export enum Language {
@@ -43,7 +45,33 @@ export class SignUpDto {
 
   @IsOptional()
   @IsString()
+  @IsOptional()
+  @IsString()
   region?: string;
+
+  // Therapist/Provider specific fields
+  @IsOptional()
+  @IsString()
+  businessName?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string; // Maps to bio_fr/bio_en
+
+  @IsOptional()
+  experience?: number;
+
+  @IsOptional()
+  isMobile?: boolean;
+
+  @IsOptional()
+  latitude?: number;
+
+  @IsOptional()
+  longitude?: number;
+
+  @IsOptional()
+  serviceZones?: any[]; // For now accept any array, can be refined
 }
 
 export class SignInDto {

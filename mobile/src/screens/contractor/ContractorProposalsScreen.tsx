@@ -181,7 +181,7 @@ export const ContractorProposalsScreen = () => {
       </View>
 
       <Text style={[styles.title, { fontSize: normalizeFontSize(24), padding: spacing(2.5) }]}>
-        {language === 'fr' ? 'Réservations' : 'Bookings'}
+        {t.proposals.title}
       </Text>
 
       {/* Filter Chips */}
@@ -273,7 +273,7 @@ export const ContractorProposalsScreen = () => {
         {bookings.length === 0 ? (
           <View style={{ padding: spacing(4), alignItems: 'center' }}>
             <Text style={[styles.emptyText, { fontSize: normalizeFontSize(16), marginBottom: spacing(2) }]}>
-              {language === 'fr' ? 'Aucune réservation' : 'No bookings'}
+              {t.proposals.noProposals}
             </Text>
             <Text style={[styles.emptySubtext, { fontSize: normalizeFontSize(14), textAlign: 'center' }]}>
               {language === 'fr'
@@ -299,8 +299,8 @@ export const ContractorProposalsScreen = () => {
               booking.items && booking.items.length > 0
                 ? booking.items[0].service_name
                 : language === 'fr'
-                ? 'Service'
-                : 'Service';
+                  ? 'Service'
+                  : 'Service';
 
             // Le backend récupère l'image du service en cherchant par nom
             const serviceImage = booking.items && booking.items.length > 0 ? booking.items[0].service_image : null;

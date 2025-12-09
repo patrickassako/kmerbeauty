@@ -8,7 +8,12 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,10 +21,13 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useServices } from '../../hooks/useServices';
 import { useSalons } from '../../hooks/useSalons';
+import { useGeolocation } from '../../hooks/useGeolocation';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, PackageWithProviders } from '../../navigation/HomeStackNavigator';
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
+import { bookingsApi } from '../../services/api';
+import { InstituteMap } from '../../components/InstituteMap';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -35,10 +43,48 @@ export const HomeScreen: React.FC = () => {
   // Charger les salons depuis l'API
   const { salons, loading: salonsLoading, error: salonsError, refetch: refetchSalons } = useSalons();
 
+  // Geolocation for nearby providers
+  const { nearbyProviders, loading: geoLoading, error: geoError, refresh: refreshGeolocation, city, district, setManualLocation, location } = useGeolocation();
+
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
   const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [manualCity, setManualCity] = useState('');
+  const [manualDistrict, setManualDistrict] = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+
+  // Load upcoming bookings
+  React.useEffect(() => {
+    if (user?.id) {
+      loadUpcomingBookings();
+    }
+  }, [user]);
+
+  const loadUpcomingBookings = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingBookings(true);
+      const allBookings = await bookingsApi.getAll(user.id);
+
+      // Filter for upcoming bookings (CONFIRMED, IN_PROGRESS only)
+      const upcoming = allBookings
+        .filter((b: any) => ['CONFIRMED', 'IN_PROGRESS'].includes(b.status.toUpperCase()))
+        .sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+        .slice(0, 5); // Show up to 5 for horizontal scroll
+
+      setUpcomingBookings(upcoming);
+    } catch (error) {
+      console.error('Error loading upcoming bookings:', error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
 
   const toggleLanguage = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -46,20 +92,16 @@ export const HomeScreen: React.FC = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetch(), refetchSalons()]);
+    await Promise.all([refetch(), refetchSalons(), loadUpcomingBookings()]);
+    refreshGeolocation();
     setRefreshing(false);
   };
 
   const handleSalonPress = (salon: any) => {
     // Navigate to salon details (ProviderDetailsScreen avec type salon)
     navigation.navigate('ProviderDetails', {
-      provider: {
-        type: 'salon',
-        id: salon.id,
-        name: language === 'fr' ? salon.name_fr : salon.name_en,
-        rating: salon.rating,
-        reviewCount: salon.review_count,
-      },
+      providerId: salon.id,
+      providerType: 'salon',
     });
   };
 
@@ -88,8 +130,7 @@ export const HomeScreen: React.FC = () => {
     OTHER: { fr: 'Autres services', en: 'Other Services' },
   };
 
-  // Mock data pour les bookings et packages (à implémenter plus tard)
-  const upcomingBookings: Booking[] = [];
+  // Mock data pour les packages (à implémenter plus tard)
   const servicePackages: PackageWithProviders[] = [];
   const giftCards: GiftCard[] = [];
 
@@ -99,6 +140,46 @@ export const HomeScreen: React.FC = () => {
 
   const handlePackagePress = (pkg: PackageWithProviders) => {
     navigation.navigate('PackageProviders', { package: pkg });
+  };
+
+  const searchAddress = async (query: string) => {
+    setManualCity(query);
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    try {
+      setIsSearchingAddress(true);
+      // Use Nominatim for free geocoding (limited to Cameroon)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cm&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'User-Agent': 'KMR-Beauty-App/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      setAddressSuggestions(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const selectAddress = (item: any) => {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+    const city = item.address?.city || item.address?.town || item.address?.village || item.address?.state;
+    const district = item.address?.suburb || item.address?.neighbourhood || item.address?.quarter;
+
+    setManualCity(item.display_name);
+    setAddressSuggestions([]);
+
+    setManualLocation(lat, lon, city, district);
+    setLocationModalVisible(false);
   };
 
   const handleSearch = (filters: SearchFilters) => {
@@ -111,7 +192,15 @@ export const HomeScreen: React.FC = () => {
       <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
         <View>
           <Text style={[styles.logo, { fontSize: normalizeFontSize(20) }]}>KMR-Beauty</Text>
-          <Text style={[styles.tagline, { fontSize: normalizeFontSize(10) }]}>{t.home.tagline}</Text>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing(0.5) }}
+            onPress={() => setLocationModalVisible(true)}
+          >
+            <Text style={{ fontSize: normalizeFontSize(12), color: '#666', marginRight: spacing(0.5) }}>
+              📍 {city ? `${city}${district ? `, ${district}` : ''}` : 'Localisation...'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color="#666" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.headerRight}>
@@ -230,30 +319,274 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Upcoming Bookings */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.upcomingBookings}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('BookingManagement')}>
-              <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.bookingCard, { borderRadius: spacing(2), padding: spacing(2) }]}>
-            <View style={styles.bookingContent}>
-              <View style={[styles.bookingLogo, { width: spacing(7), height: spacing(7), borderRadius: spacing(1) }]}>
-                <Text style={[styles.bookingLogoText, { fontSize: normalizeFontSize(12) }]}>Logo</Text>
-              </View>
-              <View style={styles.bookingInfo}>
-                <Text style={[styles.bookingName, { fontSize: normalizeFontSize(16) }]}>Luxembourg Gardens Salon</Text>
-                <View style={styles.bookingDetails}>
-                  <Text style={[styles.bookingTime, { fontSize: normalizeFontSize(12) }]}>⏰ 10am</Text>
-                  <Text style={[styles.bookingDate, { fontSize: normalizeFontSize(12) }]}>📅 23 August, 2024</Text>
-                </View>
-              </View>
+        {/* Upcoming Bookings - Show only in Home mode */}
+        {viewMode === 'home' && upcomingBookings.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.upcomingBookings}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('BookingManagement')}>
+                <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
+              </TouchableOpacity>
             </View>
+
+            {upcomingBookings.length === 1 ? (
+              // Single booking - no scroll
+              <View>
+                {upcomingBookings.map((booking) => {
+                  const dateTime = {
+                    date: new Date(booking.scheduled_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    }),
+                    time: new Date(booking.scheduled_at).toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  };
+
+                  const serviceName = booking.items?.[0]?.service_name || (language === 'fr' ? 'Service' : 'Service');
+
+                  // Get service image - check service_image field first, then service.images array
+                  let serviceImage: string | null = null;
+                  if (booking.items && booking.items.length > 0) {
+                    const firstItem = booking.items[0];
+                    console.log('Single booking - Full item data:', JSON.stringify(firstItem, null, 2));
+                    if (firstItem.service_image) {
+                      serviceImage = firstItem.service_image;
+                      console.log('✅ Using service_image:', serviceImage);
+                    } else if (firstItem.service?.images && firstItem.service.images.length > 0) {
+                      serviceImage = firstItem.service.images[0];
+                      console.log('✅ Using service.images[0]:', serviceImage);
+                    } else {
+                      console.log('❌ No image found - service_image:', firstItem.service_image, 'service.images:', firstItem.service?.images);
+                    }
+                  }
+
+                  const providerName = booking.therapist_id
+                    ? `${booking.provider?.user?.first_name || ''} ${booking.provider?.user?.last_name || ''}`.trim()
+                    : (language === 'fr' ? booking.provider?.name_fr : booking.provider?.name_en) || booking.provider?.name_fr;
+
+                  const getStatusColor = (status: string) => {
+                    const upperStatus = status.toUpperCase();
+                    switch (upperStatus) {
+                      case 'CONFIRMED': return '#2196F3';
+                      case 'IN_PROGRESS': return '#FF9800';
+                      default: return '#999';
+                    }
+                  };
+
+                  const getStatusLabel = (status: string) => {
+                    const upperStatus = status.toUpperCase();
+                    const labels = {
+                      CONFIRMED: language === 'fr' ? 'Confirmée' : 'Confirmed',
+                      IN_PROGRESS: language === 'fr' ? 'En cours' : 'In Progress',
+                    };
+                    return labels[upperStatus as keyof typeof labels] || status;
+                  };
+
+                  return (
+                    <TouchableOpacity
+                      key={booking.id}
+                      style={[styles.bookingCard, {
+                        borderRadius: spacing(2),
+                        padding: spacing(1.5),
+                      }]}
+                      onPress={() => {
+                        navigation.navigate('BookingDetails', { bookingId: booking.id } as any);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {/* Status Badge */}
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(booking.status), paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), position: 'absolute', top: spacing(1.5), right: spacing(1.5), zIndex: 1 }
+                        ]}
+                      >
+                        <Text style={[styles.statusText, { fontSize: normalizeFontSize(10) }]}>
+                          {getStatusLabel(booking.status)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.bookingContent}>
+                        {/* Image/Icon */}
+                        <View style={[styles.bookingImage, { width: spacing(12), height: spacing(12), borderRadius: spacing(1.5) }]}>
+                          {serviceImage ? (
+                            <Image
+                              source={{ uri: serviceImage }}
+                              style={{ width: '100%', height: '100%', borderRadius: spacing(1.5) }}
+                              resizeMode="cover"
+                              onError={(e) => console.log('❌ Image load error:', e.nativeEvent.error)}
+                              onLoad={() => console.log('✅ Image loaded successfully:', serviceImage)}
+                            />
+                          ) : (
+                            <View style={styles.bookingImagePlaceholder}>
+                              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(24) }]}>
+                                {booking.therapist_id ? '👤' : '🏢'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Info */}
+                        <View style={styles.bookingInfo}>
+                          <Text style={[styles.bookingName, { fontSize: normalizeFontSize(14), marginBottom: spacing(0.5), paddingRight: spacing(8) }]} numberOfLines={1}>
+                            {serviceName}
+                          </Text>
+                          <Text style={[styles.bookingPrice, { fontSize: normalizeFontSize(16), marginBottom: spacing(1) }]}>
+                            {formatCurrency(booking.total, countryCode)}
+                          </Text>
+                          <View style={styles.bookingDetails}>
+                            <Text style={[styles.bookingDate, { fontSize: normalizeFontSize(12) }]}>📅 {dateTime.date}</Text>
+                            <Text style={[styles.bookingTime, { fontSize: normalizeFontSize(12) }]}>⏰ {dateTime.time}</Text>
+                          </View>
+                          <View style={[styles.bookingFooter, { marginTop: spacing(1) }]}>
+                            <Text style={[styles.bookingProvider, { fontSize: normalizeFontSize(12) }]} numberOfLines={1}>
+                              {booking.therapist_id ? '👤' : '🏢'} {providerName}
+                            </Text>
+                            {booking.provider?.rating != null && (
+                              <Text style={[styles.bookingRating, { fontSize: normalizeFontSize(12) }]}>
+                                ⭐ {booking.provider.rating.toFixed(1)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              // Multiple bookings - horizontal scroll
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: spacing(2.5) }}
+              >
+                {upcomingBookings.map((booking) => {
+                  const dateTime = {
+                    date: new Date(booking.scheduled_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    }),
+                    time: new Date(booking.scheduled_at).toLocaleTimeString(language === 'fr' ? 'fr-FR' : 'en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  };
+
+                  const serviceName = booking.items?.[0]?.service_name || (language === 'fr' ? 'Service' : 'Service');
+
+                  // Get service image - check service_image field first, then service.images array
+                  let serviceImage: string | null = null;
+                  if (booking.items && booking.items.length > 0) {
+                    const firstItem = booking.items[0];
+                    if (firstItem.service_image) {
+                      serviceImage = firstItem.service_image;
+                    } else if (firstItem.service?.images && firstItem.service.images.length > 0) {
+                      serviceImage = firstItem.service.images[0];
+                    }
+                  }
+
+                  const providerName = booking.therapist_id
+                    ? `${booking.provider?.user?.first_name || ''} ${booking.provider?.user?.last_name || ''}`.trim()
+                    : (language === 'fr' ? booking.provider?.name_fr : booking.provider?.name_en) || booking.provider?.name_fr;
+
+                  const getStatusColor = (status: string) => {
+                    const upperStatus = status.toUpperCase();
+                    switch (upperStatus) {
+                      case 'CONFIRMED': return '#2196F3';
+                      case 'IN_PROGRESS': return '#FF9800';
+                      default: return '#999';
+                    }
+                  };
+
+                  const getStatusLabel = (status: string) => {
+                    const upperStatus = status.toUpperCase();
+                    const labels = {
+                      CONFIRMED: language === 'fr' ? 'Confirmée' : 'Confirmed',
+                      IN_PROGRESS: language === 'fr' ? 'En cours' : 'In Progress',
+                    };
+                    return labels[upperStatus as keyof typeof labels] || status;
+                  };
+
+                  return (
+                    <TouchableOpacity
+                      key={booking.id}
+                      style={[styles.bookingCard, {
+                        borderRadius: spacing(2),
+                        padding: spacing(1.5),
+                        marginRight: spacing(2),
+                        width: spacing(70)
+                      }]}
+                      onPress={() => {
+                        navigation.navigate('BookingDetails', { bookingId: booking.id } as any);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      {/* Status Badge */}
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(booking.status), paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(1.5), position: 'absolute', top: spacing(1.5), right: spacing(1.5), zIndex: 1 }
+                        ]}
+                      >
+                        <Text style={[styles.statusText, { fontSize: normalizeFontSize(10) }]}>
+                          {getStatusLabel(booking.status)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.bookingContent}>
+                        {/* Image/Icon */}
+                        <View style={[styles.bookingImage, { width: spacing(12), height: spacing(12), borderRadius: spacing(1.5) }]}>
+                          {serviceImage ? (
+                            <Image
+                              source={{ uri: serviceImage }}
+                              style={{ width: '100%', height: '100%', borderRadius: spacing(1.5) }}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.bookingImagePlaceholder}>
+                              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(24) }]}>
+                                {booking.therapist_id ? '👤' : '🏢'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Info */}
+                        <View style={styles.bookingInfo}>
+                          <Text style={[styles.bookingName, { fontSize: normalizeFontSize(14), marginBottom: spacing(0.5), paddingRight: spacing(8) }]} numberOfLines={1}>
+                            {serviceName}
+                          </Text>
+                          <Text style={[styles.bookingPrice, { fontSize: normalizeFontSize(16), marginBottom: spacing(1) }]}>
+                            {formatCurrency(booking.total, countryCode)}
+                          </Text>
+                          <View style={styles.bookingDetails}>
+                            <Text style={[styles.bookingDate, { fontSize: normalizeFontSize(12) }]}>📅 {dateTime.date}</Text>
+                            <Text style={[styles.bookingTime, { fontSize: normalizeFontSize(12) }]}>⏰ {dateTime.time}</Text>
+                          </View>
+                          <View style={[styles.bookingFooter, { marginTop: spacing(1) }]}>
+                            <Text style={[styles.bookingProvider, { fontSize: normalizeFontSize(12) }]} numberOfLines={1}>
+                              {booking.therapist_id ? '👤' : '🏢'} {providerName}
+                            </Text>
+                            {booking.provider?.rating != null && (
+                              <Text style={[styles.bookingRating, { fontSize: normalizeFontSize(12) }]}>
+                                ⭐ {booking.provider.rating.toFixed(1)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
-        </View>
+        )}
 
         {/* Near Me (Services) - Mode Home */}
         {viewMode === 'home' && (
@@ -315,54 +648,89 @@ export const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {salonsLoading && !refreshing ? (
+            {geoLoading && !refreshing ? (
               <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#000" />
               </View>
-            ) : salons.length === 0 ? (
+            ) : nearbyProviders.filter(p => p.type === 'salon').length === 0 ? (
               <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
                 <Text style={{ fontSize: normalizeFontSize(14), color: '#999' }}>
                   Aucun institut disponible
                 </Text>
               </View>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-                {salons.slice(0, 5).map((salon) => (
-                  <TouchableOpacity
-                    key={salon.id}
-                    style={[styles.instituteCard, { width: spacing(30), borderRadius: spacing(2), padding: spacing(2) }]}
-                    onPress={() => handleSalonPress(salon)}
-                  >
-                    <View style={[styles.instituteImage, { height: spacing(15), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                      {salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0) ? (
-                        <Image
-                          source={{ uri: salon.cover_image || salon.ambiance_images[0] }}
-                          style={styles.instituteImageActual}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View style={styles.instituteImagePlaceholder}>
-                          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Institut</Text>
+              <View>
+                {/* Map View */}
+                <InstituteMap
+                  salons={nearbyProviders.filter(p => p.type === 'salon').map(p => ({
+                    ...p,
+                    name_fr: p.name, // Fallback mapping
+                    name_en: p.name,
+                    cover_image: p.image,
+                    logo: p.image
+                  }))}
+                  userLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null}
+                  onSalonPress={(salon) => handleSalonPress(salon as any)}
+                  onLocationSelect={(lat, lon, city, district) => setManualLocation(lat, lon, city, district)}
+                />
+
+                {/* List View (Sorted by distance) */}
+                <View style={{ gap: spacing(2) }}>
+                  {nearbyProviders
+                    .filter(p => p.type === 'salon')
+                    .sort((a, b) => (a.distance_meters || 0) - (b.distance_meters || 0))
+                    .map((salon) => (
+                      <TouchableOpacity
+                        key={salon.id}
+                        style={[styles.instituteCard, {
+                          borderRadius: spacing(2),
+                          padding: spacing(1.5),
+                          flexDirection: 'row',
+                          alignItems: 'center'
+                        }]}
+                        onPress={() => handleSalonPress(salon as any)}
+                      >
+                        <View style={[styles.instituteImage, { width: spacing(10), height: spacing(10), borderRadius: spacing(1.5) }]}>
+                          {salon.image ? (
+                            <Image
+                              source={{ uri: salon.image }}
+                              style={styles.instituteImageActual}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.instituteImagePlaceholder}>
+                              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Institut</Text>
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
-                    <Text style={[styles.instituteName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                      {language === 'fr' ? salon.name_fr : salon.name_en}
-                    </Text>
-                    <Text style={[styles.instituteLocation, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5), color: '#666' }]} numberOfLines={1}>
-                      📍 {salon.city}, {salon.quarter}
-                    </Text>
-                    <View style={styles.instituteFooter}>
-                      <Text style={[styles.instituteRating, { fontSize: normalizeFontSize(12) }]}>
-                        ⭐ {salon.rating} ({salon.review_count})
-                      </Text>
-                      <Text style={[styles.instituteServices, { fontSize: normalizeFontSize(12), color: '#FF6B6B' }]}>
-                        {salon.service_count} services
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+
+                        <View style={{ flex: 1, marginLeft: spacing(1.5) }}>
+                          <Text style={[styles.instituteName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                            {salon.name}
+                          </Text>
+                          <Text style={[styles.instituteLocation, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5), color: '#666' }]} numberOfLines={1}>
+                            📍 {salon.city}
+                          </Text>
+                          <View style={styles.instituteFooter}>
+                            <Text style={[styles.instituteRating, { fontSize: normalizeFontSize(12) }]}>
+                              ⭐ {salon.rating} ({salon.review_count})
+                            </Text>
+                            <Text style={[styles.instituteServices, { fontSize: normalizeFontSize(12), color: '#FF6B6B' }]}>
+                              Voir services
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={{ alignItems: 'flex-end', marginLeft: spacing(1) }}>
+                          <Text style={{ fontSize: normalizeFontSize(12), color: '#666', fontWeight: '600' }}>
+                            {salon.distance_meters ? `${(salon.distance_meters / 1000).toFixed(1)} km` : ''}
+                          </Text>
+                          <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginTop: spacing(1) }} />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              </View>
             )}
           </View>
         )}
@@ -417,6 +785,80 @@ export const HomeScreen: React.FC = () => {
           )}
         </View>
 
+        {/* Nearby Providers (Proximity-based) */}
+        {nearbyProviders && nearbyProviders.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>
+              {t.home.nearbyProviders}
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginHorizontal: -spacing(2.5) }}
+              contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}
+            >
+              {nearbyProviders.slice(0, 10).map((provider) => (
+                <TouchableOpacity
+                  key={provider.id}
+                  style={[styles.providerCard, { width: spacing(35), borderRadius: spacing(2), padding: spacing(2) }]}
+                  onPress={() => navigation.navigate('ProviderDetails', {
+                    provider: {
+                      type: provider.type,
+                      id: provider.id,
+                      name: provider.name,
+                      rating: provider.rating,
+                      reviewCount: provider.review_count,
+                    },
+                  })}
+                >
+                  <View style={[styles.providerImage, { height: spacing(18), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                    {provider.image ? (
+                      <Image
+                        source={{ uri: provider.image }}
+                        style={styles.providerImageActual}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.providerImagePlaceholder}>
+                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>
+                          {provider.name.charAt(0)}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={[styles.providerDistance, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                      <Text style={[styles.providerDistanceText, { fontSize: normalizeFontSize(10) }]}>
+                        📍 {(provider.distance_meters / 1000).toFixed(1)} km
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.providerName, { fontSize: normalizeFontSize(15), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                    {provider.name}
+                  </Text>
+                  <Text style={[styles.providerLocation, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5), color: '#666' }]} numberOfLines={1}>
+                    📍 {provider.city}
+                  </Text>
+                  <View style={styles.providerFooter}>
+                    <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12) }]}>
+                      ⭐ {provider.rating?.toFixed(1) || 'N/A'} ({provider.review_count || 0})
+                    </Text>
+                    {provider.is_mobile && (
+                      <Text style={[styles.providerMobile, { fontSize: normalizeFontSize(11), color: '#4CAF50' }]}>
+                        🚗 Mobile
+                      </Text>
+                    )}
+                    {provider.type === 'salon' && (
+                      <Text style={[styles.providerMobile, { fontSize: normalizeFontSize(11), color: '#E91E63', marginLeft: spacing(1) }]}>
+                        🏢 Institut
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Services par Catégorie */}
         {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
           categoryServices.length > 0 && (
@@ -425,7 +867,10 @@ export const HomeScreen: React.FC = () => {
                 <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>
                   {categoryNames[category]?.[language] || category}
                 </Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('CategoryServices', {
+                  category,
+                  categoryName: categoryNames[category]?.[language] || category
+                })}>
                   <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll || 'Voir tout'}</Text>
                 </TouchableOpacity>
               </View>
@@ -537,6 +982,73 @@ export const HomeScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
+
+      {/* Location Selection Modal */}
+      <Modal
+        visible={locationModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setLocationModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, height: '80%' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Changer de localisation</Text>
+                <TouchableOpacity onPress={() => setLocationModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#000" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontSize: 14, color: '#666', marginBottom: 5 }}>Rechercher une adresse</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 16 }}
+                placeholder="Ex: Akwa, Douala..."
+                value={manualCity}
+                onChangeText={searchAddress}
+                autoFocus={true}
+                returnKeyType="done"
+              />
+
+              {isSearchingAddress && (
+                <ActivityIndicator size="small" color="#000" style={{ marginBottom: 10 }} />
+              )}
+
+              <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+                {addressSuggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }}
+                    onPress={() => selectAddress(item)}
+                  >
+                    <Text style={{ fontWeight: '600', marginBottom: 2 }}>
+                      {item.name || item.address?.suburb || item.address?.city}
+                    </Text>
+                    <Text style={{ color: '#666', fontSize: 12 }}>
+                      {item.display_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <TouchableOpacity
+                style={{ marginTop: 15, alignItems: 'center', padding: 15, borderTopWidth: 1, borderTopColor: '#eee' }}
+                onPress={() => {
+                  refreshGeolocation();
+                  setManualCity('');
+                  setManualDistrict('');
+                  setLocationModalVisible(false);
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="locate" size={20} color="#FF6B6B" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#FF6B6B', fontSize: 16, fontWeight: '600' }}>Utiliser ma position actuelle (GPS)</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -667,6 +1179,45 @@ const styles = StyleSheet.create({
   },
   bookingDate: {
     color: '#FFFFFF',
+  },
+  bookingTitle: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  statusBadge: {},
+  statusText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  bookingImage: {
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+  },
+  bookingImageActual: {
+    width: '100%',
+    height: '100%',
+  },
+  bookingImagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  bookingPrice: {
+    color: '#FF6B6B',
+    fontWeight: '700',
+  },
+  bookingFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bookingProvider: {
+    color: '#666',
+    flex: 1,
+  },
+  bookingRating: {
+    color: '#666',
   },
   serviceCard: {
     backgroundColor: '#FFFFFF',
@@ -832,6 +1383,55 @@ const styles = StyleSheet.create({
   },
   giftCardSubtitle: {
     color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  providerCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  providerImage: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  providerImageActual: {
+    width: '100%',
+    height: '100%',
+  },
+  providerImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#2D2D2D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerDistance: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(45, 45, 45, 0.8)',
+  },
+  providerDistanceText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  providerName: {
+    fontWeight: '600',
+    color: '#2D2D2D',
+  },
+  providerLocation: {
+    color: '#666',
+  },
+  providerFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  providerRating: {
+    color: '#666',
+  },
+  providerMobile: {
     fontWeight: '600',
   },
   giftCardExpiry: {

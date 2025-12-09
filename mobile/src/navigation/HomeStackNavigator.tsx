@@ -71,7 +71,7 @@ export type HomeStackParamList = {
   BookingDetails: {
     bookingId: string;
   };
-  Chat: {
+  ConversationDetails: {
     chatId?: string; // Existing chat ID (from conversations list)
     bookingId?: string; // Optional for direct chats
     providerId: string;
@@ -81,6 +81,10 @@ export type HomeStackParamList = {
   };
   Review: {
     booking: Booking;
+  };
+  CategoryServices: {
+    category: string;
+    categoryName: string;
   };
   BookingManagement: undefined;
 };
@@ -92,6 +96,8 @@ const PackageProvidersScreen = () => null;
 const PackageDetailsScreenPlaceholder = () => null;
 const BookingManagementScreen = () => null;
 
+import { CategoryServicesScreen } from '../screens/main/CategoryServicesScreen';
+
 export const HomeStackNavigator: React.FC = () => {
   return (
     <Stack.Navigator
@@ -101,6 +107,7 @@ export const HomeStackNavigator: React.FC = () => {
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="CategoryServices" component={CategoryServicesScreen} />
       <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
       <Stack.Screen name="ServiceProviders" component={ServiceProvidersScreen} />
       <Stack.Screen name="PackageProviders" component={PackageProvidersScreen} />
@@ -110,7 +117,7 @@ export const HomeStackNavigator: React.FC = () => {
       <Stack.Screen name="PackageDetails" component={PackageDetailsScreenPlaceholder} />
       <Stack.Screen name="Booking" component={BookingScreen} />
       <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="ConversationDetails" component={ChatScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="BookingManagement" component={BookingManagementScreen} />
     </Stack.Navigator>

@@ -15,7 +15,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 
 interface SignInScreenProps {
-  onSignIn: (data: SignInData) => void;
+  onSignIn: (data: SignInData) => Promise<void>;
   onSignUp: () => void;
   onForgotPassword: () => void;
 }
@@ -63,11 +63,18 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
     setLoading(true);
-    onSignIn(formData);
+    try {
+      await onSignIn(formData);
+    } catch (error) {
+      // Error is handled in AppNavigator but we catch here just in case
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -15,7 +15,8 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-import { bookingsApi, type Booking } from '../../services/api';
+import { bookingsApi, reviewsApi, type Booking } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 type BookingDetailsRouteProp = RouteProp<HomeStackParamList, 'BookingDetails'>;
 type BookingDetailsNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'BookingDetails'>;
@@ -27,9 +28,12 @@ export const BookingDetailsScreen: React.FC = () => {
 
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const { language } = useI18n();
+  const { user } = useAuth();
   const [countryCode] = useState<CountryCode>('CM');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [checkingReview, setCheckingReview] = useState(false);
 
   useEffect(() => {
     loadBooking();
@@ -41,10 +45,40 @@ export const BookingDetailsScreen: React.FC = () => {
       const data = await bookingsApi.getById(bookingId);
       console.log('📋 [BookingDetailsScreen] Booking loaded - Status:', data.status);
       setBooking(data);
+
+      // Check if user has already reviewed this booking (only for completed bookings)
+      if (data.status.toUpperCase() === 'COMPLETED') {
+        checkExistingReview(data);
+      }
     } catch (error) {
       console.error('Error loading booking:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkExistingReview = async (bookingData: Booking) => {
+    if (!user?.id) return;
+
+    try {
+      setCheckingReview(true);
+      let reviews: any[] = [];
+
+      if (bookingData.therapist_id) {
+        reviews = await reviewsApi.getTherapistReviews(bookingData.therapist_id);
+      } else if (bookingData.salon_id) {
+        reviews = await reviewsApi.getSalonReviews(bookingData.salon_id);
+      }
+
+      // Check if user has already reviewed this provider
+      const userReview = reviews.find((review: any) => review.user_id === user.id);
+      setHasReviewed(!!userReview);
+    } catch (error) {
+      console.error('Error checking existing review:', error);
+      // If error, allow user to try leaving a review (backend will handle duplicate check)
+      setHasReviewed(false);
+    } finally {
+      setCheckingReview(false);
     }
   };
 
@@ -97,7 +131,11 @@ export const BookingDetailsScreen: React.FC = () => {
   const getProviderName = () => {
     if (!booking?.provider) return '';
     if (booking.therapist_id) {
-      return `${booking.provider.user?.first_name || ''} ${booking.provider.user?.last_name || ''}`.trim() || 'Thérapeute';
+      const firstName = booking.provider.user?.first_name;
+      const lastName = booking.provider.user?.last_name;
+      return (firstName || lastName)
+        ? `${firstName || ''} ${lastName || ''}`.trim()
+        : (language === 'fr' ? 'Thérapeute' : 'Therapist');
     } else if (booking.salon_id) {
       return (language === 'fr' ? booking.provider.name_fr : booking.provider.name_en) || booking.provider.name_fr || 'Institut';
     }
@@ -306,24 +344,28 @@ export const BookingDetailsScreen: React.FC = () => {
             {language === 'fr' ? 'Prestataire' : 'Provider'}
           </Text>
           <View style={styles.providerContent}>
-            {/* Avatar */}
             <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-              {booking.provider?.profile_image || booking.provider?.logo ? (
-                <Image
-                  source={{ uri: booking.provider.profile_image || booking.provider.logo }}
-                  style={styles.providerAvatarImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={[styles.providerAvatarPlaceholder, { width: '100%', height: '100%', borderRadius: spacing(4) }]}>
-                  <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
-                    {getProviderType() === 'salon' ? '🏢' : '👤'}
-                  </Text>
-                </View>
-              )}
+              {(() => {
+                const avatar = booking.provider?.profile_image || booking.provider?.user?.avatar || booking.provider?.logo;
+                if (avatar) {
+                  return (
+                    <Image
+                      source={{ uri: avatar }}
+                      style={styles.providerAvatarImage}
+                      resizeMode="cover"
+                    />
+                  );
+                }
+                return (
+                  <View style={[styles.providerAvatarPlaceholder, { width: '100%', height: '100%', borderRadius: spacing(4) }]}>
+                    <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
+                      {getProviderType() === 'salon' ? '🏢' : '👤'}
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
 
-            {/* Info */}
             <View style={[styles.providerInfo, { flex: 1, marginLeft: spacing(2) }]}>
               <View style={styles.providerHeader}>
                 <Text style={[styles.providerName, { fontSize: normalizeFontSize(16), flex: 1 }]}>
@@ -340,14 +382,13 @@ export const BookingDetailsScreen: React.FC = () => {
                   📍 {booking.provider.city}
                 </Text>
               )}
-              {booking.provider?.rating && (
+              {booking.provider?.rating != null && (
                 <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12), marginTop: spacing(0.5) }]}>
                   ⭐ {booking.provider.rating.toFixed(1)}
                 </Text>
               )}
             </View>
 
-            {/* Arrow */}
             <Text style={[styles.providerArrow, { fontSize: normalizeFontSize(20), marginLeft: spacing(1) }]}>
               →
             </Text>
@@ -442,8 +483,8 @@ export const BookingDetailsScreen: React.FC = () => {
             const status = booking.status.toUpperCase();
             console.log('🔍 [BookingDetailsScreen] Rendering buttons for status:', status);
 
-            // Review Button - Only show if booking is COMPLETED
-            if (status === 'COMPLETED') {
+            // For completed bookings, show "Leave Review" button only if user hasn't reviewed yet
+            if (status === 'COMPLETED' && !hasReviewed && !checkingReview) {
               return (
                 <TouchableOpacity
                   style={[
@@ -713,14 +754,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#F44336',
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
-    color: '#F44336',
+    color: '#D32F2F',
     fontWeight: '700',
   },
   bookingId: {

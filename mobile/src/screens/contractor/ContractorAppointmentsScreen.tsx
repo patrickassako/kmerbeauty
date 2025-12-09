@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -144,70 +145,101 @@ export const ContractorAppointmentsScreen = () => {
             </View>
           ) : (
             <View style={{ gap: spacing(1.5) }}>
-              {appointments.map((appointment) => (
-                <TouchableOpacity
-                  key={appointment.id}
-                  onPress={() => handleAppointmentPress(appointment)}
-                  style={[
-                    styles.appointmentCard,
-                    {
-                      padding: spacing(1.5),
-                      borderRadius: spacing(1.5),
-                      gap: spacing(1.5),
-                    },
-                  ]}
-                >
-                  <View style={styles.appointmentContent}>
-                    {/* Client Image */}
-                    <View
+              {appointments.map((appointment, index) => {
+                const animValue = useRef(new Animated.Value(0)).current;
+
+                useEffect(() => {
+                  Animated.spring(animValue, {
+                    toValue: 1,
+                    delay: index * 100,
+                    tension: 50,
+                    friction: 7,
+                    useNativeDriver: true,
+                  }).start();
+                }, []);
+
+                return (
+                  <Animated.View
+                    key={appointment.id}
+                    style={{
+                      opacity: animValue,
+                      transform: [{
+                        translateY: animValue.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [50, 0],
+                        })
+                      }, {
+                        scale: animValue.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.9, 1],
+                        })
+                      }]
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => handleAppointmentPress(appointment)}
                       style={[
-                        styles.clientImage,
+                        styles.appointmentCard,
                         {
-                          width: spacing(6),
-                          height: spacing(6),
-                          borderRadius: spacing(1),
+                          padding: spacing(1.5),
+                          borderRadius: spacing(1.5),
+                          gap: spacing(1.5),
                         },
                       ]}
                     >
-                      {appointment.client?.profile_picture ? (
-                        <Image
-                          source={{ uri: appointment.client.profile_picture }}
-                          style={{ width: '100%', height: '100%', borderRadius: spacing(1) }}
-                        />
-                      ) : (
-                        <View style={styles.placeholderImage}>
-                          <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
-                            {getUserInitials(appointment.client)}
-                          </Text>
+                      <View style={styles.appointmentContent}>
+                        {/* Client Image */}
+                        <View
+                          style={[
+                            styles.clientImage,
+                            {
+                              width: spacing(6),
+                              height: spacing(6),
+                              borderRadius: spacing(1),
+                            },
+                          ]}
+                        >
+                          {appointment.client?.profile_picture ? (
+                            <Image
+                              source={{ uri: appointment.client.profile_picture }}
+                              style={{ width: '100%', height: '100%', borderRadius: spacing(1) }}
+                            />
+                          ) : (
+                            <View style={styles.placeholderImage}>
+                              <Text style={{ fontSize: normalizeFontSize(20), color: '#FFF' }}>
+                                {getUserInitials(appointment.client)}
+                              </Text>
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
 
-                    {/* Service Info */}
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.serviceName,
-                          { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) },
-                        ]}
-                      >
-                        {appointment.service?.name || 'Service'}
-                      </Text>
-                      <View style={styles.timeRow}>
-                        <Text style={[styles.timeText, { fontSize: normalizeFontSize(13) }]}>
-                          🕐 {formatTime(appointment.scheduled_at)}
-                        </Text>
-                        <Text style={[styles.dateText, { fontSize: normalizeFontSize(13) }]}>
-                          📅 {formatDate(appointment.scheduled_at)}
-                        </Text>
+                        {/* Service Info */}
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              styles.serviceName,
+                              { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) },
+                            ]}
+                          >
+                            {appointment.service?.name || 'Service'}
+                          </Text>
+                          <View style={styles.timeRow}>
+                            <Text style={[styles.timeText, { fontSize: normalizeFontSize(13) }]}>
+                              🕐 {formatTime(appointment.scheduled_at)}
+                            </Text>
+                            <Text style={[styles.dateText, { fontSize: normalizeFontSize(13) }]}>
+                              📅 {formatDate(appointment.scheduled_at)}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Arrow Icon */}
+                        <Text style={{ fontSize: normalizeFontSize(18), color: '#FFF' }}>→</Text>
                       </View>
-                    </View>
-
-                    {/* Arrow Icon */}
-                    <Text style={{ fontSize: normalizeFontSize(18), color: '#FFF' }}>→</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
             </View>
           )}
         </View>

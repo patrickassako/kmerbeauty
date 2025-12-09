@@ -10,3 +10,5 @@ export { ContractorEarningsScreen } from './ContractorEarningsScreen';
 // Detail screens
 export { AppointmentDetailsScreen } from './AppointmentDetailsScreen';
 export { ProposalDetailsScreen } from './ProposalDetailsScreen';
+export * from './ContractorMenuScreen';
+export * from './ContractorSettingsScreen';

@@ -27,8 +27,10 @@ import { OfferMessage } from '../../components/chat/OfferMessage';
 import { CreateOfferModal } from '../../components/chat/CreateOfferModal';
 import { supabase } from '../../lib/supabase';
 
-type ChatRouteProp = RouteProp<HomeStackParamList, 'Chat'>;
-type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Chat'>;
+type ChatRouteProp = RouteProp<HomeStackParamList, 'ConversationDetails'>;
+type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList & {
+  ProposalDetails: { bookingId: string };
+}, 'ConversationDetails'>;
 
 export const ChatScreen: React.FC = () => {
   const route = useRoute<ChatRouteProp>();
@@ -49,15 +51,18 @@ export const ChatScreen: React.FC = () => {
   const [booking, setBooking] = useState<Booking | null>(null);
 
   // Voice recording state
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+
+  // Refs for recording to handle async race conditions
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const isStartingRecording = useRef(false);
 
   // Offer modal state
   const [showOfferModal, setShowOfferModal] = useState(false);
 
   // Check if user is provider
-  const isProvider = user?.role === 'PROVIDER';
+  const isProvider = user?.role === 'provider';
 
   const flatListRef = useRef<FlatList>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -83,11 +88,11 @@ export const ChatScreen: React.FC = () => {
   // Cleanup recording on unmount
   useEffect(() => {
     return () => {
-      if (recording) {
-        recording.stopAndUnloadAsync().catch(() => {});
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => { });
       }
     };
-  }, [recording]);
+  }, []);
 
   const requestPermissions = async () => {
     try {
@@ -120,7 +125,11 @@ export const ChatScreen: React.FC = () => {
         if (!user?.id) {
           throw new Error('User not authenticated');
         }
-        chatData = await chatApi.getOrCreateDirectChat(user.id, providerId, providerType);
+        chatData = await chatApi.getOrCreateDirectChat(
+          user.id,
+          providerId,
+          providerType as 'therapist' | 'salon'
+        );
       }
 
       setChat(chatData);
@@ -177,7 +186,6 @@ export const ChatScreen: React.FC = () => {
     try {
       // Vérifier l'authentification
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Auth session exists:', !!session);
 
       if (!session) {
         console.error('No authenticated session found');
@@ -189,13 +197,15 @@ export const ChatScreen: React.FC = () => {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // Get file extension
-      const ext = uri.split('.').pop() || 'jpg';
-      const contentType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
-                         ext === 'png' ? 'image/png' :
-                         ext === 'm4a' || ext === 'mp3' ? 'audio/mpeg' : 'application/octet-stream';
+      // Get file extension and content type
+      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      let contentType = 'application/octet-stream';
+      if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
+      else if (ext === 'png') contentType = 'image/png';
+      else if (ext === 'm4a') contentType = 'audio/mp4';
+      else if (ext === 'mp3') contentType = 'audio/mpeg';
 
-      // Decode base64 to ArrayBuffer for React Native
+      // Convert base64 to ArrayBuffer
       const binaryString = atob(fileData);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -240,7 +250,10 @@ export const ChatScreen: React.FC = () => {
         reply_to_message_id: replyingTo?.id,
       });
 
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
       setNewMessage('');
       setReplyingTo(null);
 
@@ -274,13 +287,16 @@ export const ChatScreen: React.FC = () => {
           // Send image message
           const message = await chatApi.sendMessage(chat.id, {
             sender_id: user.id,
-            content: newMessage.trim() || language === 'fr' ? 'Image' : 'Image',
+            content: newMessage.trim() || (language === 'fr' ? 'Image' : 'Image'),
             type: 'IMAGE',
             attachments: [imageUrl],
             reply_to_message_id: replyingTo?.id,
           });
 
-          setMessages(prev => [...prev, message]);
+          setMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
           setNewMessage('');
           setReplyingTo(null);
 
@@ -300,15 +316,18 @@ export const ChatScreen: React.FC = () => {
   };
 
   const startRecording = async () => {
+    if (isStartingRecording.current) return;
+    isStartingRecording.current = true;
+
     try {
       // Clean up any existing recording first
-      if (recording) {
+      if (recordingRef.current) {
         try {
-          await recording.stopAndUnloadAsync();
+          await recordingRef.current.stopAndUnloadAsync();
         } catch (e) {
           // Ignore errors when stopping
         }
-        setRecording(null);
+        recordingRef.current = null;
       }
 
       await Audio.setAudioModeAsync({
@@ -317,25 +336,74 @@ export const ChatScreen: React.FC = () => {
       });
 
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        {
+          android: {
+            extension: '.m4a',
+            outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+            audioEncoder: Audio.AndroidAudioEncoder.AAC,
+            sampleRate: 44100,
+            numberOfChannels: 2,
+            bitRate: 128000,
+          },
+          ios: {
+            extension: '.m4a',
+            outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+            audioQuality: Audio.IOSAudioQuality.MAX,
+            sampleRate: 44100,
+            numberOfChannels: 2,
+            bitRate: 128000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false,
+          },
+          web: {
+            mimeType: 'audio/mp4',
+            bitsPerSecond: 128000,
+          },
+        }
       );
 
-      setRecording(newRecording);
+      recordingRef.current = newRecording;
       setIsRecording(true);
       setRecordingDuration(0);
 
       // Update duration every second
+      if (recordingInterval.current) clearInterval(recordingInterval.current);
       recordingInterval.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
     } catch (error) {
       console.error('Error starting recording:', error);
       Alert.alert('Error', 'Failed to start recording');
+      setIsRecording(false);
+    } finally {
+      isStartingRecording.current = false;
     }
   };
 
   const stopRecording = async () => {
-    if (!recording || !chat?.id || !user?.id) return;
+    // If we are currently starting a recording, wait a bit or ignore?
+    // Better: check if we have a recording ref.
+    // If startRecording is in progress, we might miss the ref. 
+    // But since this is triggered by onPressOut, it should be fine if the user held it long enough.
+    // If the user tapped very quickly, startRecording might still be running.
+
+    if (isStartingRecording.current) {
+      // Wait for start to finish? Or just cancel?
+      // Let's wait a small amount of time or just return if it's too fast.
+      // For now, let's just wait for the ref to be populated if possible, or fail gracefully.
+      console.log('Stop called while starting...');
+    }
+
+    if (!recordingRef.current || !chat?.id || !user?.id) {
+      // Cleanup if UI thinks we are recording but we have no ref
+      if (isRecording) {
+        setIsRecording(false);
+        setRecordingDuration(0);
+        if (recordingInterval.current) clearInterval(recordingInterval.current);
+      }
+      return;
+    }
 
     try {
       if (recordingInterval.current) {
@@ -343,8 +411,11 @@ export const ChatScreen: React.FC = () => {
       }
 
       setIsRecording(false);
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+
+      // Reset ref immediately so we don't try to use it again
+      recordingRef.current = null;
 
       if (uri) {
         setSending(true);
@@ -364,7 +435,10 @@ export const ChatScreen: React.FC = () => {
             reply_to_message_id: replyingTo?.id,
           });
 
-          setMessages(prev => [...prev, message]);
+          setMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
           setReplyingTo(null);
 
           setTimeout(() => {
@@ -377,25 +451,24 @@ export const ChatScreen: React.FC = () => {
         setSending(false);
       }
 
-      setRecording(null);
       setRecordingDuration(0);
     } catch (error) {
       console.error('Error stopping recording:', error);
-      setRecording(null);
+      recordingRef.current = null;
       setRecordingDuration(0);
       setSending(false);
     }
   };
 
   const cancelRecording = async () => {
-    if (recording) {
-      await recording.stopAndUnloadAsync();
-      setRecording(null);
-      setIsRecording(false);
-      setRecordingDuration(0);
-      if (recordingInterval.current) {
-        clearInterval(recordingInterval.current);
-      }
+    if (recordingRef.current) {
+      await recordingRef.current.stopAndUnloadAsync();
+      recordingRef.current = null;
+    }
+    setIsRecording(false);
+    setRecordingDuration(0);
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
     }
   };
 
@@ -417,7 +490,10 @@ export const ChatScreen: React.FC = () => {
       });
 
       // Add message to local state
-      setMessages(prev => [...prev, result.message]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === result.message.id)) return prev;
+        return [...prev, result.message];
+      });
       setOffers(prev => [result.offer, ...prev]);
 
       setShowOfferModal(false);
@@ -563,7 +639,7 @@ export const ChatScreen: React.FC = () => {
           onPress={() => {
             if (bookingId) {
               // Navigate to appropriate screen based on user role
-              if (user?.role === 'PROVIDER') {
+              if (user?.role === 'provider') {
                 navigation.navigate('ProposalDetails', { bookingId });
               } else {
                 // CLIENT role
@@ -865,14 +941,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   bookingBanner: {
-    backgroundColor: '#FFF8E1',
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFD54F',
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#BBDEFB',
   },
   bookingBannerIcon: {
-    backgroundColor: '#FFEB3B',
+    backgroundColor: '#2196F3',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -881,9 +957,9 @@ const styles = StyleSheet.create({
   },
   bookingBannerTitle: {
     fontWeight: '600',
-    color: '#2D2D2D',
+    color: '#1565C0',
   },
   bookingBannerSubtitle: {
-    color: '#666',
+    color: '#1976D2',
   },
 });

@@ -26,7 +26,7 @@ import {
 
 @Controller('contractors')
 export class ContractorController {
-  constructor(private readonly contractorService: ContractorService) {}
+  constructor(private readonly contractorService: ContractorService) { }
 
   // =====================================================
   // PROFILE ENDPOINTS

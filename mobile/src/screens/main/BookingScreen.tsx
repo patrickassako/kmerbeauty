@@ -52,11 +52,9 @@ export const BookingScreen: React.FC = () => {
     return date;
   });
 
-  // Horaires disponibles
-  const availableTimes = [
-    '08:00', '09:00', '10:00', '11:00', '12:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00',
-  ];
+  // Horaires disponibles (chargés depuis l'API)
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   // Charger les services du prestataire
   useEffect(() => {
@@ -65,7 +63,62 @@ export const BookingScreen: React.FC = () => {
     }
   }, [providerId, providerType]);
 
+  // Charger les disponibilités quand une date est sélectionnée
+  useEffect(() => {
+    if (selectedDate && providerId && providerType) {
+      loadAvailability();
+    } else {
+      setAvailableTimes([]);
+    }
+  }, [selectedDate, providerId, providerType]);
+
+  const loadAvailability = async () => {
+    if (!selectedDate || !providerId) return;
+
+    try {
+      setLoadingAvailability(true);
+      // Format date YYYY-MM-DD
+      const dateStr = selectedDate.toISOString().split('T')[0];
+
+      let times: string[] = [];
+      try {
+        if (providerType === 'therapist') {
+          times = await therapistsApi.getAvailability(providerId, dateStr);
+        } else {
+          times = await salonsApi.getAvailability(providerId, dateStr);
+        }
+      } catch (apiError) {
+        console.warn('Failed to fetch availability, using default slots:', apiError);
+        // Fallback to default slots will happen below if times is empty
+      }
+
+      // Si aucun créneau n'est retourné (ou erreur API), on génère des créneaux par défaut
+      // pour ne pas bloquer l'utilisateur. Ils s'arrangeront par chat/téléphone.
+      if (!times || times.length === 0) {
+        const defaultSlots = [];
+        for (let i = 8; i <= 20; i++) {
+          defaultSlots.push(`${i.toString().padStart(2, '0')}:00`);
+        }
+        times = defaultSlots;
+      }
+
+      setAvailableTimes(times);
+    } catch (error) {
+      console.error('Error in loadAvailability:', error);
+      // Even in case of catastrophic error, show default slots
+      const defaultSlots = [];
+      for (let i = 8; i <= 20; i++) {
+        defaultSlots.push(`${i.toString().padStart(2, '0')}:00`);
+      }
+      setAvailableTimes(defaultSlots);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
   const loadProviderServices = async () => {
+    if (!providerId) return;
+
     try {
       setLoadingServices(true);
       let services: any[] = [];
@@ -95,6 +148,7 @@ export const BookingScreen: React.FC = () => {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setSelectedTime(null); // Reset time when date changes
   };
 
   const handleTimeSelect = (time: string) => {
@@ -579,24 +633,34 @@ export const BookingScreen: React.FC = () => {
               {language === 'fr' ? 'Sélectionner une heure' : 'Select a time'}
             </Text>
             <View style={styles.timeGrid}>
-              {availableTimes.map((time) => {
-                const isSelected = selectedTime === time;
-                return (
-                  <TouchableOpacity
-                    key={time}
-                    style={[
-                      styles.timeCard,
-                      isSelected && styles.timeCardSelected,
-                      { padding: spacing(1.5), borderRadius: spacing(1.5), marginRight: spacing(1), marginBottom: spacing(1) },
-                    ]}
-                    onPress={() => handleTimeSelect(time)}
-                  >
-                    <Text style={[styles.timeText, isSelected && styles.timeTextSelected, { fontSize: normalizeFontSize(14) }]}>
-                      {time}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {loadingAvailability ? (
+                <View style={{ padding: 20, width: '100%', alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#2D2D2D" />
+                </View>
+              ) : availableTimes.length === 0 ? (
+                <Text style={{ color: '#666', fontStyle: 'italic', padding: 10 }}>
+                  {language === 'fr' ? 'Aucun créneau disponible' : 'No slots available'}
+                </Text>
+              ) : (
+                availableTimes.map((time) => {
+                  const isSelected = selectedTime === time;
+                  return (
+                    <TouchableOpacity
+                      key={time}
+                      style={[
+                        styles.timeCard,
+                        isSelected && styles.timeCardSelected,
+                        { padding: spacing(1.5), borderRadius: spacing(1.5), marginRight: spacing(1), marginBottom: spacing(1) },
+                      ]}
+                      onPress={() => handleTimeSelect(time)}
+                    >
+                      <Text style={[styles.timeText, isSelected && styles.timeTextSelected, { fontSize: normalizeFontSize(14) }]}>
+                        {time}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </View>
           </View>
         )}
