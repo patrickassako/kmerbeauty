@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Loader2 } from 'lucide-react';
 import { ProductCard } from '@/components/marketplace/ProductCard';
@@ -18,7 +18,7 @@ interface Product {
     city?: string;
 }
 
-export default function MarketplacePage() {
+function MarketplaceContent() {
     const searchParams = useSearchParams();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -106,5 +106,13 @@ export default function MarketplacePage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function MarketplacePage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <MarketplaceContent />
+        </Suspense>
     );
 }
