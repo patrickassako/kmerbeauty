@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Phone, Clock, Globe, ArrowLeft, Share2, Heart, CheckCircle, Mail, User, Shield, Award, Pin } from "lucide-react";
+import { MapPin, Star, Phone, Clock, Globe, ArrowLeft, Share2, Heart, CheckCircle, Mail, User, Shield, Award, Pin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useInteractionTracking } from "@/hooks/useInteractionTracking";
 import { Modal } from "@/components/ui/Modal";
 import { LoginForm } from "@/components/auth/LoginForm";
 
-export default function TherapistProfilePage() {
+function TherapistProfileContent() {
     const { id } = useParams();
     const router = useRouter();
     // ... params
@@ -432,3 +432,12 @@ export default function TherapistProfilePage() {
         </div>
     );
 }
+
+export default function TherapistProfilePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+            <TherapistProfileContent />
+        </Suspense>
+    );
+}
+

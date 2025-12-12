@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-export default function UserBookingsPage() {
+function UserBookingsContent() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -274,3 +274,12 @@ export default function UserBookingsPage() {
         </div>
     );
 }
+
+export default function UserBookingsPage() {
+    return (
+        <Suspense fallback={<div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <UserBookingsContent />
+        </Suspense>
+    );
+}
+

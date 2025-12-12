@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Star, Clock, Calendar, Check, Shield, Info } from "lucide-react";
+import { ArrowLeft, MapPin, Star, Clock, Calendar, Check, Shield, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export default function ServiceDetailsPage() {
+function ServiceDetailsContent() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -420,3 +420,12 @@ export default function ServiceDetailsPage() {
         </div>
     );
 }
+
+export default function ServiceDetailsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+            <ServiceDetailsContent />
+        </Suspense>
+    );
+}
+
