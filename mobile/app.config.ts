@@ -18,14 +18,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         assetBundlePatterns: ['**/*'],
         ios: {
             supportsTablet: true,
-            bundleIdentifier: 'com.kmrbeauty.app',
+            bundleIdentifier: 'com.kmerservice.beauty',
         },
         android: {
             adaptiveIcon: {
                 foregroundImage: './assets/adaptive-icon.png',
                 backgroundColor: '#ffffff',
             },
-            package: 'com.kmrbeauty.app',
+            package: 'com.kmerservice.beauty',
             intentFilters: [
                 {
                     action: 'VIEW',
