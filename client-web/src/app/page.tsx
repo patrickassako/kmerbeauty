@@ -115,7 +115,7 @@ export default function Home() {
 
       let allProviders: any[] = [];
 
-      // Process Therapists
+      // Process Therapists - now using pre-computed coordinates from backend
       if (therapistsData) {
         // Filter out invalid coordinates for main location OR ensure they have service zones
         const validProviders = therapistsData.filter(p =>
@@ -123,58 +123,7 @@ export default function Home() {
           (p.service_zones && Array.isArray(p.service_zones) && p.service_zones.length > 0)
         );
 
-        // 1. Collect all unique zones to geocode
-        const uniqueZones = new Map<string, string>(); // Key: "District, City", Value: Query
-
-        validProviders.forEach(provider => {
-          if (provider.service_zones && Array.isArray(provider.service_zones)) {
-            provider.service_zones.slice(0, 5).forEach((zone: any) => {
-              if (zone.city && zone.city !== 'Unknown') {
-                const city = zone.city.trim();
-                const district = zone.district ? zone.district.trim() : null;
-
-                // Create a normalized key for deduplication
-                const key = district ? `${district}, ${city}`.toLowerCase() : city.toLowerCase();
-                const query = district
-                  ? `${district}, ${city}, Cameroun`
-                  : `${city}, Cameroun`;
-                uniqueZones.set(key, query);
-              }
-            });
-          }
-        });
-
-        // 2. Geocode unique zones sequentially to respect rate limits
-        const zoneCoordinates = new Map<string, { lat: number, lon: number }>();
-        const zonesToGeocode = Array.from(uniqueZones.entries());
-
-        for (const [key, query] of zonesToGeocode) {
-          try {
-            if (zoneCoordinates.has(key)) continue;
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit
-
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
-            );
-
-            if (!response.ok) {
-              if (response.status === 429) await new Promise(resolve => setTimeout(resolve, 5000));
-              continue;
-            }
-
-            const data = await response.json();
-            if (data && data[0]) {
-              zoneCoordinates.set(key, {
-                lat: parseFloat(data[0].lat),
-                lon: parseFloat(data[0].lon)
-              });
-            }
-          } catch (e) {
-            console.error(`Error geocoding ${key}:`, e);
-          }
-        }
-
-        // 3. Map coordinates back to providers
+        // Map providers - zones already have coordinates from backend geocoding
         const mappedTherapists = validProviders.map(provider => {
           let serviceAreas: any[] = [];
 
@@ -184,13 +133,14 @@ export default function Home() {
 
               const city = zone.city.trim();
               const district = zone.district ? zone.district.trim() : null;
-              const key = district ? `${district}, ${city}`.toLowerCase() : city.toLowerCase();
-
-              const coords = zoneCoordinates.get(key);
-              // Use original casing for display name
               const displayName = district ? `${district}, ${city}` : city;
 
-              return coords ? { name: displayName, latitude: coords.lat, longitude: coords.lon } : null;
+              // Use pre-computed coordinates from backend, fallback to provider coords
+              return {
+                name: displayName,
+                latitude: zone.latitude || provider.latitude || 0,
+                longitude: zone.longitude || provider.longitude || 0
+              };
             }).filter(Boolean);
           }
 
@@ -205,7 +155,7 @@ export default function Home() {
             address: provider.is_mobile ? "Service Mobile" : (provider.city || "Cameroun"),
             city: provider.city,
             service_areas: serviceAreas,
-            type: 'therapist' // Distinguish type
+            type: 'therapist'
           };
         });
 
