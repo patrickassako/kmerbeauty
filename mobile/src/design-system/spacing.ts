@@ -3,7 +3,7 @@
  * Basé sur l'analyse du design SIMONE
  */
 
-export const spacing = {
+const rawSpacing = {
   '0': 0,
   '1': 4,
   '2': 8,
@@ -20,19 +20,22 @@ export const spacing = {
   '24': 96,
 } as const;
 
-// Aliases pour faciliter l'utilisation
-export const space = {
-  none: spacing['0'],
-  xs: spacing['1'],   // 4px
-  sm: spacing['2'],   // 8px
-  md: spacing['3'],   // 12px
-  lg: spacing['4'],   // 16px
-  xl: spacing['5'],   // 20px
-  '2xl': spacing['6'], // 24px
-  '3xl': spacing['8'], // 32px
-  '4xl': spacing['10'], // 40px
-  '5xl': spacing['12'], // 48px
+export const spacing = {
+  ...rawSpacing,
+  none: rawSpacing['0'],
+  xs: rawSpacing['1'],   // 4px
+  sm: rawSpacing['2'],   // 8px
+  md: rawSpacing['3'],   // 12px
+  lg: rawSpacing['4'],   // 16px
+  xl: rawSpacing['5'],   // 20px
+  '2xl': rawSpacing['6'], // 24px
+  '3xl': rawSpacing['8'], // 32px
+  '4xl': rawSpacing['10'], // 40px
+  '5xl': rawSpacing['12'], // 48px
 } as const;
+
+// Legacy alias support if needed
+export const space = spacing;
 
 export type Spacing = keyof typeof spacing;
 export type Space = keyof typeof space;

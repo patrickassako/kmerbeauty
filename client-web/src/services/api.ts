@@ -258,11 +258,6 @@ export const contractorApi = {
     getEarnings: async (contractorId: string, period: 'week' | 'month' | 'year' = 'month') => {
         const response = await api.get(`/contractors/${contractorId}/earnings`, { params: { period } });
         return response.data;
-    },
-
-    checkAvailability: async (contractorId: string, date: string, duration: number) => {
-        const response = await api.post(`/contractors/${contractorId}/check-availability`, { date, duration });
-        return response.data;
     }
 };
 

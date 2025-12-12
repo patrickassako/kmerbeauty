@@ -14,6 +14,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -76,11 +78,15 @@ class NotificationService {
 
       // Obtenir le projectId depuis différentes sources possibles
       // Dans un bare workflow (après prebuild), on utilise le projectId en dur
+      const config = Constants.expoConfig as any;
+      const manifest = Constants.manifest as any;
+      const manifest2 = (Constants as any).manifest2;
+
       const projectId =
-        Constants.expoConfig?.extra?.eas?.projectId ||
-        Constants.expoConfig?.projectId ||
-        Constants.manifest?.extra?.eas?.projectId ||
-        Constants.manifest2?.extra?.eas?.projectId ||
+        config?.extra?.eas?.projectId ||
+        config?.projectId ||
+        manifest?.extra?.eas?.projectId ||
+        manifest2?.extra?.eas?.projectId ||
         'kmerservice-d178f'; // Fallback pour bare workflow
 
       console.log('🔍 ProjectId détecté:', projectId);

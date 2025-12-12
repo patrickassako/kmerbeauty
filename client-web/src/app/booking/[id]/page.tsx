@@ -324,7 +324,7 @@ function BookingContent() {
             // Reference ID is the Booking ID
             await trackInteraction(
                 id as string,
-                providerType,
+                providerType === 'individual' ? 'therapist' : 'salon',
                 'booking_confirmed',
                 user.id,
                 bookingData.id // Reference ID
@@ -408,7 +408,7 @@ function BookingContent() {
                                 onClick={() => {
                                     trackInteraction(
                                         id as string,
-                                        providerType,
+                                        providerType === 'individual' ? 'therapist' : 'salon',
                                         'chat_started',
                                         // We don't have user object easily here in render, need to store it or use guestId
                                         // But this view is only shown after submission where we checked auth.

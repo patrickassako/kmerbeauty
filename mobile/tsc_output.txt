@@ -1,0 +1,82 @@
+src/components/chat/OfferMessage.tsx(129,12): error TS18048: 'offerData' is possibly 'undefined'.
+src/components/chat/OfferMessage.tsx(133,10): error TS18048: 'offerData' is possibly 'undefined'.
+src/components/chat/OfferMessage.tsx(144,14): error TS18048: 'offerData' is possibly 'undefined'.
+src/components/chat/OfferMessage.tsx(161,31): error TS18048: 'offerData' is possibly 'undefined'.
+src/components/chat/OfferMessage.tsx(169,16): error TS18048: 'offerData' is possibly 'undefined'.
+src/components/InstituteMap.tsx(216,46): error TS2532: Object is possibly 'undefined'.
+src/components/RebookModal.tsx(244,38): error TS2345: Argument of type '{ user_id: string; therapist_id: string | undefined; salon_id: string | undefined; scheduled_at: string; duration: number; location_type: "HOME" | "SALON"; quarter: string | undefined; ... 12 more ...; items: { ...; }[]; }' is not assignable to parameter of type 'CreateBookingDto'.
+  Types of property 'items' are incompatible.
+    Type '{ service_name: string; price: number; duration: number; }[]' is not assignable to type 'BookingItem[]'.
+      Property 'service_id' is missing in type '{ service_name: string; price: number; duration: number; }' but required in type 'BookingItem'.
+src/hooks/useFavorites.ts(2,10): error TS2614: Module '"../services/api"' has no exported member 'favoritesApi'. Did you mean to use 'import favoritesApi from "../services/api"' instead?
+src/hooks/useReviews.ts(97,37): error TS2339: Property 'createReview' does not exist on type '{ getTherapistReviews: (therapistId: string) => Promise<Review[]>; getSalonReviews: (salonId: string) => Promise<Review[]>; create: (data: CreateReviewDto) => Promise<...>; }'.
+src/screens/common/TermsScreen.tsx(31,37): error TS2339: Property 'section' does not exist on type '{ container: { flex: number; backgroundColor: string; }; header: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; backgroundColor: string; borderBottomWidth: number; borderBottomColor: string; }; ... 4 more ...; paragraph: { ...; }; }'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(136,24): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(138,42): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(161,28): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(163,46): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(227,29): error TS2339: Property 'total_price' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(236,81): error TS2339: Property 'client_rating' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(244,26): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(253,28): error TS2339: Property 'location' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(286,38): error TS2339: Property 'profile_picture' does not exist on type '{ id: string; first_name: string; last_name: string; email?: string | undefined; phone?: string | undefined; avatar?: string | undefined; }'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(288,55): error TS2339: Property 'profile_picture' does not exist on type '{ id: string; first_name: string; last_name: string; email?: string | undefined; phone?: string | undefined; avatar?: string | undefined; }'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(301,74): error TS2339: Property 'is_verified' does not exist on type '{ id: string; first_name: string; last_name: string; email?: string | undefined; phone?: string | undefined; avatar?: string | undefined; }'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(317,28): error TS2339: Property 'skin_type' does not exist on type 'Booking'.
+src/screens/contractor/AppointmentDetailsScreen.tsx(329,28): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/ContractorAppointmentsScreen.tsx(45,23): error TS18047: 'profile' is possibly 'null'.
+src/screens/contractor/ContractorAppointmentsScreen.tsx(202,48): error TS2339: Property 'profile_picture' does not exist on type '{ id: string; first_name: string; last_name: string; email?: string | undefined; phone?: string | undefined; avatar?: string | undefined; }'.
+src/screens/contractor/ContractorAppointmentsScreen.tsx(204,65): error TS2339: Property 'profile_picture' does not exist on type '{ id: string; first_name: string; last_name: string; email?: string | undefined; phone?: string | undefined; avatar?: string | undefined; }'.
+src/screens/contractor/ContractorAppointmentsScreen.tsx(224,42): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/ContractorAvailabilityScreen.tsx(109,94): error TS2339: Property 'note' does not exist on type '{ loading: string; error: string; success: string; cancel: string; confirm: string; save: string; delete: string; edit: string; close: string; search: string; filter: string; sort: string; back: string; next: string; previous: string; done: string; }'.
+src/screens/contractor/ContractorDashboardScreen.tsx(14,32): error TS2307: Cannot find module 'expo-linear-gradient' or its corresponding type declarations.
+src/screens/contractor/ContractorDashboardScreen.tsx(212,18): error TS2551: Property 'first_name' does not exist on type 'User'. Did you mean 'firstName'?
+src/screens/contractor/ContractorDashboardScreen.tsx(212,38): error TS2551: Property 'last_name' does not exist on type 'User'. Did you mean 'lastName'?
+src/screens/contractor/ContractorDashboardScreen.tsx(212,58): error TS2551: Property 'first_name' does not exist on type 'User'. Did you mean 'firstName'?
+src/screens/contractor/ContractorDashboardScreen.tsx(212,77): error TS2551: Property 'last_name' does not exist on type 'User'. Did you mean 'lastName'?
+src/screens/contractor/ContractorDashboardScreen.tsx(454,32): error TS2339: Property 'user' does not exist on type 'Booking'.
+src/screens/contractor/ContractorDashboardScreen.tsx(462,34): error TS2339: Property 'service' does not exist on type 'Booking'.
+src/screens/contractor/ContractorEarningsScreen.tsx(73,23): error TS18047: 'profile' is possibly 'null'.
+src/screens/contractor/ContractorProfileEditScreen.tsx(647,28): error TS2339: Property 'experience' does not exist on type 'Partial<ContractorProfile>'.
+src/screens/contractor/ContractorProfileEditScreen.tsx(648,62): error TS2353: Object literal may only specify known properties, and 'experience' does not exist in type 'SetStateAction<Partial<ContractorProfile>>'.
+src/screens/contractor/ContractorSettingsScreen.tsx(14,10): error TS2614: Module '"../../services/api"' has no exported member 'authApi'. Did you mean to use 'import authApi from "../../services/api"' instead?
+src/screens/credits/PurchaseCreditsScreen.tsx(83,31): error TS2551: Property 'first_name' does not exist on type 'User'. Did you mean 'firstName'?
+src/screens/credits/PurchaseCreditsScreen.tsx(83,50): error TS2551: Property 'last_name' does not exist on type 'User'. Did you mean 'lastName'?
+src/screens/credits/PurchaseCreditsScreen.tsx(119,17): error TS18046: 'error' is of type 'unknown'.
+src/screens/ForgotPasswordScreen.tsx(22,10): error TS2614: Module '"../services/api"' has no exported member 'api'. Did you mean to use 'import api from "../services/api"' instead?
+src/screens/ForgotPasswordScreen.tsx(65,84): error TS2339: Property 'primary' does not exist on type '{ readonly black: "#2D2D2D"; readonly charcoal: "#1A1A1A"; readonly white: "#FFFFFF"; readonly coral: "#FF6B6B"; readonly coralLight: "#FF8B8B"; readonly coralDark: "#FF4B4B"; readonly gray50: "#FAFAFA"; ... 35 more ...; readonly whiteAlpha90: "rgba(255, 255, 255, 0.9)"; }'.
+src/screens/ForgotPasswordScreen.tsx(223,39): error TS2339: Property 'md' does not exist on type '{ readonly '2xs': 10; readonly xs: 12; readonly sm: 14; readonly base: 16; readonly lg: 18; readonly xl: 20; readonly '2xl': 24; readonly '3xl': 28; readonly '4xl': 32; readonly '5xl': 40; }'.
+src/screens/ForgotPasswordScreen.tsx(232,39): error TS2339: Property 'md' does not exist on type '{ readonly '2xs': 10; readonly xs: 12; readonly sm: 14; readonly base: 16; readonly lg: 18; readonly xl: 20; readonly '2xl': 24; readonly '3xl': 28; readonly '4xl': 32; readonly '5xl': 40; }'.
+src/screens/ForgotPasswordScreen.tsx(246,33): error TS2339: Property 'primary' does not exist on type '{ readonly black: "#2D2D2D"; readonly charcoal: "#1A1A1A"; readonly white: "#FFFFFF"; readonly coral: "#FF6B6B"; readonly coralLight: "#FF8B8B"; readonly coralDark: "#FF4B4B"; readonly gray50: "#FAFAFA"; ... 35 more ...; readonly whiteAlpha90: "rgba(255, 255, 255, 0.9)"; }'.
+src/screens/main/BookingDetailsScreen.tsx(221,25): error TS2345: Argument of type '["Chat", { bookingId: string; providerId: string; providerName: any; providerType: "therapist" | "salon"; }]' is not assignable to parameter of type '[screen: "Booking", params: { service: Service; providerId?: string | undefined; providerType?: "therapist" | "salon" | undefined; providerName?: string | undefined; providerPrice?: number | undefined; }, options?: { ...; } | undefined] | ... 12 more ... | [screen: ...]'.
+  Type '["Chat", { bookingId: string; providerId: string; providerName: any; providerType: "therapist" | "salon"; }]' is not assignable to type '[screen: "ConversationDetails", params: { chatId?: string | undefined; bookingId?: string | undefined; providerId: string; providerName: string; providerType: "client" | "therapist" | "salon"; providerImage?: string | undefined; }, options?: { ...; } | undefined]'.
+    Type at position 0 in source is not compatible with type at position 0 in target.
+      Type '"Chat"' is not assignable to type '"ConversationDetails"'.
+src/screens/main/HomeScreen.tsx(117,24): error TS2345: Argument of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' is not assignable to parameter of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+  Property 'priority' is missing in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' but required in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+src/screens/main/HomeScreen.tsx(610,53): error TS2345: Argument of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' is not assignable to parameter of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+  Property 'priority' is missing in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' but required in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+src/screens/main/HomeScreen.tsx(749,49): error TS2345: Argument of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' is not assignable to parameter of type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+  Property 'priority' is missing in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/models").Service' but required in type 'import("/Users/apple/Documents/kmerservices/mobile/src/types/database.types").Service'.
+src/screens/main/HomeScreen.tsx(810,21): error TS2561: Object literal may only specify known properties, but 'provider' does not exist in type '{ providerId: string; providerType: "therapist" | "salon"; }'. Did you mean to write 'providerId'?
+src/screens/main/HomeScreen.tsx(903,36): error TS2339: Property 'provider_count' does not exist on type 'Service'.
+src/screens/main/HomeScreen_old.tsx(16,30): error TS2305: Module '"../../navigation/HomeStackNavigator"' has no exported member 'Provider'.
+src/screens/main/HomeScreen_old.tsx(16,40): error TS2459: Module '"../../navigation/HomeStackNavigator"' declares 'Salon' locally, but it is not exported.
+src/screens/main/HomeScreen_old.tsx(16,47): error TS2459: Module '"../../navigation/HomeStackNavigator"' declares 'Service' locally, but it is not exported.
+src/screens/main/HomeScreen_old.tsx(36,46): error TS2561: Object literal may only specify known properties, but 'provider' does not exist in type '{ providerId: string; providerType: "therapist" | "salon"; }'. Did you mean to write 'providerId'?
+src/screens/main/ReviewScreen.tsx(68,24): error TS2339: Property 'createReview' does not exist on type '{ getTherapistReviews: (therapistId: string) => Promise<Review[]>; getSalonReviews: (salonId: string) => Promise<Review[]>; create: (data: CreateReviewDto) => Promise<...>; }'.
+src/screens/main/SearchResultsScreen.tsx(93,29): error TS2339: Property 'profile_image' does not exist on type 'Therapist'.
+src/screens/main/ServiceProvidersScreen.tsx(65,25): error TS2339: Property 'profile_image' does not exist on type 'Therapist'.
+src/screens/main/ServiceProvidersScreen.tsx(68,24): error TS2339: Property 'service_price' does not exist on type 'Therapist'.
+src/screens/main/ServiceProvidersScreen.tsx(69,27): error TS2339: Property 'service_duration' does not exist on type 'Therapist'.
+src/screens/main/ServiceProvidersScreen.tsx(82,20): error TS2339: Property 'service_price' does not exist on type 'Salon'.
+src/screens/main/ServiceProvidersScreen.tsx(83,23): error TS2339: Property 'service_duration' does not exist on type 'Salon'.
+src/screens/main/ServiceProvidersScreen.tsx(115,25): error TS2345: Argument of type '["Chat", { providerId: string; providerType: "therapist" | "salon"; }]' is not assignable to parameter of type '[screen: "Booking", params: { service: Service; providerId?: string | undefined; providerType?: "therapist" | "salon" | undefined; providerName?: string | undefined; providerPrice?: number | undefined; }, options?: { ...; } | undefined] | ... 12 more ... | [screen: ...]'.
+  Type '["Chat", { providerId: string; providerType: "therapist" | "salon"; }]' is not assignable to type '[screen: "ProviderDetails", params: { providerId: string; providerType: "therapist" | "salon"; }, options?: { merge?: boolean | undefined; pop?: boolean | undefined; } | undefined]'.
+    Type at position 0 in source is not compatible with type at position 0 in target.
+      Type '"Chat"' is not assignable to type '"ProviderDetails"'.
+src/screens/ResetPasswordScreen.tsx(127,63): error TS2339: Property 'primary' does not exist on type '{ readonly black: "#2D2D2D"; readonly charcoal: "#1A1A1A"; readonly white: "#FFFFFF"; readonly coral: "#FF6B6B"; readonly coralLight: "#FF8B8B"; readonly coralDark: "#FF4B4B"; readonly gray50: "#FAFAFA"; ... 35 more ...; readonly whiteAlpha90: "rgba(255, 255, 255, 0.9)"; }'.
+src/screens/ResetPasswordScreen.tsx(271,39): error TS2339: Property 'md' does not exist on type '{ readonly '2xs': 10; readonly xs: 12; readonly sm: 14; readonly base: 16; readonly lg: 18; readonly xl: 20; readonly '2xl': 24; readonly '3xl': 28; readonly '4xl': 32; readonly '5xl': 40; }'.
+src/screens/SignUpScreen.tsx(84,12): error TS18048: 'formData.email' is possibly 'undefined'.
+src/screens/SignUpScreen.tsx(86,39): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

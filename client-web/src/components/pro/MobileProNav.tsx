@@ -12,7 +12,6 @@ import {
     ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useResponsive } from '@/hooks/useResponsive'; // Assuming this hook exists or I'll implement a simple check
 
 const MENU_ITEMS = [
     { label: 'Accueil', icon: LayoutDashboard, href: '/pro/dashboard' },

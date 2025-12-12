@@ -1,5 +1,19 @@
 
 // Core Data Models
+
+export interface User {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    avatar?: string;
+    role: string;
+    city?: string;
+    region?: string;
+    created_at?: string;
+}
+
 export interface Service {
     id: string;
     name_fr: string;
@@ -15,6 +29,7 @@ export interface Service {
     ideal_for_fr?: string;
     ideal_for_en?: string;
     provider_count?: number;
+    priority?: number;
     components?: string[];
     created_at: string;
     updated_at: string;
@@ -200,6 +215,8 @@ export interface CreateBookingDto {
     total: number;
     notes?: string;
     items: BookingItem[];
+    user?: User;
+    provider?: Therapist | Salon;
 }
 
 // Chat
@@ -330,4 +347,132 @@ export interface CreateReviewDto {
     cleanliness?: number;
     professionalism?: number;
     value?: number;
+}
+
+// =====================================================
+// CONTRACTOR TYPES
+// =====================================================
+
+export interface ServiceZone {
+    location: {
+        lat: number;
+        lng: number;
+        address: string;
+    };
+    radius: number;
+}
+
+export interface IdCardUrls {
+    front?: string;
+    back?: string;
+}
+
+export interface ContractorProfile {
+    id: string;
+    user_id: string;
+    business_name?: string;
+    siret_number?: string;
+    legal_status?: string;
+    qualifications_proof?: string[];
+    professional_experience?: string;
+    types_of_services?: string[];
+    id_card_url?: string | IdCardUrls;
+    insurance_url?: string;
+    training_certificates?: string[];
+    portfolio_images?: string[];
+    profile_image?: string;
+    confidentiality_accepted?: boolean;
+    terms_accepted?: boolean;
+    languages_spoken?: string[];
+    available_transportation?: string[];
+    service_zones?: ServiceZone[] | string[];
+    total_bookings?: number;
+    total_revenue?: number;
+    average_rating?: number;
+    profile_completed?: boolean;
+    is_verified?: boolean;
+    is_active?: boolean;
+    is_online?: boolean;
+    created_at?: string;
+    updated_at?: string;
+    latitude?: number;
+    longitude?: number;
+    city?: string;
+    region?: string;
+    user?: any;
+}
+
+export interface ContractorAvailability {
+    id: string;
+    contractor_id: string;
+    day_of_week: number;
+    is_working: boolean;
+    start_time?: string;
+    end_time?: string;
+}
+
+export interface ContractorBreak {
+    id: string;
+    contractor_id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+}
+
+export interface ContractorException {
+    id: string;
+    contractor_id: string;
+    exception_date: string;
+    is_available: boolean;
+    start_time?: string;
+    end_time?: string;
+    reason?: string;
+}
+
+export interface ContractorService {
+    id: string;
+    contractor_id: string;
+    service_id: string;
+    price: number;
+    duration: number;
+    description?: string;
+    is_active?: boolean;
+    service?: Service;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface DashboardStats {
+    total_income: number;
+    total_proposals: number;
+    completed_bookings: number;
+    total_clients: number;
+    upcoming_appointments: number;
+    earnings_chart?: Array<{ date: string; amount: number }>;
+    bookings_chart?: Array<{ date: string; count: number }>;
+    clients_chart?: Array<{ date: string; count: number }>;
+}
+
+export interface Proposal {
+    id: string;
+    client_id: string;
+    contractor_id: string;
+    service_name: string;
+    description?: string;
+    requested_date?: string;
+    location?: {
+        address: string;
+        lat: number;
+        lng: number;
+    };
+    proposed_price?: number;
+    estimated_duration?: number;
+    status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'EXPIRED';
+    contractor_response?: string;
+    responded_at?: string;
+    expires_at?: string;
+    created_at?: string;
+    updated_at?: string;
+    client?: any;
+    contractor?: ContractorProfile;
 }

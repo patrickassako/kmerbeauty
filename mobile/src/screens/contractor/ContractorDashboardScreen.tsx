@@ -209,7 +209,7 @@ export const ContractorDashboardScreen = () => {
       {/* Greeting */}
       <View style={[styles.greetingSection, { padding: spacing(2.5) }]}>
         <Text style={[styles.name, { fontSize: normalizeFontSize(24) }]}>
-          {user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.email || 'Utilisateur'}
+          {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || 'Utilisateur'}
         </Text>
         <Text style={[styles.greeting, { fontSize: normalizeFontSize(14) }]}>
           {language === 'fr' ? 'Bonjour!' : 'Good morning!'}
@@ -451,7 +451,7 @@ export const ContractorDashboardScreen = () => {
                 }
               >
                 <View style={[styles.appointmentImage, { width: spacing(8), height: spacing(8) }]}>
-                  {appointment.user?.profile_picture ? (
+                  {appointment.user?.avatar ? (
                     <Text style={{ fontSize: normalizeFontSize(40) }}>👤</Text>
                   ) : (
                     <Text style={{ fontSize: normalizeFontSize(40) }}>👤</Text>
@@ -459,7 +459,7 @@ export const ContractorDashboardScreen = () => {
                 </View>
                 <View style={styles.appointmentInfo}>
                   <Text style={[styles.appointmentService, { fontSize: normalizeFontSize(16) }]}>
-                    {appointment.service?.name || 'Haircut service'}
+                    {appointment.items?.[0]?.service_name || 'Service'}
                   </Text>
                   <View style={styles.appointmentDetails}>
                     <Text style={[styles.appointmentTime, { fontSize: normalizeFontSize(13) }]}>

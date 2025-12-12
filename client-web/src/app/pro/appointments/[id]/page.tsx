@@ -122,9 +122,9 @@ export default function AppointmentDetailsPage() {
         <div className="bg-gray-50 min-h-screen pb-24">
             {/* Header Image Gallery */}
             <div className="relative h-64 md:h-80 bg-gray-200">
-                {appointment.items?.[0]?.service_image || appointment.service?.images?.[0] ? (
+                {appointment.items?.[0]?.service_image || (appointment.service as any)?.images?.[0] ? (
                     <img
-                        src={appointment.items?.[0]?.service_image || appointment.service?.images?.[0]}
+                        src={appointment.items?.[0]?.service_image || (appointment.service as any)?.images?.[0]}
                         className="w-full h-full object-cover"
                     />
                 ) : (

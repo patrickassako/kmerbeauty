@@ -65,7 +65,7 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({ navigation, route }) => {
     try {
       setSubmitting(true);
 
-      await reviewsApi.createReview({
+      await reviewsApi.create({
         user_id: user.id,
         therapist_id: booking.therapist_id || undefined,
         salon_id: booking.salon_id || undefined,

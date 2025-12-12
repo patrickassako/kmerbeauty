@@ -81,7 +81,7 @@ export default function ProductForm({ initialData, onSubmit, loading, userId }: 
     const removeImage = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            images: prev.images.filter((_, i) => i !== index)
+            images: prev.images.filter((_: string, i: number) => i !== index)
         }));
     };
 
@@ -110,7 +110,7 @@ export default function ProductForm({ initialData, onSubmit, loading, userId }: 
             <div>
                 <label className="block text-sm font-medium mb-2">Images (max 5)</label>
                 <div className="flex flex-wrap gap-4 mb-4">
-                    {formData.images.map((img, idx) => (
+                    {formData.images.map((img: string, idx: number) => (
                         <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
                             <img src={img} className="w-full h-full object-cover" />
                             <button

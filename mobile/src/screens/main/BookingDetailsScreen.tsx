@@ -15,7 +15,8 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
-import { bookingsApi, reviewsApi, type Booking } from '../../services/api';
+import { bookingsApi, reviewsApi } from '../../services/api';
+import type { Booking } from '../../types/models';
 import { useAuth } from '../../contexts/AuthContext';
 
 type BookingDetailsRouteProp = RouteProp<HomeStackParamList, 'BookingDetails'>;

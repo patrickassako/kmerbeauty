@@ -24,7 +24,7 @@ import { useSalons } from '../../hooks/useSalons';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, PackageWithProviders } from '../../navigation/HomeStackNavigator';
-import type { Service, ServicePackage, GiftCard, Booking } from '../../types/database.types';
+import type { Service, ServicePackage, GiftCard, Booking } from '../../types/models';
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 import { bookingsApi } from '../../services/api';
 import { InstituteMap } from '../../components/InstituteMap';
@@ -807,13 +807,8 @@ export const HomeScreen: React.FC = () => {
                   key={provider.id}
                   style={[styles.providerCard, { width: spacing(35), borderRadius: spacing(2), padding: spacing(2) }]}
                   onPress={() => navigation.navigate('ProviderDetails', {
-                    provider: {
-                      type: provider.type,
-                      id: provider.id,
-                      name: provider.name,
-                      rating: provider.rating,
-                      reviewCount: provider.review_count,
-                    },
+                    providerId: provider.id,
+                    providerType: provider.type as 'salon' | 'therapist',
                   })}
                 >
                   <View style={[styles.providerImage, { height: spacing(18), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>

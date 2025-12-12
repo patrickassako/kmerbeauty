@@ -32,6 +32,8 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
 
         try {
             console.log("Attempting login via:", mode);
+            let authData: any = null;
+
             if (mode === 'email') {
                 console.log("Signing in with email...");
                 const { error, data } = await supabase.auth.signInWithPassword({
@@ -40,6 +42,7 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
                 });
                 console.log("Email sign in result:", { error, session: !!data.session });
                 if (error) throw error;
+                authData = data;
             } else {
                 // Phone Auth
                 let formattedPhone = phone.trim();
@@ -66,6 +69,7 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
                 });
                 console.log("Phone sign in result:", { error, session: !!data.session });
                 if (error) throw error;
+                authData = data;
             }
 
             // Success
@@ -74,13 +78,11 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
             let targetUrl = redirectTo || '/';
 
             // If no explicit redirect, determine destination based on role
-            if (!redirectTo) {
+            if (!redirectTo && authData) {
                 try {
                     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-                    // data.user might be nested under data.session.user depending on response structure of signIn
-                    // signIn return { data: { user, session }, error }
-                    const userId = data.user?.id || data.session?.user?.id;
-                    const textToken = data.session?.access_token;
+                    const userId = authData.user?.id || authData.session?.user?.id;
+                    const textToken = authData.session?.access_token;
 
                     if (userId && textToken) {
                         const res = await fetch(`${API_URL}/contractors/profile/user/${userId}`, {
