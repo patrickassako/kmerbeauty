@@ -31,10 +31,25 @@ async function bootstrap() {
     }),
   );
 
-  // CORS - Allow all origins in development for mobile testing
+  // CORS - Allow configured origins
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'https://kmerbeauty-web.vercel.app',
+    'https://kmerbeauty.com',
+    'https://www.kmerbeauty.com',
+  ].filter(Boolean);
+
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
-      ? process.env.FRONTEND_URL
+      ? (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        // Allow Vercel preview deployments
+        if (origin.includes('vercel.app') || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+      }
       : true, // Allow all origins in development
     credentials: true,
   });
