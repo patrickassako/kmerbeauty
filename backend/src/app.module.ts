@@ -21,6 +21,7 @@ import { PaymentsModule } from './payments/payments.module';
 
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { SearchModule } from './search/search.module';
+import { GeocodingModule } from './geocoding/geocoding.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SearchModule } from './search/search.module';
     PaymentsModule,
     MarketplaceModule,
     SearchModule,
+    GeocodingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

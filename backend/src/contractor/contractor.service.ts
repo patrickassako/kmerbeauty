@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { GeocodingService } from '../geocoding/geocoding.service';
 import {
   CreateContractorProfileDto,
   UpdateContractorProfileDto,
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class ContractorService implements OnModuleInit {
-  constructor(private supabaseService: SupabaseService) { }
+  constructor(
+    private supabaseService: SupabaseService,
+    private geocodingService: GeocodingService,
+  ) { }
 
   async onModuleInit() {
     // Create contractor-files bucket if it doesn't exist
@@ -270,6 +274,12 @@ export class ContractorService implements OnModuleInit {
       bio_en: dto.professional_experience, // Map to bio_en
       is_online: dto.is_online,
     };
+
+    // Enrich service zones with coordinates if provided
+    if (dto.service_zones && Array.isArray(dto.service_zones)) {
+      console.log('📍 Enriching service zones with coordinates...');
+      updateData.service_zones = await this.geocodingService.enrichServiceZones(dto.service_zones);
+    }
 
     // Handle location update if lat/lng provided
     if (dto.latitude && dto.longitude) {
