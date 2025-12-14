@@ -338,8 +338,9 @@ export const ReportBlockModal: React.FC<ReportBlockModalProps> = ({
                 onPress={handleClose}
             >
                 <TouchableOpacity
-                    style={[styles.container, { maxWidth: SCREEN_WIDTH - 40 }]}
+                    style={styles.container}
                     activeOpacity={1}
+                    onPress={(e) => e.stopPropagation()}
                 >
                     <View style={styles.handle} />
 

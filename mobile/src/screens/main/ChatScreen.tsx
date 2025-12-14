@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import { Ionicons } from '@expo/vector-icons';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,6 +28,7 @@ import { OfferMessage } from '../../components/chat/OfferMessage';
 import { CreateOfferModal } from '../../components/chat/CreateOfferModal';
 import { supabase } from '../../lib/supabase';
 import { ReportBlockModal } from '../../components/modals/ReportBlockModal';
+import { checkMutualBlock } from '../../services/reportApi';
 
 type ChatRouteProp = RouteProp<HomeStackParamList, 'ConversationDetails'>;
 type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList & {
@@ -64,6 +66,9 @@ export const ChatScreen: React.FC = () => {
 
   // Report/Block modal state
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Block status
+  const [isBlocked, setIsBlocked] = useState(false);
 
   // Check if user is provider
   const isProvider = user?.role === 'provider';
@@ -137,6 +142,17 @@ export const ChatScreen: React.FC = () => {
       }
 
       setChat(chatData);
+
+      // Check if blocked (mutual block check)
+      if (chatData.client_id && chatData.provider_id && user?.id) {
+        const otherUserId = chatData.client_id === user.id ? chatData.provider_id : chatData.client_id;
+        try {
+          const blockStatus = await checkMutualBlock(otherUserId);
+          setIsBlocked(blockStatus.isBlocked);
+        } catch (err) {
+          console.log('Could not check block status:', err);
+        }
+      }
 
       // Load messages and offers
       await Promise.all([
@@ -740,78 +756,89 @@ export const ChatScreen: React.FC = () => {
       )}
 
       {/* Input Area */}
-      <View style={[styles.inputContainer, { padding: spacing(2), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
-        {/* Attachment buttons */}
-        <TouchableOpacity
-          style={[styles.attachButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5), marginRight: spacing(1) }]}
-          onPress={handlePickImage}
-          disabled={sending || isRecording}
-        >
-          <Text style={[styles.attachIcon, { fontSize: normalizeFontSize(20) }]}>📷</Text>
-        </TouchableOpacity>
-
-        <TextInput
-          style={[
-            styles.input,
-            {
-              flex: 1,
-              padding: spacing(1.5),
-              borderRadius: spacing(3),
-              fontSize: normalizeFontSize(14),
-              marginRight: spacing(1),
-            },
-          ]}
-          placeholder={language === 'fr' ? 'Tapez votre message...' : 'Type your message...'}
-          placeholderTextColor="#999"
-          value={newMessage}
-          onChangeText={setNewMessage}
-          multiline
-          maxLength={500}
-          editable={!isRecording}
-        />
-
-        {/* Voice or Send button */}
-        {newMessage.trim() ? (
+      {isBlocked ? (
+        <View style={[styles.blockedContainer, { padding: spacing(2), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+          <Ionicons name="ban" size={20} color="#F44336" />
+          <Text style={[styles.blockedText, { fontSize: normalizeFontSize(14), marginLeft: spacing(1) }]}>
+            {language === 'fr'
+              ? 'La conversation est bloquée. Vous ne pouvez plus échanger avec cet utilisateur.'
+              : 'This conversation is blocked. You can no longer message this user.'}
+          </Text>
+        </View>
+      ) : (
+        <View style={[styles.inputContainer, { padding: spacing(2), borderTopWidth: 1, borderTopColor: '#E0E0E0' }]}>
+          {/* Attachment buttons */}
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                width: spacing(6),
-                height: spacing(6),
-                borderRadius: spacing(3),
-              },
-              !newMessage.trim() && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSend}
-            disabled={!newMessage.trim() || sending}
+            style={[styles.attachButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5), marginRight: spacing(1) }]}
+            onPress={handlePickImage}
+            disabled={sending || isRecording}
           >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={[styles.sendIcon, { fontSize: normalizeFontSize(20) }]}>➤</Text>
-            )}
+            <Text style={[styles.attachIcon, { fontSize: normalizeFontSize(20) }]}>📷</Text>
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
+
+          <TextInput
             style={[
-              styles.voiceButton,
+              styles.input,
               {
-                width: spacing(6),
-                height: spacing(6),
+                flex: 1,
+                padding: spacing(1.5),
                 borderRadius: spacing(3),
+                fontSize: normalizeFontSize(14),
+                marginRight: spacing(1),
               },
-              isRecording && styles.voiceButtonRecording,
             ]}
-            onPressIn={startRecording}
-            onPressOut={stopRecording}
-            disabled={sending}
-          >
-            <Text style={[styles.voiceIcon, { fontSize: normalizeFontSize(20) }]}>
-              {isRecording ? '⏹' : '🎤'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+            placeholder={language === 'fr' ? 'Tapez votre message...' : 'Type your message...'}
+            placeholderTextColor="#999"
+            value={newMessage}
+            onChangeText={setNewMessage}
+            multiline
+            maxLength={500}
+            editable={!isRecording}
+          />
+
+          {/* Voice or Send button */}
+          {newMessage.trim() ? (
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                {
+                  width: spacing(6),
+                  height: spacing(6),
+                  borderRadius: spacing(3),
+                },
+                !newMessage.trim() && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={!newMessage.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={[styles.sendIcon, { fontSize: normalizeFontSize(20) }]}>➤</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                {
+                  width: spacing(6),
+                  height: spacing(6),
+                  borderRadius: spacing(3),
+                },
+                isRecording && styles.voiceButtonRecording,
+              ]}
+              onPressIn={startRecording}
+              onPressOut={stopRecording}
+              disabled={sending}
+            >
+              <Text style={[styles.voiceIcon, { fontSize: normalizeFontSize(20) }]}>
+                {isRecording ? '⏹' : '🎤'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Create Offer Modal */}
       <CreateOfferModal
@@ -1004,5 +1031,16 @@ const styles = StyleSheet.create({
   menuButtonIcon: {
     color: '#666',
     fontWeight: 'bold',
+  },
+  blockedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    justifyContent: 'center',
+  },
+  blockedText: {
+    color: '#F44336',
+    flex: 1,
+    textAlign: 'center',
   },
 });

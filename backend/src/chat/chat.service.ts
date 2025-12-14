@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SupabaseService } from '../supabase/supabase.service';
+import { ReportsService } from '../reports/reports.service';
 import { SendMessageDto } from './chat.controller';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class ChatService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly reportsService: ReportsService,
   ) { }
 
   /**
@@ -246,6 +248,27 @@ export class ChatService {
   async sendMessage(chatId: string, sendMessageDto: SendMessageDto) {
     const supabase = this.supabaseService.getClient();
 
+    // First, get the chat to find out who we're messaging
+    const { data: chatInfo, error: chatError } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('id', chatId)
+      .single();
+
+    if (chatError || !chatInfo) {
+      throw new Error(`Chat not found: ${chatError?.message}`);
+    }
+
+    // Determine the recipient (the other user in the chat)
+    const senderId = sendMessageDto.sender_id;
+    const recipientId = chatInfo.client_id === senderId ? chatInfo.provider_id : chatInfo.client_id;
+
+    // Check if either user has blocked the other (mutual block check)
+    const isMutuallyBlocked = await this.reportsService.isMutuallyBlocked(senderId, recipientId);
+    if (isMutuallyBlocked) {
+      throw new ForbiddenException('Vous ne pouvez pas envoyer de message à cet utilisateur car un blocage existe entre vous.');
+    }
+
     // Insert the message
     const { data: message, error: messageError } = await supabase
       .from('chat_messages')
@@ -284,13 +307,9 @@ export class ChatService {
 
     // Check if this is the first message from the client in a pre-booking context
     // 1. Check if sender is client
-    const { data: chat } = await supabase
-      .from('chats')
-      .select('*')
-      .eq('id', chatId)
-      .single();
+    // Re-use chatInfo from above since we already fetched it with '*'
 
-    if (chat && chat.client_id === sendMessageDto.sender_id) {
+    if (chatInfo && chatInfo.client_id === sendMessageDto.sender_id) {
       // 2. Check if it's the first message
       const { count } = await supabase
         .from('chat_messages')
@@ -301,11 +320,11 @@ export class ChatService {
       if (count === 1) {
         // 3. Check if it's pre-booking (no booking_id or booking not confirmed)
         let isPreBooking = true;
-        if (chat.booking_id) {
+        if (chatInfo.booking_id) {
           const { data: booking } = await supabase
             .from('bookings')
             .select('status')
-            .eq('id', chat.booking_id)
+            .eq('id', chatInfo.booking_id)
             .single();
 
           if (booking && booking.status === 'CONFIRMED') {
@@ -315,10 +334,10 @@ export class ChatService {
 
         if (isPreBooking) {
           this.eventEmitter.emit('chat.started', {
-            providerId: chat.provider_id,
+            providerId: chatInfo.provider_id,
             providerType: 'therapist', // Default, logic needs to be more robust if we track provider type in chats
-            userId: chat.client_id,
-            chatId: chat.id,
+            userId: chatInfo.client_id,
+            chatId: chatInfo.id,
             isPreBooking: true,
           });
           // Note: providerType is tricky here as chats table doesn't store it directly. 
@@ -329,18 +348,18 @@ export class ChatService {
           const { data: therapist } = await supabase
             .from('therapists')
             .select('id')
-            .eq('user_id', chat.provider_id)
+            .eq('user_id', chatInfo.provider_id)
             .single();
 
           const type = therapist ? 'therapist' : 'salon';
 
           this.eventEmitter.emit('chat.started', {
-            providerId: chat.provider_id, // This is user_id, but listener expects provider UUID? 
+            providerId: chatInfo.provider_id, // This is user_id, but listener expects provider UUID? 
             // Wait, interaction-tracking expects providerId (UUID from therapists/salons table)
             // We need to fetch the correct ID.
             providerType: type,
-            userId: chat.client_id,
-            chatId: chat.id,
+            userId: chatInfo.client_id,
+            chatId: chatInfo.id,
             isPreBooking: true,
           });
         }
