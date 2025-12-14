@@ -16,6 +16,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import {
     createReport,
     blockUser,
+    unblockUser,
     reportReasons,
     ReportReason,
     ContextType
@@ -30,8 +31,10 @@ interface ReportBlockModalProps {
     targetUserName: string;
     contextType?: ContextType;
     contextId?: string;
+    isBlocked?: boolean;
     onReportSuccess?: () => void;
     onBlockSuccess?: () => void;
+    onUnblockSuccess?: () => void;
 }
 
 export const ReportBlockModal: React.FC<ReportBlockModalProps> = ({
@@ -41,8 +44,10 @@ export const ReportBlockModal: React.FC<ReportBlockModalProps> = ({
     targetUserName,
     contextType,
     contextId,
+    isBlocked = false,
     onReportSuccess,
     onBlockSuccess,
+    onUnblockSuccess,
 }) => {
     const { normalizeFontSize, spacing } = useResponsive();
     const [mode, setMode] = useState<'menu' | 'report' | 'block'>('menu');
@@ -123,6 +128,36 @@ export const ReportBlockModal: React.FC<ReportBlockModalProps> = ({
         );
     };
 
+    const handleUnblock = async () => {
+        Alert.alert(
+            'Débloquer cet utilisateur ?',
+            `Vous pourrez à nouveau échanger des messages avec ${targetUserName}.`,
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Débloquer',
+                    onPress: async () => {
+                        setLoading(true);
+                        try {
+                            await unblockUser(targetUserId);
+                            Alert.alert(
+                                'Utilisateur débloqué',
+                                `${targetUserName} a été débloqué avec succès.`,
+                                [{ text: 'OK', onPress: handleClose }]
+                            );
+                            onUnblockSuccess?.();
+                        } catch (error: any) {
+                            const message = error.response?.data?.message || 'Erreur lors du déblocage';
+                            Alert.alert('Erreur', message);
+                        } finally {
+                            setLoading(false);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const renderMenu = () => (
         <View style={styles.menuContainer}>
             <Text style={[styles.title, { fontSize: normalizeFontSize(18) }]}>
@@ -147,23 +182,48 @@ export const ReportBlockModal: React.FC<ReportBlockModalProps> = ({
                 <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[styles.menuItem, { paddingVertical: spacing(2) }]}
-                onPress={() => setMode('block')}
-            >
-                <View style={[styles.menuIcon, { backgroundColor: '#FFEBEE' }]}>
-                    <Ionicons name="ban" size={24} color="#D32F2F" />
-                </View>
-                <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuTitle, { fontSize: normalizeFontSize(16) }]}>
-                        Bloquer
-                    </Text>
-                    <Text style={[styles.menuSubtitle, { fontSize: normalizeFontSize(13) }]}>
-                        Empêcher tout contact futur
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
-            </TouchableOpacity>
+            {isBlocked ? (
+                <TouchableOpacity
+                    style={[styles.menuItem, { paddingVertical: spacing(2) }]}
+                    onPress={handleUnblock}
+                    disabled={loading}
+                >
+                    <View style={[styles.menuIcon, { backgroundColor: '#E8F5E9' }]}>
+                        {loading ? (
+                            <ActivityIndicator size="small" color="#4CAF50" />
+                        ) : (
+                            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                        )}
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                        <Text style={[styles.menuTitle, { fontSize: normalizeFontSize(16) }]}>
+                            Débloquer
+                        </Text>
+                        <Text style={[styles.menuSubtitle, { fontSize: normalizeFontSize(13) }]}>
+                            Permettre à nouveau les échanges
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#999" />
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity
+                    style={[styles.menuItem, { paddingVertical: spacing(2) }]}
+                    onPress={() => setMode('block')}
+                >
+                    <View style={[styles.menuIcon, { backgroundColor: '#FFEBEE' }]}>
+                        <Ionicons name="ban" size={24} color="#D32F2F" />
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                        <Text style={[styles.menuTitle, { fontSize: normalizeFontSize(16) }]}>
+                            Bloquer
+                        </Text>
+                        <Text style={[styles.menuSubtitle, { fontSize: normalizeFontSize(13) }]}>
+                            Empêcher tout contact futur
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#999" />
+                </TouchableOpacity>
+            )}
         </View>
     );
 

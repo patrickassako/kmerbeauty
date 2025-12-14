@@ -101,7 +101,7 @@ export const GeolocationProvider: React.FC<{ children: ReactNode }> = ({ childre
                 console.warn('Reverse geocoding failed:', geoError);
             }
 
-            await fetchNearbyProviders(coords.latitude, coords.longitude, 10000, detectedCity, detectedDistrict);
+            await fetchNearbyProviders(coords.latitude, coords.longitude, 50000, detectedCity, detectedDistrict);
         } catch (err) {
             console.error('Error getting location:', err);
             setError('Impossible de récupérer votre position');
@@ -149,7 +149,7 @@ export const GeolocationProvider: React.FC<{ children: ReactNode }> = ({ childre
         setLocation({ latitude: lat, longitude: lng });
         setCity(manualCity);
         setDistrict(manualDistrict);
-        await fetchNearbyProviders(lat, lng, 10000, manualCity, manualDistrict);
+        await fetchNearbyProviders(lat, lng, 50000, manualCity, manualDistrict);
     };
 
     return (

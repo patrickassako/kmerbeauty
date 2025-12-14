@@ -656,7 +656,7 @@ export const HomeScreen: React.FC = () => {
               <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#000" />
               </View>
-            ) : nearbyProviders.filter(p => p.type === 'salon').length === 0 ? (
+            ) : nearbyProviders.length === 0 ? (
               <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
                 <Text style={{ fontSize: normalizeFontSize(14), color: '#999' }}>
                   Aucun institut disponible
@@ -666,7 +666,7 @@ export const HomeScreen: React.FC = () => {
               <View>
                 {/* Map View */}
                 <InstituteMap
-                  salons={nearbyProviders.filter(p => p.type === 'salon').map(p => ({
+                  salons={nearbyProviders.map(p => ({
                     ...p,
                     name_fr: p.name, // Fallback mapping
                     name_en: p.name,
@@ -681,7 +681,6 @@ export const HomeScreen: React.FC = () => {
                 {/* List View (Sorted by distance) */}
                 <View style={{ gap: spacing(2) }}>
                   {nearbyProviders
-                    .filter(p => p.type === 'salon')
                     .sort((a, b) => (a.distance_meters || 0) - (b.distance_meters || 0))
                     .map((salon) => (
                       <TouchableOpacity

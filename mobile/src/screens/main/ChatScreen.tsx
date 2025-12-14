@@ -860,12 +860,18 @@ export const ChatScreen: React.FC = () => {
         targetUserName={providerName || 'Utilisateur'}
         contextType="chat"
         contextId={chat?.id}
+        isBlocked={isBlocked}
         onReportSuccess={() => {
           setShowReportModal(false);
         }}
         onBlockSuccess={() => {
           setShowReportModal(false);
+          setIsBlocked(true);
           navigation.goBack();
+        }}
+        onUnblockSuccess={() => {
+          setShowReportModal(false);
+          setIsBlocked(false);
         }}
       />
     </KeyboardAvoidingView>
