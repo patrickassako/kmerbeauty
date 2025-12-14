@@ -114,8 +114,8 @@ export const ChatScreen: React.FC = () => {
       let chatData;
 
       if (chatId) {
-        // Existing chat - just set the ID and load messages
-        chatData = { id: chatId } as Chat;
+        // Existing chat - fetch full details to get client_id and provider_id
+        chatData = await chatApi.getChatById(chatId);
       } else if (bookingId) {
         chatData = await chatApi.getOrCreateChatByBooking(bookingId);
         // Load booking details to show service banner
@@ -824,7 +824,12 @@ export const ChatScreen: React.FC = () => {
       <ReportBlockModal
         visible={showReportModal}
         onClose={() => setShowReportModal(false)}
-        targetUserId={chat?.client_id === user?.id ? (chat?.provider_id || providerId) : (chat?.client_id || user?.id || '')}
+        targetUserId={
+          // Always target the OTHER user in the chat
+          user?.id === chat?.client_id
+            ? (chat?.provider_id || '') // I'm client, target provider
+            : (chat?.client_id || '')   // I'm provider, target client
+        }
         targetUserName={providerName || 'Utilisateur'}
         contextType="chat"
         contextId={chat?.id}

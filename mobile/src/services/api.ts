@@ -363,6 +363,14 @@ export const chatApi = {
   },
 
   /**
+   * Get chat details by ID
+   */
+  getChatById: async (chatId: string): Promise<Chat> => {
+    const response = await api.get(`/chat/details/${chatId}`);
+    return response.data;
+  },
+
+  /**
    * Get messages for a chat
    */
   getMessages: async (chatId: string, limit?: number, offset?: number): Promise<ChatMessage[]> => {
