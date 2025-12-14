@@ -773,65 +773,6 @@ export const HomeScreen: React.FC = () => {
                   onSalonPress={(provider) => handleSalonPress(provider as any)}
                   onLocationSelect={(lat, lon, city, district) => setManualLocation(lat, lon, city, district)}
                 />
-
-                {/* List View (Sorted by distance) */}
-                <View style={{ gap: spacing(2) }}>
-                  {nearbyProviders
-                    .filter(p => p.type === 'therapist')
-                    .sort((a, b) => (a.distance_meters || 0) - (b.distance_meters || 0))
-                    .map((provider) => (
-                      <TouchableOpacity
-                        key={provider.id}
-                        style={[styles.instituteCard, {
-                          borderRadius: spacing(2),
-                          padding: spacing(1.5),
-                          flexDirection: 'row',
-                          alignItems: 'center'
-                        }]}
-                        onPress={() => handleSalonPress(provider as any)}
-                      >
-                        <View style={[styles.instituteImage, { width: spacing(10), height: spacing(10), borderRadius: spacing(1.5) }]}>
-                          {provider.image ? (
-                            <Image
-                              source={{ uri: provider.image }}
-                              style={styles.instituteImageActual}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <View style={[styles.instituteImagePlaceholder, { backgroundColor: '#E3F2FD' }]}>
-                              <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12), color: '#1565C0' }]}>
-                                {provider.name.charAt(0)}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <View style={{ flex: 1, marginLeft: spacing(1.5) }}>
-                          <Text style={[styles.instituteName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                            {provider.name}
-                          </Text>
-                          <Text style={[styles.instituteLocation, { fontSize: normalizeFontSize(12), marginBottom: spacing(0.5), color: '#666' }]} numberOfLines={1}>
-                            📍 {provider.city}
-                          </Text>
-                          <View style={styles.instituteFooter}>
-                            <Text style={[styles.instituteRating, { fontSize: normalizeFontSize(12) }]}>
-                              ⭐ {provider.rating} ({provider.review_count})
-                            </Text>
-                            <Text style={[styles.instituteServices, { fontSize: normalizeFontSize(12), color: '#2196F3' }]}>
-                              Voir profil
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={{ alignItems: 'flex-end', marginLeft: spacing(1) }}>
-                          <Text style={{ fontSize: normalizeFontSize(12), color: '#666', fontWeight: '600' }}>
-                            {provider.distance_meters ? `${(provider.distance_meters / 1000).toFixed(1)} km` : ''}
-                          </Text>
-                          <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginTop: spacing(1) }} />
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                </View>
               </View>
             )}
           </View>
