@@ -67,11 +67,15 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {user?.firstName?.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>
+                  {user?.firstName?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <TouchableOpacity
               style={styles.editAvatarButton}
               onPress={() => navigation.navigate('EditProfile')}

@@ -17,6 +17,7 @@ interface User {
   city?: string;
   region?: string;
   therapist?: any; // To store therapist details if they exist
+  avatar?: string;
 }
 
 interface AuthContextType {

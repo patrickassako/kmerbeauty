@@ -16,7 +16,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../design-system/colors';
 import { space as spacing } from '../../design-system/spacing';
@@ -40,6 +42,8 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [region, setRegion] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [pickedImage, setPickedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -49,6 +53,7 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       setPhone(user.phone || '');
       setCity(user.city || '');
       setRegion(user.region || '');
+      setAvatar(user.avatar || '');
     }
   }, [user]);
 
@@ -62,26 +67,53 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
     setLoading(true);
 
     try {
+      let avatarUrl = avatar;
+
+      // 1. Upload new image if picked
+      if (pickedImage) {
+        try {
+          const response = await fetch(pickedImage);
+          const blob = await response.blob();
+          const fileExt = pickedImage.split('.').pop()?.toLowerCase() || 'jpg';
+          const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
+          const filePath = `${fileName}`; // Just filename if bucket is public/private root
+
+          // Upload to 'avatars' bucket
+          const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, blob, {
+              contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+              upsert: true
+            });
+
+          if (uploadError) throw uploadError;
+
+          // Get Public URL
+          const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+          avatarUrl = data.publicUrl;
+        } catch (uploadErr) {
+          console.error('Error uploading image:', uploadErr);
+          Alert.alert('Erreur', 'Impossible de télécharger l\'image. Le profil sera mis à jour sans la photo.');
+          // Continue updating other fields
+        }
+      }
+
+      // 2. Update User Profile
       const { error } = await supabase
         .from('users')
         .update({
           first_name: firstName,
           last_name: lastName,
-          // email: email, // Email update requires auth verification usually
           phone: phone,
           city: city,
           region: region,
+          avatar: avatarUrl
         })
         .eq('id', user?.id);
 
       if (error) throw error;
 
-      // await refreshUser(); // Refresh context - assuming this might not exist yet, so I'll comment it out if it fails, but I saw it in previous file content? No, I didn't see refreshUser in AuthContext.tsx.
-      // Let's check AuthContext.tsx again. It has setUser but not refreshUser exposed.
-      // I should probably just update the local user state if possible or trigger a reload.
-      // For now, I'll just rely on the fact that AuthContext might re-fetch or I can manually update it if I had access.
-      // Actually, I can't easily update AuthContext user from here without a method.
-      // I'll skip refreshUser for now and just go back. The ProfileScreen might not update immediately unless it re-renders.
+      await refreshUser();
 
       Alert.alert('Succès', 'Votre profil a été mis à jour', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -105,8 +137,24 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
     }
   };
 
-  const handleChangePhoto = () => {
-    Alert.alert('Changer la photo', 'Fonctionnalité bientôt disponible');
+  const handleChangePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', 'Nous avons besoin de la permission d\'accès à la galerie pour changer votre photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setPickedImage(result.assets[0].uri);
+    }
   };
 
   return (
@@ -146,9 +194,16 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
           <View style={styles.photoSection}>
             <View style={styles.photoContainer}>
               <View style={styles.photoPlaceholder}>
-                <Text style={styles.photoInitial}>
-                  {firstName?.charAt(0).toUpperCase()}
-                </Text>
+                {(pickedImage || avatar) ? (
+                  <Image
+                    source={{ uri: pickedImage || avatar }}
+                    style={{ width: 100, height: 100, borderRadius: 50 }}
+                  />
+                ) : (
+                  <Text style={styles.photoInitial}>
+                    {firstName?.charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
               <TouchableOpacity style={styles.photoEditButton} onPress={handleChangePhoto}>
                 <Ionicons name="camera" size={20} color={colors.black} />
