@@ -6,6 +6,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ...config,
         name: 'KMR-BEAUTY',
         slug: 'kmr-beauty',
+        scheme: 'kmerbeauty',
         version: '1.0.0',
         orientation: 'portrait',
         icon: './assets/icon.png',
@@ -37,6 +38,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                     category: ['BROWSABLE', 'DEFAULT'],
                 },
             ],
+            config: {
+                googleMaps: {
+                    apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDLrqBuWSVKkGquPQfodmErX8ci1vI-fgA"
+                }
+            }
         },
         web: {
             favicon: './assets/favicon.png',
@@ -52,9 +58,26 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 },
             ],
             [
+                "expo-image-picker",
+                {
+                    "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to update your profile or upload service images.",
+                    "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take photos for your profile or services."
+                }
+            ],
+            [
                 'expo-notifications',
                 {
                     color: '#ffffff',
+                },
+            ],
+            [
+                'expo-build-properties',
+                {
+                    android: {
+                        kotlinVersion: '1.9.25',
+                        enableProguardInReleaseBuilds: false,
+                        enableShrinkResourcesInReleaseBuilds: false,
+                    },
                 },
             ],
         ],

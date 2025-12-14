@@ -16,7 +16,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,6 +26,7 @@ import { MessageBubble } from '../../components/chat/MessageBubble';
 import { OfferMessage } from '../../components/chat/OfferMessage';
 import { CreateOfferModal } from '../../components/chat/CreateOfferModal';
 import { supabase } from '../../lib/supabase';
+import { ReportBlockModal } from '../../components/modals/ReportBlockModal';
 
 type ChatRouteProp = RouteProp<HomeStackParamList, 'ConversationDetails'>;
 type ChatNavigationProp = NativeStackNavigationProp<HomeStackParamList & {
@@ -60,6 +61,9 @@ export const ChatScreen: React.FC = () => {
 
   // Offer modal state
   const [showOfferModal, setShowOfferModal] = useState(false);
+
+  // Report/Block modal state
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Check if user is provider
   const isProvider = user?.role === 'provider';
@@ -630,6 +634,14 @@ export const ChatScreen: React.FC = () => {
             <Text style={[styles.offerButtonIcon, { fontSize: normalizeFontSize(20) }]}>💼</Text>
           </TouchableOpacity>
         )}
+
+        {/* Menu button (report/block) */}
+        <TouchableOpacity
+          style={[styles.menuButton, { width: spacing(5), height: spacing(5), borderRadius: spacing(2.5), marginLeft: spacing(1) }]}
+          onPress={() => setShowReportModal(true)}
+        >
+          <Text style={[styles.menuButtonIcon, { fontSize: normalizeFontSize(20) }]}>⋮</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Booking Service Banner */}
@@ -807,6 +819,23 @@ export const ChatScreen: React.FC = () => {
         onClose={() => setShowOfferModal(false)}
         onSubmit={handleCreateOffer}
       />
+
+      {/* Report/Block Modal */}
+      <ReportBlockModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetUserId={chat?.client_id === user?.id ? (chat?.provider_id || providerId) : (chat?.client_id || user?.id || '')}
+        targetUserName={providerName || 'Utilisateur'}
+        contextType="chat"
+        contextId={chat?.id}
+        onReportSuccess={() => {
+          setShowReportModal(false);
+        }}
+        onBlockSuccess={() => {
+          setShowReportModal(false);
+          navigation.goBack();
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -961,5 +990,14 @@ const styles = StyleSheet.create({
   },
   bookingBannerSubtitle: {
     color: '#1976D2',
+  },
+  menuButton: {
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuButtonIcon: {
+    color: '#666',
+    fontWeight: 'bold',
   },
 });

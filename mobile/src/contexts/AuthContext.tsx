@@ -203,56 +203,114 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (data: SignInData) => {
     try {
-      const response = await api.post('/auth/signin', {
-        emailOrPhone: data.emailOrPhone,
-        password: data.password,
-      });
+      const emailOrPhone = data.emailOrPhone;
+      const isEmail = emailOrPhone.includes('@');
 
-      const { user: userData, accessToken, refreshToken } = response.data;
+      let authResult;
 
-      await SecureStore.setItemAsync('accessToken', accessToken);
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
-      await SecureStore.setItemAsync('user', JSON.stringify(userData));
+      if (isEmail) {
+        // Email login via Supabase Auth directly
+        console.log('🔐 Signing in with email via Supabase Auth...');
+        const { error, data: authData } = await supabase.auth.signInWithPassword({
+          email: emailOrPhone,
+          password: data.password,
+        });
+        if (error) throw error;
+        authResult = authData;
+      } else {
+        // Phone login via Supabase Auth directly (like web)
+        let formattedPhone = emailOrPhone.trim().replace(/\D/g, ''); // Remove non-digits
 
-      await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+        // Basic formatting for Cameroon if it starts with 6 and is 9 digits
+        if (/^6\d{8}$/.test(formattedPhone)) {
+          formattedPhone = `237${formattedPhone}`;
+        }
+
+        // Add + if missing
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = `+${formattedPhone}`;
+        }
+
+        console.log('🔐 Signing in with phone via Supabase Auth:', formattedPhone);
+
+        const { error, data: authData } = await supabase.auth.signInWithPassword({
+          phone: formattedPhone,
+          password: data.password,
+        });
+        if (error) throw error;
+        authResult = authData;
+      }
+
+      if (!authResult.session) {
+        throw new Error('Authentication failed - no session returned');
+      }
+
+      const { session } = authResult;
+
+      // Store tokens
+      await SecureStore.setItemAsync('accessToken', session.access_token);
+      await SecureStore.setItemAsync('refreshToken', session.refresh_token);
+
+      // Fetch user data from our users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError || !userData) {
+        console.error('Failed to fetch user data:', userError);
+        throw new Error('Compte introuvable dans la base de données');
+      }
+
+      // Transform user data to expected format
+      const formattedUser = {
+        id: userData.id,
+        email: userData.email,
+        phone: userData.phone,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        role: userData.role?.toLowerCase(),
+        language: userData.language,
+        avatar: userData.avatar,
+      };
+
+      await SecureStore.setItemAsync('user', JSON.stringify(formattedUser));
 
       // Fetch therapist details
       const { data: therapist } = await supabase
         .from('therapists')
         .select('*')
-        .eq('user_id', userData.id)
+        .eq('user_id', formattedUser.id)
         .single();
 
       if (therapist) {
-        userData.therapist = therapist;
+        (formattedUser as any).therapist = therapist;
         // Sync role if active
-        if (therapist.is_active && userData.role !== 'provider') {
-          userData.role = 'provider';
-          supabase.from('users').update({ role: 'PROVIDER' }).eq('id', userData.id);
+        if (therapist.is_active && formattedUser.role !== 'provider') {
+          formattedUser.role = 'provider';
+          supabase.from('users').update({ role: 'PROVIDER' }).eq('id', formattedUser.id);
         }
       }
 
-      setUser(userData);
+      setUser(formattedUser);
 
-      if (userData.role === 'provider') {
+      if (formattedUser.role === 'provider') {
         setUserMode('provider');
       } else {
         setUserMode('client');
       }
+
+      console.log('✅ Sign in successful via Supabase Auth');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      // ... existing error handling ...
-      if (error.message === 'Network Error' || !error.response) {
-        throw new Error('Impossible de se connecter au serveur.');
-      }
-      const errorMessage = error.response?.data?.message || 'Sign in failed';
-      if (errorMessage.includes('credentials') || errorMessage.includes('password')) {
+      const errorMessage = error.message || 'Sign in failed';
+      if (errorMessage.includes('Invalid login credentials')) {
         throw new Error('Email/téléphone ou mot de passe incorrect');
-      } else if (errorMessage.includes('not found')) {
-        throw new Error('Compte introuvable');
+      } else if (errorMessage.includes('Email not confirmed')) {
+        throw new Error('Email non confirmé. Vérifiez votre boîte mail.');
+      } else if (errorMessage.includes('Phone not confirmed')) {
+        throw new Error('Numéro non vérifié.');
       } else {
         throw new Error(errorMessage);
       }

@@ -13,12 +13,16 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://kmerbeauty-production.up.railway.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://kmerbeauty-production.up.railway.app/api/v1",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yogfmkyfpfucbozlvwja.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvZ2Zta3lmcGZ1Y2Jvemx2d2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4OTg2NDIsImV4cCI6MjA3ODQ3NDY0Mn0.rPooBNTnmhRNN4OFQiBEkVxvOQ6vp1CvwXeVYwctZcY"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://kmerbeauty-production.up.railway.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://kmerbeauty-production.up.railway.app/api/v1",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://yogfmkyfpfucbozlvwja.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvZ2Zta3lmcGZ1Y2Jvemx2d2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4OTg2NDIsImV4cCI6MjA3ODQ3NDY0Mn0.rPooBNTnmhRNN4OFQiBEkVxvOQ6vp1CvwXeVYwctZcY"
       }
     }
   },
