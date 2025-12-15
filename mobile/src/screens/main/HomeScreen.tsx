@@ -27,7 +27,7 @@ import { HomeStackParamList, PackageWithProviders } from '../../navigation/HomeS
 import type { Service, ServicePackage, GiftCard, Booking } from '../../types/models';
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 import { bookingsApi } from '../../services/api';
-import { InstituteMap } from '../../components/InstituteMap';
+import { SimpleMap } from '../../components/SimpleMap';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -642,8 +642,8 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Nearby Institutes - Mode Institute */}
-        {viewMode === 'institute' && (
+        {/* Nearby Institutes */}
+        {nearbyProviders.filter(p => p.type === 'salon').length > 0 && (
           <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Instituts Proches</Text>
@@ -665,17 +665,11 @@ export const HomeScreen: React.FC = () => {
             ) : (
               <View>
                 {/* Map View */}
-                <InstituteMap
-                  salons={nearbyProviders.filter(p => p.type === 'salon').map(p => ({
-                    ...p,
-                    name_fr: p.name, // Fallback mapping
-                    name_en: p.name,
-                    cover_image: p.image,
-                    logo: p.image
-                  }))}
+                <SimpleMap
+                  providers={nearbyProviders.filter(p => p.type === 'salon')}
                   userLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null}
-                  onSalonPress={(salon) => handleSalonPress(salon as any)}
-                  onLocationSelect={(lat, lon, city, district) => setManualLocation(lat, lon, city, district)}
+                  onProviderPress={(provider) => handleSalonPress(provider as any)}
+                  mapHeight={180}
                 />
 
                 {/* List View (Sorted by distance) */}
@@ -739,8 +733,8 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Nearby Independent Providers - Always visible or controlled by logic */}
-        {(viewMode === 'institute' || nearbyProviders.filter(p => p.type === 'therapist').length > 0) && (
+        {/* Nearby Independent Providers */}
+        {nearbyProviders.filter(p => p.type === 'therapist').length > 0 && (
           <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>
@@ -761,17 +755,11 @@ export const HomeScreen: React.FC = () => {
             ) : (
               <View>
                 {/* Map View */}
-                <InstituteMap
-                  salons={nearbyProviders.filter(p => p.type === 'therapist').map(p => ({
-                    ...p,
-                    name_fr: p.name,
-                    name_en: p.name,
-                    cover_image: p.image,
-                    logo: p.image
-                  }))}
+                <SimpleMap
+                  providers={nearbyProviders.filter(p => p.type === 'therapist')}
                   userLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null}
-                  onSalonPress={(provider) => handleSalonPress(provider as any)}
-                  onLocationSelect={(lat, lon, city, district) => setManualLocation(lat, lon, city, district)}
+                  onProviderPress={(provider) => handleSalonPress(provider as any)}
+                  mapHeight={180}
                 />
               </View>
             )}
