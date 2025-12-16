@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     Users,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 const menuItems = [
     {
@@ -64,7 +65,14 @@ const menuItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/login");
+        router.refresh();
+    };
 
     return (
         <div
@@ -135,6 +143,7 @@ export function Sidebar() {
                         "w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
                         isCollapsed ? "justify-center px-2" : "justify-start gap-3"
                     )}
+                    onClick={handleLogout}
                 >
                     <LogOut className="h-5 w-5" />
                     {!isCollapsed && <span>Déconnexion</span>}

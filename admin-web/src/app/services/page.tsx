@@ -194,32 +194,70 @@ export default function ServicesPage() {
     };
 
     const handleSave = async () => {
-        if (!formData.name_fr || !formData.name_en || !formData.base_price || !formData.duration) {
-            alert("Veuillez remplir les champs obligatoires (Noms, Prix, Durée)");
+        console.log("handleSave started", { formData, editingService });
+
+        // Allow price 0, but check for empty names
+        if (!formData.name_fr || !formData.name_en) {
+            console.warn("Validation failed: Missing required fields", formData);
+            alert("Veuillez remplir les champs obligatoires (Noms)");
+            return;
+        }
+
+        // Check if duration is valid (must be positive)
+        if (!formData.duration || formData.duration <= 0) {
+            console.warn("Validation failed: Invalid duration", formData.duration);
+            alert("La durée doit être supérieure à 0");
             return;
         }
 
         setActionLoading(true);
         try {
             if (editingService) {
+                console.log("Updating existing service...", editingService.id);
                 // Update
-                const { error } = await supabase
+                const { error, data } = await supabase
                     .from('services')
                     .update(formData)
-                    .eq('id', editingService.id);
-                if (error) throw error;
+                    .eq('id', editingService.id)
+                    .select();
+
+                if (error) {
+                    console.error("Supabase update error:", error);
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    console.warn("Update succeeded but no rows returned. Check RLS policies.");
+                    alert("Attention: Modification non appliquée (aucun retour). Avez-vous les droits nécessaires ?");
+                } else {
+                    console.log("Service updated successfully:", data);
+                }
             } else {
+                console.log("Creating new service...");
                 // Create
-                const { error } = await supabase
+                const { error, data } = await supabase
                     .from('services')
-                    .insert([formData]);
-                if (error) throw error;
+                    .insert([formData])
+                    .select();
+
+                if (error) {
+                    console.error("Supabase insert error:", error);
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    console.warn("Insert succeeded but no rows returned.");
+                    alert("Attention: Création non appliquée. Vérifiez vos droits.");
+                } else {
+                    console.log("Service created successfully:", data);
+                }
             }
 
             await fetchServices();
             setIsDialogOpen(false);
         } catch (error: any) {
-            alert("Erreur: " + error.message);
+            console.error("Error in handleSave:", error);
+            alert("Erreur: " + (error.message || JSON.stringify(error)));
         } finally {
             setActionLoading(false);
         }
