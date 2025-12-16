@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "fr_CM",
-    url: "https://kmerbeauty.com",
+    url: "https://kmrbeauty.com",
     siteName: "KMR-BEAUTY",
     title: "KMR-BEAUTY | La beauté à votre porte",
     description: "Réservez vos soins de beauté à domicile ou en salon. Coiffure, maquillage, manucure, massage et plus encore au Cameroun.",
@@ -67,12 +68,8 @@ export const metadata: Metadata = {
     apple: '/icon.png',
   },
   manifest: '/manifest.json',
-  metadataBase: new URL('https://kmerbeauty.com'),
+  metadataBase: new URL('https://kmrbeauty.com'),
 };
-
-import { LanguageProvider } from "@/context/LanguageContext";
-
-// ... existing imports
 
 export default function RootLayout({
   children,
