@@ -80,15 +80,17 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
             // If no explicit redirect, determine destination based on role
             if (!redirectTo && authData) {
                 try {
-                    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
                     const userId = authData.user?.id || authData.session?.user?.id;
-                    const textToken = authData.session?.access_token;
 
-                    if (userId && textToken) {
-                        const res = await fetch(`${API_URL}/contractors/profile/user/${userId}`, {
-                            headers: { 'Authorization': `Bearer ${textToken}` }
-                        });
-                        if (res.ok) {
+                    if (userId) {
+                        // Check role directly from users table
+                        const { data: userData } = await supabase
+                            .from('users')
+                            .select('role')
+                            .eq('id', userId)
+                            .single();
+
+                        if (userData && (userData.role === 'PROVIDER' || userData.role === 'contractor')) {
                             targetUrl = '/pro/dashboard';
                         } else {
                             targetUrl = '/profile'; // Default for clients

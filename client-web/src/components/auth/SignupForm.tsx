@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Phone, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Phone, Lock, User, ArrowRight, Loader2, Briefcase, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface SignupFormProps {
@@ -16,6 +16,7 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToLogin }: SignupFormProps) {
+    const [accountType, setAccountType] = useState<'CLIENT' | 'PROVIDER'>('CLIENT');
     const [mode, setMode] = useState<'email' | 'phone'>('email');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -60,6 +61,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
         try {
             const metadata = {
                 full_name: name,
+                account_type: accountType,
             };
 
             if (mode === 'email') {
@@ -93,7 +95,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                         phone: formattedPhone || null, // Add phone if provided
                         first_name: name.split(' ')[0] || 'User',
                         last_name: name.split(' ').slice(1).join(' ') || '',
-                        role: 'CLIENT'
+                        role: accountType
                     };
 
                     let { error: profileError } = await supabase
@@ -151,13 +153,13 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
 
             if (onSuccess) onSuccess();
 
-            // For email, we might need verification, so show a message instead of redirecting immediately if session is null
-            // But usually for UX we redirect to a "check your email" or home page
-            if (redirectTo) {
-                router.push(redirectTo);
-            } else {
-                router.push('/');
+            // Redirect based on account type
+            let targetUrl = redirectTo || '/';
+            if (!redirectTo) {
+                // PROVIDER goes to register to complete pro profile first (triggers initial credits)
+                targetUrl = accountType === 'PROVIDER' ? '/pro/register' : '/profile';
             }
+            router.push(targetUrl);
 
             router.refresh();
 
@@ -192,7 +194,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                         email: `${phone.replace(/\+/g, '')}@kmrbeauty.temp`, // Placeholder email (can be removed if column is nullable)
                         first_name: name.split(' ')[0] || 'User',
                         last_name: name.split(' ').slice(1).join(' ') || '',
-                        role: 'CLIENT' // Default role
+                        role: accountType
                     }, { onConflict: 'id' });
 
                 if (profileError) {
@@ -203,11 +205,13 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
 
             if (onSuccess) onSuccess();
 
-            if (redirectTo) {
-                router.push(redirectTo);
-            } else {
-                router.push('/');
+            // Redirect based on account type
+            let targetUrl = redirectTo || '/';
+            if (!redirectTo) {
+                // PROVIDER goes to register to complete pro profile first (triggers initial credits)
+                targetUrl = accountType === 'PROVIDER' ? '/pro/register' : '/profile';
             }
+            router.push(targetUrl);
 
             router.refresh();
         } catch (err: any) {
@@ -313,9 +317,38 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
 
     return (
         <div className={`w-full ${isModal ? 'p-6' : 'max-w-md bg-white border border-gray-200 rounded-3xl p-8 shadow-sm'}`}>
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
                 <h1 className="text-3xl font-bold mb-2 text-gray-900">Créer un compte</h1>
                 <p className="text-gray-500">Rejoignez-nous dès aujourd'hui</p>
+            </div>
+
+            {/* Account Type Toggle */}
+            <div className="mb-6">
+                <p className="text-sm font-medium text-gray-700 mb-3 text-center">Type de compte</p>
+                <div className="flex p-1 rounded-xl bg-gray-100">
+                    <button
+                        type="button"
+                        onClick={() => setAccountType('CLIENT')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${accountType === 'CLIENT'
+                            ? 'bg-[#FFB700] text-[#1E3A5F] shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                    >
+                        <UserCircle className="w-5 h-5" />
+                        Client
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setAccountType('PROVIDER')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${accountType === 'PROVIDER'
+                            ? 'bg-[#FFB700] text-[#1E3A5F] shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                    >
+                        <Briefcase className="w-5 h-5" />
+                        Prestataire
+                    </button>
+                </div>
             </div>
 
             <div className="flex p-1 rounded-xl mb-6 bg-gray-100">
