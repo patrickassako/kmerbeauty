@@ -19,7 +19,7 @@ interface BulkNotificationPayload {
     type?: string;
 }
 
-interface NotificationPreferences {
+export interface NotificationPreferences {
     bookings: boolean;
     messages: boolean;
     reminders: boolean;
