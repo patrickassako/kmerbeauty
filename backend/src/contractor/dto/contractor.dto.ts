@@ -37,6 +37,9 @@ export class CreateContractorProfileDto {
   experience?: number;
   profile_completed?: boolean;
   is_online?: boolean;
+  is_mobile?: boolean;
+  travel_radius?: number;
+  travel_fee?: number;
 }
 
 export class UpdateContractorProfileDto {

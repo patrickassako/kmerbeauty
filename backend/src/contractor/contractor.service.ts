@@ -89,7 +89,9 @@ export class ContractorService implements OnModuleInit {
       experience: dto.experience || 0,
       bio_fr: dto.professional_experience, // Map to bio_fr as well
       bio_en: dto.professional_experience, // Map to bio_en as fallback
-      is_mobile: true,
+      is_mobile: dto.is_mobile !== undefined ? dto.is_mobile : true,
+      travel_radius: dto.travel_radius || 10, // Default 10km
+      travel_fee: dto.travel_fee || 0, // Default 0
       location: dto.latitude && dto.longitude ? `POINT(${dto.longitude} ${dto.latitude})` : `POINT(0 0)`,
       latitude: dto.latitude || 0,
       longitude: dto.longitude || 0,
