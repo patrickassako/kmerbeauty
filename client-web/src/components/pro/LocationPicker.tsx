@@ -43,17 +43,38 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
         document.head.appendChild(link);
 
         return () => {
-            document.head.removeChild(link);
+            // Cleanup map on unmount
+            if (mapRef.current) {
+                mapRef.current.remove();
+                mapRef.current = null;
+                markerRef.current = null;
+                setMapReady(false);
+            }
+            try {
+                document.head.removeChild(link);
+            } catch (e) {
+                // Link might already be removed
+            }
         };
     }, []);
 
     useEffect(() => {
         if (showMap && !mapRef.current) {
-            initMap();
+            // Small delay to ensure DOM is ready
+            const timer = setTimeout(() => {
+                initMap();
+            }, 100);
+            return () => clearTimeout(timer);
         }
     }, [showMap]);
 
     const initMap = async () => {
+        // Prevent double initialization
+        if (mapRef.current) return;
+
+        const mapContainer = document.getElementById('location-picker-map');
+        if (!mapContainer) return;
+
         const L = (await import('leaflet')).default;
 
         // Fix default icon issue
