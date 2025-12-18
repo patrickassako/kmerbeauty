@@ -12,6 +12,9 @@ import BecomeProviderScreen from '../screens/main/BecomeProviderScreen';
 import { ConversationsScreen } from '../screens/main/ConversationsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
+import { SupportScreen } from '../screens/support/SupportScreen';
+import { NewTicketScreen } from '../screens/support/NewTicketScreen';
+import { SupportChatScreen } from '../screens/support/SupportChatScreen';
 import {
   MarketplaceBrowseScreen,
   ProductDetailsScreen,
@@ -63,6 +66,9 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     <ProfileStack.Screen name="BecomeProvider" component={BecomeProviderScreen} />
     <ProfileStack.Screen name="Settings" component={ProfileScreen} />
+    <ProfileStack.Screen name="Support" component={SupportScreen} />
+    <ProfileStack.Screen name="NewTicket" component={NewTicketScreen} />
+    <ProfileStack.Screen name="SupportChat" component={SupportChatScreen} />
   </ProfileStack.Navigator>
 );
 

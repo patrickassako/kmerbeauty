@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   Image,
   StatusBar,
   Platform,
+  Modal,
+  Alert,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,12 +22,15 @@ import { space as spacing } from '../../design-system/spacing';
 import { radius } from '../../design-system/radius';
 import { typography } from '../../design-system/typography';
 import { shadows } from '../../design-system/shadows';
+import { BetaTesterModal } from '../../components/modals/BetaTesterModal';
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, signOut, switchRole, userMode } = useAuth();
   const { normalizeFontSize } = useResponsive();
-  const { language } = useI18n();
+  const { language, toggleLanguage } = useI18n();
+  const [showBetaModal, setShowBetaModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -117,7 +123,7 @@ export const ProfileScreen: React.FC = () => {
             <MenuOption
               icon="location-outline"
               label={language === 'fr' ? 'Mes Adresses' : 'My Addresses'}
-              onPress={() => { }}
+              onPress={() => navigation.navigate('AddressManagement')}
             />
           </View>
         </View>
@@ -131,19 +137,25 @@ export const ProfileScreen: React.FC = () => {
             <MenuOption
               icon="notifications-outline"
               label={language === 'fr' ? 'Notifications' : 'Notifications'}
-              onPress={() => { }}
+              onPress={() => navigation.navigate('Notifications')}
             />
             <View style={styles.divider} />
             <MenuOption
               icon="language-outline"
-              label={language === 'fr' ? 'Langue' : 'Language'}
-              onPress={() => { }}
+              label={`${language === 'fr' ? 'Langue' : 'Language'} (${language.toUpperCase()})`}
+              onPress={() => setShowLanguageModal(true)}
             />
             <View style={styles.divider} />
             <MenuOption
               icon="help-circle-outline"
               label={language === 'fr' ? 'Aide & Support' : 'Help & Support'}
-              onPress={() => { }}
+              onPress={() => navigation.navigate('Support')}
+            />
+            <View style={styles.divider} />
+            <MenuOption
+              icon="document-text-outline"
+              label={language === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy'}
+              onPress={() => WebBrowser.openBrowserAsync('https://sites.google.com/view/kmerbeauty-policy/accueil')}
             />
           </View>
         </View>
@@ -188,6 +200,81 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.versionText}>Version 1.0.0</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Floating Beta Tester Button */}
+      <TouchableOpacity
+        style={styles.betaButton}
+        onPress={() => setShowBetaModal(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.betaButtonText}>🧪</Text>
+      </TouchableOpacity>
+
+      {/* Beta Tester Modal */}
+      <BetaTesterModal
+        visible={showBetaModal}
+        onClose={() => setShowBetaModal(false)}
+      />
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={styles.languageModalContainer}>
+            <Text style={styles.languageModalTitle}>
+              {language === 'fr' ? 'Choisir la langue' : 'Choose Language'}
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.languageOption,
+                language === 'fr' && styles.languageOptionActive
+              ]}
+              onPress={() => {
+                if (language !== 'fr') toggleLanguage();
+                setShowLanguageModal(false);
+              }}
+            >
+              <Text style={styles.languageFlag}>🇫🇷</Text>
+              <Text style={[
+                styles.languageText,
+                language === 'fr' && styles.languageTextActive
+              ]}>Français</Text>
+              {language === 'fr' && (
+                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.languageOption,
+                language === 'en' && styles.languageOptionActive
+              ]}
+              onPress={() => {
+                if (language !== 'en') toggleLanguage();
+                setShowLanguageModal(false);
+              }}
+            >
+              <Text style={styles.languageFlag}>🇬🇧</Text>
+              <Text style={[
+                styles.languageText,
+                language === 'en' && styles.languageTextActive
+              ]}>English</Text>
+              {language === 'en' && (
+                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -328,5 +415,68 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
     marginTop: spacing.sm,
+  },
+  betaButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#6B4EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.md,
+  },
+  betaButtonText: {
+    fontSize: 24,
+  },
+  // Language Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  languageModalContainer: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    width: '80%',
+    maxWidth: 320,
+    ...shadows.lg,
+  },
+  languageModalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.black,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.gray50,
+  },
+  languageOptionActive: {
+    backgroundColor: colors.gray100,
+    borderWidth: 2,
+    borderColor: colors.success,
+  },
+  languageFlag: {
+    fontSize: 28,
+    marginRight: spacing.md,
+  },
+  languageText: {
+    flex: 1,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.black,
+  },
+  languageTextActive: {
+    fontWeight: typography.fontWeight.bold,
   },
 });

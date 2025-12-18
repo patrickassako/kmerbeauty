@@ -127,7 +127,19 @@ export const AppNavigator: React.FC = () => {
                 try {
                   const result = await signUp(data);
                   if (result?.verificationRequired) {
-                    props.navigation.navigate('Verification', { phone: result.phone });
+                    // Only navigate to verification for phone signups
+                    // Email verification is not implemented yet
+                    if (result.authMethod === 'phone') {
+                      props.navigation.navigate('Verification', {
+                        phone: result.phone,
+                        authMethod: 'phone'
+                      });
+                    } else {
+                      // Email signup - show message that account was created
+                      // User will need to login manually
+                      alert('Compte créé ! Vous pouvez maintenant vous connecter avec votre email.');
+                      props.navigation.navigate('SignIn');
+                    }
                   }
                   // Navigation will happen automatically via auth state change if success (no verification needed)
                 } catch (error: any) {

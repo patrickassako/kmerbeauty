@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 15000, // 15 second default timeout - prevents infinite hangs
   headers: {
     'Content-Type': 'application/json',
   },

@@ -377,7 +377,7 @@ export const BookingScreen: React.FC = () => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingHorizontal: spacing(2.5), paddingBottom: spacing(10) }}
+        contentContainerStyle={{ paddingHorizontal: spacing(2.5), paddingBottom: spacing(12), flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Service Info */}

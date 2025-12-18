@@ -42,7 +42,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 googleMaps: {
                     apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDLrqBuWSVKkGquPQfodmErX8ci1vI-fgA"
                 }
-            }
+            },
+            googleServicesFile: "./google-services.json",
         },
         web: {
             favicon: './assets/favicon.png',

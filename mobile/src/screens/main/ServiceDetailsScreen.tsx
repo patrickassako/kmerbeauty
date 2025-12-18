@@ -117,8 +117,8 @@ export const ServiceDetailsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header Image Gallery */}
-      <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
+      {/* Header Image Gallery - Responsive height */}
+      <View style={[styles.headerImageContainer, { height: isTablet ? spacing(50) : spacing(28) }]}>
         {service.images && service.images.length > 0 && service.images[0] ? (
           <Image
             source={{ uri: service.images[0] }}
@@ -148,12 +148,13 @@ export const ServiceDetailsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      {/* Content - Full scroll */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={{
-          paddingBottom: spacing(12),
+          paddingBottom: spacing(14),
           paddingHorizontal: isTablet ? containerPaddingHorizontal : 0,
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -321,13 +322,14 @@ export const ServiceDetailsScreen: React.FC = () => {
                     );
                   })}
 
-                  {totalProviders > 5 && (
+                  {/* Always show button to access filter page */}
+                  {totalProviders > 0 && (
                     <TouchableOpacity
-                      style={[styles.viewAllProvidersButton, { padding: spacing(2), borderRadius: spacing(2), borderWidth: 1 }]}
+                      style={[styles.viewAllProvidersButton, { padding: spacing(2), borderRadius: spacing(2), borderWidth: 1, marginTop: spacing(1) }]}
                       onPress={handleViewProviders}
                     >
                       <Text style={[styles.viewAllProvidersText, { fontSize: normalizeFontSize(14) }]}>
-                        Voir tous les {totalProviders} prestataires →
+                        🎛️ Voir tous les prestataires avec filtres →
                       </Text>
                     </TouchableOpacity>
                   )}

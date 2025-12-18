@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider } from './src/i18n/I18nContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { GeolocationProvider } from './src/contexts/GeolocationContext';
+import { WalkthroughProvider } from './src/contexts/WalkthroughContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 import { ToastProvider } from './src/contexts/ToastContext';
@@ -29,8 +30,10 @@ export default function App() {
             <ToastProvider>
               <AuthProvider>
                 <GeolocationProvider>
-                  <StatusBar barStyle="light-content" />
-                  <AppNavigator />
+                  <WalkthroughProvider>
+                    <StatusBar barStyle="light-content" />
+                    <AppNavigator />
+                  </WalkthroughProvider>
                 </GeolocationProvider>
               </AuthProvider>
             </ToastProvider>
@@ -40,3 +43,4 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+

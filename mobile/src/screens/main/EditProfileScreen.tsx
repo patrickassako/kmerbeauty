@@ -1,8 +1,3 @@
-/**
- * EditProfileScreen
- * Écran pour modifier le profil utilisateur
- */
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -19,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../design-system/colors';
 import { space as spacing } from '../../design-system/spacing';
@@ -72,24 +68,35 @@ const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation }) => 
       // 1. Upload new image if picked
       if (pickedImage) {
         try {
-          const response = await fetch(pickedImage);
-          const blob = await response.blob();
+          // Read file as base64
+          const fileData = await FileSystem.readAsStringAsync(pickedImage, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // Get file extension and content type
           const fileExt = pickedImage.split('.').pop()?.toLowerCase() || 'jpg';
+          const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
           const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
-          const filePath = `${fileName}`; // Just filename if bucket is public/private root
+
+          // Convert base64 to Uint8Array
+          const binaryString = atob(fileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
 
           // Upload to 'avatars' bucket
           const { error: uploadError } = await supabase.storage
             .from('avatars')
-            .upload(filePath, blob, {
-              contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+            .upload(fileName, bytes, {
+              contentType,
               upsert: true
             });
 
           if (uploadError) throw uploadError;
 
           // Get Public URL
-          const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+          const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
           avatarUrl = data.publicUrl;
         } catch (uploadErr) {
           console.error('Error uploading image:', uploadErr);

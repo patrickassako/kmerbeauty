@@ -21,14 +21,16 @@ import { useAuth } from '../contexts/AuthContext';
 interface VerificationScreenProps {
     route: {
         params: {
-            phone: string;
+            phone?: string;
+            email?: string;
+            authMethod: 'phone' | 'email';
         };
     };
     navigation: any;
 }
 
 export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, navigation }) => {
-    const { phone } = route.params || {};
+    const { phone, email, authMethod = 'phone' } = route.params || {};
     const { t } = useI18n();
     const { normalizeFontSize, spacing } = useResponsive();
     const { showToast } = useToast();
@@ -37,6 +39,10 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, n
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(60);
+
+    // Determine which identifier to display and use
+    const identifier = authMethod === 'email' ? email : phone;
+    const identifierLabel = authMethod === 'email' ? 'l\'adresse' : 'le numéro';
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -56,7 +62,8 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, n
 
         try {
             const response = await api.post('/auth/verify', {
-                phone,
+                phone: authMethod === 'phone' ? phone : undefined,
+                email: authMethod === 'email' ? email : undefined,
                 token: code,
             });
 
@@ -97,7 +104,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, n
                     Vérification
                 </Text>
                 <Text style={[styles.subtitle, { fontSize: normalizeFontSize(14), marginBottom: spacing(4) }]}>
-                    Un code a été envoyé au {phone}
+                    Un code a été envoyé à {identifierLabel} {identifier}
                 </Text>
 
                 <Input

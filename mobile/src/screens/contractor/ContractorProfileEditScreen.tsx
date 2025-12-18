@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,17 @@ import {
   Alert,
   Switch,
   Image,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import MapView, { Marker, MapPressEvent, Region } from 'react-native-maps';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { contractorApi, categoriesApi, type ContractorProfile } from '../../services/api';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Category {
   category: string;
@@ -613,6 +617,60 @@ export const ContractorProfileEditScreen = () => {
             )}
           </View>
 
+          {/* Map Location Picker */}
+          <Text style={[styles.label, { fontSize: normalizeFontSize(14), marginTop: spacing(2), marginBottom: spacing(1) }]}>
+            📍 {profile.legal_status === 'salon' ? 'Position du Salon sur la Carte' : 'Votre Position sur la Carte'}
+          </Text>
+          <Text style={[styles.helperText, { fontSize: normalizeFontSize(12), color: '#666', marginBottom: spacing(1) }]}>
+            Appuyez sur la carte pour ajuster votre position exacte
+          </Text>
+          <View style={[styles.mapContainer, { height: 200, marginBottom: spacing(2) }]}>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: providerLocation?.latitude || 4.0511,
+                longitude: providerLocation?.longitude || 9.7679,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              region={providerLocation ? {
+                latitude: providerLocation.latitude,
+                longitude: providerLocation.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              } : undefined}
+              onPress={(e: MapPressEvent) => {
+                const { latitude, longitude } = e.nativeEvent.coordinate;
+                setProviderLocation({
+                  latitude,
+                  longitude,
+                  city: providerLocation?.city || 'Unknown',
+                  region: providerLocation?.region || 'Unknown',
+                  address: providerLocation?.address || 'Position ajustée manuellement',
+                });
+              }}
+            >
+              {providerLocation && (
+                <Marker
+                  coordinate={{
+                    latitude: providerLocation.latitude,
+                    longitude: providerLocation.longitude,
+                  }}
+                  title={profile.legal_status === 'salon' ? 'Mon Salon' : 'Ma Position'}
+                  description={providerLocation.address}
+                  pinColor="#FF6B6B"
+                />
+              )}
+            </MapView>
+          </View>
+          {providerLocation && (
+            <View style={[styles.coordinatesInfo, { padding: spacing(1.5), marginBottom: spacing(2) }]}>
+              <Text style={{ fontSize: normalizeFontSize(12), color: '#666' }}>
+                📌 Lat: {providerLocation.latitude.toFixed(6)}, Lng: {providerLocation.longitude.toFixed(6)}
+              </Text>
+            </View>
+          )}
+
           {/* Business Name */}
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(16), marginTop: spacing(3) }]}>
             {t.auth.businessName || 'Nom Commercial / Entreprise'}
@@ -1201,5 +1259,24 @@ const styles = StyleSheet.create({
   emptyText: {
     fontStyle: 'italic',
     color: '#999',
+  },
+  helperText: {
+    fontStyle: 'italic',
+  },
+  mapContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  coordinatesInfo: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
 });

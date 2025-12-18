@@ -28,10 +28,94 @@ import type { Service, ServicePackage, GiftCard, Booking } from '../../types/mod
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 import { bookingsApi } from '../../services/api';
 import { SimpleMap } from '../../components/SimpleMap';
+import { BetaTesterModal } from '../../components/modals/BetaTesterModal';
+import { CopilotStep, walkthroughable, useCopilot, CopilotProvider } from 'react-native-copilot';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Create walkthroughable components
+const WalkthroughableView = walkthroughable(View);
+const WalkthroughableTouchable = walkthroughable(TouchableOpacity);
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
-export const HomeScreen: React.FC = () => {
+
+// Step titles mapping
+const STEP_TITLES: Record<string, string> = {
+  search: '🔍 Rechercher',
+  toggle: '📂 Modes de Vue',
+  services: '💅 Services Proches',
+  map: '🗺️ Carte des Prestataires',
+  booking: '⭐ Réserver un Service',
+};
+
+// Custom tooltip for French UI
+const CustomTooltip = ({
+  isFirstStep,
+  isLastStep,
+  handleNext,
+  handlePrev,
+  handleStop,
+  currentStep,
+}: any) => {
+  const stepName = currentStep?.name || '';
+  const stepTitle = STEP_TITLES[stepName] || stepName;
+  const stepText = currentStep?.text || '';
+  const stepOrder = currentStep?.order || 1;
+
+  return (
+    <View style={tooltipStyles.container}>
+      <View style={tooltipStyles.header}>
+        <Text style={tooltipStyles.stepNumber}>Étape {stepOrder}</Text>
+      </View>
+      <Text style={tooltipStyles.title}>{stepTitle}</Text>
+      <Text style={tooltipStyles.description}>{stepText}</Text>
+      <View style={tooltipStyles.actions}>
+        <TouchableOpacity style={tooltipStyles.skipButton} onPress={handleStop}>
+          <Text style={tooltipStyles.skipText}>Passer</Text>
+        </TouchableOpacity>
+        <View style={tooltipStyles.navButtons}>
+          {!isFirstStep && (
+            <TouchableOpacity style={tooltipStyles.prevButton} onPress={handlePrev}>
+              <Text style={tooltipStyles.prevText}>← Précédent</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={tooltipStyles.nextButton} onPress={isLastStep ? handleStop : handleNext}>
+            <Text style={tooltipStyles.nextText}>{isLastStep ? 'Terminer ✓' : 'Suivant →'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const tooltipStyles = StyleSheet.create({
+  container: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  header: { marginBottom: 12 },
+  stepNumber: { fontSize: 12, color: '#FF6B6B', fontWeight: '600', textTransform: 'uppercase' },
+  title: { fontSize: 18, fontWeight: '700', color: '#2D2D2D', marginBottom: 8 },
+  description: { fontSize: 14, color: '#666', lineHeight: 20, marginBottom: 20 },
+  actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  skipButton: { paddingVertical: 8, paddingHorizontal: 12 },
+  skipText: { fontSize: 14, color: '#999' },
+  navButtons: { flexDirection: 'row', gap: 8 },
+  prevButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#E0E0E0' },
+  prevText: { fontSize: 14, color: '#666', fontWeight: '600' },
+  nextButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#FF6B6B' },
+  nextText: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
+});
+
+// Inner component that uses useCopilot
+const HomeScreenContent: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
   const { language, setLanguage, t } = useI18n();
@@ -57,6 +141,40 @@ export const HomeScreen: React.FC = () => {
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [showBetaModal, setShowBetaModal] = useState(false);
+
+  // Copilot walkthrough - DISABLED (will be replaced by video tutorials)
+  // const { start: startCopilot, copilotEvents } = useCopilot();
+  // const [walkthroughStarted, setWalkthroughStarted] = useState(false);
+
+  // Start walkthrough for first-time users - DISABLED
+  // React.useEffect(() => {
+  //   const checkAndStartWalkthrough = async () => {
+  //     try {
+  //       const hasSeenWalkthrough = await AsyncStorage.getItem('@client_walkthrough_seen');
+  //       if (!hasSeenWalkthrough && user && !walkthroughStarted && !servicesLoading) {
+  //         setWalkthroughStarted(true);
+  //         setTimeout(() => {
+  //           startCopilot();
+  //         }, 1500);
+  //       }
+  //     } catch (error) {
+  //       console.log('Error checking walkthrough status:', error);
+  //     }
+  //   };
+  //   checkAndStartWalkthrough();
+  // }, [user, servicesLoading]);
+
+  // Mark walkthrough as seen when finished - DISABLED
+  // React.useEffect(() => {
+  //   const handleStop = async () => {
+  //     await AsyncStorage.setItem('@client_walkthrough_seen', 'true');
+  //   };
+  //   copilotEvents?.on('stop', handleStop);
+  //   return () => {
+  //     copilotEvents?.off('stop', handleStop);
+  //   };
+  // }, [copilotEvents]);
 
   // Load upcoming bookings
   React.useEffect(() => {
@@ -232,21 +350,27 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
-        <TouchableOpacity
-          style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}
-          onPress={() => setSearchModalVisible(true)}
-        >
-          <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}
-          onPress={() => setSearchModalVisible(true)}
-        >
-          <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Search Bar - Step 1 */}
+      <CopilotStep
+        text="🔍 Recherchez un service de beauté en appuyant ici. Vous pouvez filtrer par nom, catégorie ou lieu."
+        order={1}
+        name="search"
+      >
+        <WalkthroughableView style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
+          <TouchableOpacity
+            style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}
+            onPress={() => setSearchModalVisible(true)}
+          >
+            <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}
+            onPress={() => setSearchModalVisible(true)}
+          >
+            <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
+          </TouchableOpacity>
+        </WalkthroughableView>
+      </CopilotStep>
 
       {/* Advanced Search Modal */}
       <AdvancedSearchModal
@@ -255,53 +379,73 @@ export const HomeScreen: React.FC = () => {
         onApply={handleSearch}
       />
 
-      {/* Toggle Home/Institute */}
-      <View style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === 'home' && styles.toggleButtonActive,
-            { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3) }
-          ]}
-          onPress={() => setViewMode('home')}
-        >
-          <Text style={[
-            styles.toggleText,
-            viewMode === 'home' && styles.toggleTextActive,
-            { fontSize: normalizeFontSize(14) }
-          ]}>
-            {t.home.home || 'Services'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === 'institute' && styles.toggleButtonActive,
-            { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3), marginLeft: spacing(1) }
-          ]}
-          onPress={() => setViewMode('institute')}
-        >
-          <Text style={[
-            styles.toggleText,
-            viewMode === 'institute' && styles.toggleTextActive,
-            { fontSize: normalizeFontSize(14) }
-          ]}>
-            {t.home.institute || 'Instituts'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Floating Beta Tester Button */}
+      <TouchableOpacity
+        style={styles.betaButton}
+        onPress={() => setShowBetaModal(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.betaButtonText}>🧪</Text>
+      </TouchableOpacity>
+
+      {/* Beta Tester Modal */}
+      <BetaTesterModal
+        visible={showBetaModal}
+        onClose={() => setShowBetaModal(false)}
+      />
 
       <ScrollView
         style={styles.content}
         contentContainerStyle={{
-          paddingBottom: spacing(10),
-          paddingHorizontal: containerPaddingHorizontal,
+          paddingBottom: spacing(12),
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Toggle Home/Institute - Step 2 */}
+        <CopilotStep
+          text="📂 Basculez entre les services à domicile et les instituts de beauté. Appuyez pour explorer !"
+          order={2}
+          name="toggle"
+        >
+          <WalkthroughableView style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                viewMode === 'home' && styles.toggleButtonActive,
+                { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3) }
+              ]}
+              onPress={() => setViewMode('home')}
+            >
+              <Text style={[
+                styles.toggleText,
+                viewMode === 'home' && styles.toggleTextActive,
+                { fontSize: normalizeFontSize(14) }
+              ]}>
+                {t.home.home || 'Services'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                viewMode === 'institute' && styles.toggleButtonActive,
+                { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3), marginLeft: spacing(1) }
+              ]}
+              onPress={() => setViewMode('institute')}
+            >
+              <Text style={[
+                styles.toggleText,
+                viewMode === 'institute' && styles.toggleTextActive,
+                { fontSize: normalizeFontSize(14) }
+              ]}>
+                {t.home.institute || 'Instituts'}
+              </Text>
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
         {/* Loading State */}
         {servicesLoading && !refreshing && (
           <View style={{ padding: spacing(4), alignItems: 'center' }}>
@@ -592,58 +736,64 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Near Me (Services) - Mode Home */}
+        {/* Near Me (Services) - Mode Home - Step 3 */}
         {viewMode === 'home' && (
-          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders || 'Services Proches'}</Text>
-              <TouchableOpacity>
-                <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
-              {nearbyServices.map((service) => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
-                  onPress={() => handleServicePress(service)}
-                >
-                  <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
-                    {service.images && service.images.length > 0 && service.images[0] ? (
-                      <Image
-                        source={{ uri: service.images[0] }}
-                        style={styles.serviceImageActual}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.serviceImagePlaceholder}>
-                        <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
-                      </View>
-                    )}
-                    <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
-                      <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
-                        {service.provider_count || 0} prestataires
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
-                    {language === 'fr' ? service.name_fr : service.name_en}
-                  </Text>
-                  <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
-                    À partir de {formatCurrency(service.base_price, countryCode)}
-                  </Text>
-                  <View style={styles.serviceFooter}>
-                    <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
-                  </View>
+          <CopilotStep
+            text="💅 Découvrez les services de beauté près de chez vous. Appuyez sur un service pour voir les détails et les prestataires disponibles."
+            order={3}
+            name="services"
+          >
+            <WalkthroughableView style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.nearbyProviders || 'Services Proches'}</Text>
+                <TouchableOpacity>
+                  <Text style={[styles.seeAll, { fontSize: normalizeFontSize(14) }]}>{t.home.seeAll}</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing(2.5) }} contentContainerStyle={{ paddingHorizontal: spacing(2.5), gap: spacing(2) }}>
+                {nearbyServices.map((service) => (
+                  <TouchableOpacity
+                    key={service.id}
+                    style={[styles.serviceCard, { width: spacing(22), borderRadius: spacing(2), padding: spacing(2) }]}
+                    onPress={() => handleServicePress(service)}
+                  >
+                    <View style={[styles.serviceImage, { height: spacing(12), borderRadius: spacing(1.5), marginBottom: spacing(1.5) }]}>
+                      {service.images && service.images.length > 0 && service.images[0] ? (
+                        <Image
+                          source={{ uri: service.images[0] }}
+                          style={styles.serviceImageActual}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.serviceImagePlaceholder}>
+                          <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service</Text>
+                        </View>
+                      )}
+                      <View style={[styles.serviceProvidersCount, { position: 'absolute', top: spacing(1), right: spacing(1), paddingHorizontal: spacing(1), paddingVertical: spacing(0.5), borderRadius: spacing(1) }]}>
+                        <Text style={[styles.serviceProvidersCountText, { fontSize: normalizeFontSize(10) }]}>
+                          {service.provider_count || 0} prestataires
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.serviceName, { fontSize: normalizeFontSize(16), marginBottom: spacing(0.5) }]} numberOfLines={1}>
+                      {language === 'fr' ? service.name_fr : service.name_en}
+                    </Text>
+                    <Text style={[styles.servicePrice, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
+                      À partir de {formatCurrency(service.base_price, countryCode)}
+                    </Text>
+                    <View style={styles.serviceFooter}>
+                      <Text style={[styles.serviceDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {service.duration}min</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </WalkthroughableView>
+          </CopilotStep>
         )}
 
         {/* Nearby Institutes */}
-        {nearbyProviders.filter(p => p.type === 'salon').length > 0 && (
+        {viewMode === 'institute' && nearbyProviders.filter(p => p.type === 'salon').length > 0 && (
           <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Instituts Proches</Text>
@@ -733,88 +883,100 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Nearby Independent Providers */}
-        {nearbyProviders.filter(p => p.type === 'therapist').length > 0 && (
-          <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>
-                {language === 'fr' ? 'Prestataires Indépendants' : 'Freelance Providers'}
-              </Text>
-            </View>
-
-            {geoLoading && !refreshing ? (
-              <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#000" />
-              </View>
-            ) : nearbyProviders.filter(p => p.type === 'therapist').length === 0 ? (
-              <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
-                <Text style={{ fontSize: normalizeFontSize(14), color: '#999' }}>
-                  {language === 'fr' ? 'Aucun prestataire indépendant disponible' : 'No freelance providers available'}
+        {/* Nearby Independent Providers - Step 4 */}
+        {viewMode === 'home' && nearbyProviders.filter(p => p.type === 'therapist').length > 0 && (
+          <CopilotStep
+            text="🗺️ Visualisez les prestataires indépendants sur la carte. Vous pouvez voir leur distance et les contacter directement."
+            order={4}
+            name="map"
+          >
+            <WalkthroughableView style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>
+                  {language === 'fr' ? 'Prestataires Indépendants' : 'Freelance Providers'}
                 </Text>
               </View>
-            ) : (
-              <View>
-                {/* Map View */}
-                <SimpleMap
-                  providers={nearbyProviders.filter(p => p.type === 'therapist')}
-                  userLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null}
-                  onProviderPress={(provider) => handleSalonPress(provider as any)}
-                  mapHeight={180}
-                />
-              </View>
-            )}
-          </View>
+
+              {geoLoading && !refreshing ? (
+                <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#000" />
+                </View>
+              ) : nearbyProviders.filter(p => p.type === 'therapist').length === 0 ? (
+                <View style={{ paddingVertical: spacing(4), alignItems: 'center' }}>
+                  <Text style={{ fontSize: normalizeFontSize(14), color: '#999' }}>
+                    {language === 'fr' ? 'Aucun prestataire indépendant disponible' : 'No freelance providers available'}
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  {/* Map View */}
+                  <SimpleMap
+                    providers={nearbyProviders.filter(p => p.type === 'therapist')}
+                    userLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null}
+                    onProviderPress={(provider) => handleSalonPress(provider as any)}
+                    mapHeight={180}
+                  />
+                </View>
+              )}
+            </WalkthroughableView>
+          </CopilotStep>
         )}
 
-        {/* Recommended Service */}
-        <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
-          <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
+        {/* Recommended Service - Step 5 */}
+        <CopilotStep
+          text="⭐ Voici notre service recommandé ! Appuyez pour voir les détails, choisir un prestataire et réserver votre créneau."
+          order={5}
+          name="booking"
+        >
+          <WalkthroughableView style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.recommended}</Text>
 
-          {nearbyServices.length > 0 && (
-            <TouchableOpacity
-              style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
-              onPress={() => handleServicePress(nearbyServices[0])}
-            >
-              <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
-                {nearbyServices[0].images && nearbyServices[0].images.length > 0 && nearbyServices[0].images[0] ? (
-                  <Image
-                    source={{ uri: nearbyServices[0].images[0] }}
-                    style={styles.recommendedImageActual}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
-                    <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
-                  </View>
-                )}
-                <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
-                  <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>
-                    📍 {nearbyServices[0].provider_count || 0} prestataires disponibles
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
-                <View style={styles.recommendedHeader}>
-                  <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
-                    {language === 'fr' ? nearbyServices[0].name_fr : nearbyServices[0].name_en}
-                  </Text>
-                  <View style={styles.recommendedPrice}>
-                    <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
-                      {formatCurrency(nearbyServices[0].base_price, countryCode)}
+            {nearbyServices.length > 0 && (
+              <TouchableOpacity
+                style={[styles.recommendedCard, { borderRadius: spacing(2) }]}
+                onPress={() => handleServicePress(nearbyServices[0])}
+              >
+                <View style={[styles.recommendedImage, { height: spacing(25), borderRadius: spacing(2) }]}>
+                  {nearbyServices[0].images && nearbyServices[0].images.length > 0 && nearbyServices[0].images[0] ? (
+                    <Image
+                      source={{ uri: nearbyServices[0].images[0] }}
+                      style={styles.recommendedImageActual}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.recommendedImagePlaceholder, { height: spacing(25) }]}>
+                      <Text style={[styles.placeholderText, { fontSize: normalizeFontSize(12) }]}>Service Image</Text>
+                    </View>
+                  )}
+                  <View style={[styles.recommendedLocation, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2) }]}>
+                    <Text style={[styles.recommendedLocationText, { fontSize: normalizeFontSize(10) }]}>
+                      📍 {nearbyServices[0].provider_count || 0} prestataires disponibles
                     </Text>
-                    <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {nearbyServices[0].duration}min</Text>
                   </View>
                 </View>
-                <View style={styles.recommendedFooter}>
-                  <Text style={[styles.recommendedDescription, { fontSize: normalizeFontSize(12) }]}>
-                    {language === 'fr' ? nearbyServices[0].description_fr : nearbyServices[0].description_en}
-                  </Text>
+
+                <View style={[styles.recommendedInfo, { padding: spacing(1.5) }]}>
+                  <View style={styles.recommendedHeader}>
+                    <Text style={[styles.recommendedTitle, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                      {language === 'fr' ? nearbyServices[0].name_fr : nearbyServices[0].name_en}
+                    </Text>
+                    <View style={styles.recommendedPrice}>
+                      <Text style={[styles.recommendedPriceText, { fontSize: normalizeFontSize(16) }]}>
+                        {formatCurrency(nearbyServices[0].base_price, countryCode)}
+                      </Text>
+                      <Text style={[styles.recommendedDuration, { fontSize: normalizeFontSize(12) }]}>⏰ {nearbyServices[0].duration}min</Text>
+                    </View>
+                  </View>
+                  <View style={styles.recommendedFooter}>
+                    <Text style={[styles.recommendedDescription, { fontSize: normalizeFontSize(12) }]}>
+                      {language === 'fr' ? nearbyServices[0].description_fr : nearbyServices[0].description_en}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+              </TouchableOpacity>
+            )}
+          </WalkthroughableView>
+        </CopilotStep>
 
         {/* Nearby Providers (Proximity-based) */}
         {nearbyProviders && nearbyProviders.length > 0 && (
@@ -979,7 +1141,8 @@ export const HomeScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* Gift Cards */}
+
+        {/* Gift Cards - HIDDEN (feature not implemented yet)
         <View style={[styles.section, { paddingHorizontal: spacing(2.5) }]}>
           <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20), marginBottom: spacing(2) }]}>{t.home.giftCards}</Text>
 
@@ -1007,6 +1170,7 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           ))}
         </View>
+        */}
       </ScrollView>
 
       {/* Location Selection Modal */}
@@ -1527,4 +1691,40 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: '600',
   },
+  betaButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#6B4EFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 10,
+    zIndex: 9999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  betaButtonText: {
+    fontSize: 24,
+  },
 });
+
+// Wrapper component with CopilotProvider
+export const HomeScreen: React.FC = () => {
+  return (
+    <CopilotProvider
+      stepNumberComponent={() => null}
+      tooltipComponent={CustomTooltip}
+      overlay="svg"
+      animated
+      backdropColor="rgba(0, 0, 0, 0.75)"
+      verticalOffset={0}
+    >
+      <HomeScreenContent />
+    </CopilotProvider>
+  );
+};

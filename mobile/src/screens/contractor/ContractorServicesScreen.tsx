@@ -255,6 +255,20 @@ export const ContractorServicesScreen: React.FC<ContractorServicesScreenProps> =
         </>
       )}
 
+      {/* Explanatory Title - Always visible */}
+      <View style={styles.titleSection}>
+        <Text style={styles.titleText}>
+          {language === 'fr'
+            ? '📋 Sélectionnez les services que vous proposez'
+            : '📋 Select the services you offer'}
+        </Text>
+        <Text style={styles.subtitleText}>
+          {language === 'fr'
+            ? 'Appuyez sur un service pour l\'ajouter ou le modifier'
+            : 'Tap a service to add or edit it'}
+        </Text>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Text style={styles.searchIcon}>🔍</Text>
@@ -560,11 +574,11 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   categoryChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
     backgroundColor: '#F9F9F9',
-    marginRight: 10,
+    marginRight: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
@@ -800,5 +814,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  titleSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFF9E6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE082',
+  },
+  titleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2D2D2D',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
   },
 });

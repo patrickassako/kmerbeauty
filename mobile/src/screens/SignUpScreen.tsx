@@ -10,6 +10,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
@@ -317,13 +318,23 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
               {/* Provider-specific fields removed - moved to profile completion */}
 
               <TouchableOpacity
-                style={[styles.termsContainer, { marginBottom: spacing(3) }]}
+                style={[styles.termsContainer, { marginBottom: spacing(1.5) }]}
                 onPress={() => setAcceptTerms(!acceptTerms)}
               >
                 <View style={[styles.checkbox, { width: spacing(2.5), height: spacing(2.5) }, acceptTerms && styles.checkboxChecked]}>
                   {acceptTerms && <Text style={[styles.checkmark, { fontSize: normalizeFontSize(12) }]}>✓</Text>}
                 </View>
                 <Text style={[styles.termsText, { fontSize: normalizeFontSize(13) }]}>{t.auth.acceptTerms}</Text>
+              </TouchableOpacity>
+
+              {/* Privacy Policy Link */}
+              <TouchableOpacity
+                style={{ marginBottom: spacing(3), alignItems: 'center' }}
+                onPress={() => WebBrowser.openBrowserAsync('https://sites.google.com/view/kmerbeauty-policy/accueil')}
+              >
+                <Text style={{ fontSize: normalizeFontSize(12), color: '#666', textDecorationLine: 'underline' }}>
+                  📋 Politique de confidentialité
+                </Text>
               </TouchableOpacity>
 
               <Button

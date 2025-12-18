@@ -193,15 +193,16 @@ export const ProviderDetailsScreen: React.FC = () => {
       <ScrollView
         style={styles.content}
         contentContainerStyle={{
-          paddingBottom: spacing(12),
+          paddingBottom: spacing(14),
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Image */}
-        <View style={[styles.headerImageContainer, { height: spacing(40) }]}>
+        {/* Header Image - Responsive */}
+        <View style={[styles.headerImageContainer, { height: isTablet ? spacing(50) : spacing(28) }]}>
           {!loading && providerData && (
             isTherapist ? (
               // Thérapeute: profile_image ou user.avatar ou première image du portfolio

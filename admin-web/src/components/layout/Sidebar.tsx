@@ -14,7 +14,8 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
-    ShoppingBag
+    ShoppingBag,
+    FlaskConical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,11 @@ const menuItems = [
         title: "Modération",
         href: "/moderation",
         icon: ShieldAlert,
+    },
+    {
+        title: "Beta Tests",
+        href: "/beta-tests",
+        icon: FlaskConical,
     },
     {
         title: "Paramètres",

@@ -22,14 +22,35 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // TODO: Strictly check if user is a contractor via API or Metadata
-            // For now, we allow access to initialize the flow
+            // Check if provider has completed their profile
+            try {
+                const { data: profile } = await supabase
+                    .from('therapists')
+                    .select('id, profile_completed, business_name')
+                    .eq('user_id', session.user.id)
+                    .single();
+
+                // If no profile or profile not completed, redirect to register
+                // But allow access to /pro/register itself
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/pro/register' && (!profile || !profile.profile_completed)) {
+                    router.replace('/pro/register');
+                    return;
+                }
+            } catch (error) {
+                // No profile found - redirect to register (unless already on register page)
+                const currentPath = window.location.pathname;
+                if (currentPath !== '/pro/register') {
+                    router.replace('/pro/register');
+                    return;
+                }
+            }
 
             setLoading(false);
         };
 
         checkAuth();
-    }, []);
+    }, [router]);
 
     if (loading) {
         return (

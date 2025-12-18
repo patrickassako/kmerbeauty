@@ -15,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useI18n } from '../../i18n/I18nContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWalkthrough } from '../../contexts/WalkthroughContext';
+import { WalkthroughOverlay } from '../../components/walkthrough/WalkthroughOverlay';
 import { contractorApi, creditsApi, type DashboardStats, type Booking } from '../../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,6 +34,23 @@ export const ContractorDashboardScreen = () => {
   const [contractorId, setContractorId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [credits, setCredits] = useState<number>(0);
+
+  // Walkthrough for first-time providers
+  const {
+    providerWalkthroughCompleted,
+    providerCurrentStep,
+    startProviderWalkthrough,
+  } = useWalkthrough();
+
+  // Start walkthrough for first-time providers
+  useEffect(() => {
+    if (!providerWalkthroughCompleted && user && !loading) {
+      const timer = setTimeout(() => {
+        startProviderWalkthrough();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [providerWalkthroughCompleted, user, loading]);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -568,6 +587,12 @@ export const ContractorDashboardScreen = () => {
           </Text>
         </View>
       </View>
+
+      {/* Provider Walkthrough Overlay */}
+      <WalkthroughOverlay
+        type="provider"
+        visible={providerCurrentStep >= 0}
+      />
     </ScrollView>
   );
 };

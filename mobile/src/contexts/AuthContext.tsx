@@ -72,37 +72,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (sessionError) {
           console.error('Failed to restore Supabase session:', sessionError);
+          // Don't throw here - we can still try to use cached data
         }
 
-        // Try to get current user from backend
-        const response = await api.get('/auth/me');
-        let userData = response.data;
+        // Try to get current user from backend (with timeout already set in api.ts)
+        let userData = null;
+        try {
+          const response = await api.get('/auth/me');
+          userData = response.data;
+        } catch (apiError: any) {
+          console.warn('API /auth/me failed, trying cached user:', apiError.message);
+
+          // Fallback to cached user data if API fails
+          const cachedUser = await SecureStore.getItemAsync('user');
+          if (cachedUser) {
+            console.log('✅ Using cached user data');
+            userData = JSON.parse(cachedUser);
+          } else {
+            // No cached user and API failed - clear tokens and show login
+            console.log('❌ No cached user, clearing tokens');
+            throw apiError;
+          }
+        }
+
+        if (!userData) {
+          throw new Error('No user data available');
+        }
 
         // Fetch therapist details if they exist (regardless of role, to check for pending applications)
-        const { data: therapist } = await supabase
-          .from('therapists')
-          .select('*')
-          .eq('user_id', userData.id)
-          .single();
+        try {
+          const { data: therapist } = await supabase
+            .from('therapists')
+            .select('*')
+            .eq('user_id', userData.id)
+            .single();
 
-        if (therapist) {
-          userData = { ...userData, therapist };
+          if (therapist) {
+            userData = { ...userData, therapist };
 
-          // If therapist is active but user role is client, upgrade to provider
-          // This fixes issues where role might be out of sync
-          if (therapist.is_active && userData.role !== 'provider') {
-            console.log('🔄 Syncing user role to PROVIDER based on active therapist record');
-            userData.role = 'provider';
+            // If therapist is active but user role is client, upgrade to provider
+            // This fixes issues where role might be out of sync
+            if (therapist.is_active && userData.role !== 'provider') {
+              console.log('🔄 Syncing user role to PROVIDER based on active therapist record');
+              userData.role = 'provider';
 
-            // Asynchronously update DB to fix inconsistency
-            supabase
-              .from('users')
-              .update({ role: 'PROVIDER' })
-              .eq('id', userData.id)
-              .then(({ error }) => {
-                if (error) console.error('Failed to sync role to DB:', error);
-              });
+              // Asynchronously update DB to fix inconsistency
+              supabase
+                .from('users')
+                .update({ role: 'PROVIDER' })
+                .eq('id', userData.id)
+                .then(({ error }) => {
+                  if (error) console.error('Failed to sync role to DB:', error);
+                });
+            }
           }
+        } catch (therapistError) {
+          // Non-critical - just means they're not a therapist
+          console.log('No therapist record found (not an error)');
         }
 
         setUser(userData);
@@ -150,7 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user: userData, accessToken, refreshToken, verificationRequired } = response.data;
 
       if (verificationRequired || (!userData && !accessToken)) {
-        return { verificationRequired: true, phone: data.phone };
+        // Determine auth method based on whether email was provided
+        const authMethod = data.email ? 'email' : 'phone';
+        return { verificationRequired: true, phone: data.phone, email: data.email, authMethod };
       }
 
       await SecureStore.setItemAsync('accessToken', accessToken);
