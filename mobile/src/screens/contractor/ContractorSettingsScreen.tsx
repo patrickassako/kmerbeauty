@@ -90,9 +90,8 @@ export const ContractorSettingsScreen = () => {
                 <View style={styles.section}>
                     <SettingItem
                         title="Notifications"
-                        value={notificationsEnabled}
-                        type="switch"
-                        onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+                        type="arrow"
+                        onPress={() => navigation.navigate('NotificationSettings')}
                     />
                     <SettingItem
                         title="Langue"

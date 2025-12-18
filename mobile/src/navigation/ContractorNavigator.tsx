@@ -19,6 +19,7 @@ import {
   ContractorSettingsScreen,
 } from '../screens/contractor';
 import { TermsScreen } from '../screens/common/TermsScreen';
+import { NotificationSettingsScreen } from '../screens/settings/NotificationSettingsScreen';
 import {
   ContractorProductsScreen,
   ProductFormScreen,
@@ -98,6 +99,7 @@ const MoreStackNavigator = () => (
     <MoreStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
     <MoreStack.Screen name="ContractorProfile" component={ContractorProfileEditScreen} />
     <MoreStack.Screen name="ContractorSettings" component={ContractorSettingsScreen} />
+    <MoreStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
     <MoreStack.Screen name="Terms" component={TermsScreen} />
     <MoreStack.Screen name="ContractorProducts" component={ContractorProductsScreen} />
     <MoreStack.Screen name="ProductForm" component={ProductFormScreen} />

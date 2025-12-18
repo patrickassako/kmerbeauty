@@ -22,6 +22,7 @@ import {
   ClientOrdersScreen,
   ProductChatScreen,
 } from '../screens/marketplace';
+import { NotificationSettingsScreen } from '../screens/settings/NotificationSettingsScreen';
 import { useNotifications } from '../hooks/useNotifications';
 
 export type MainTabParamList = {
@@ -66,6 +67,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     <ProfileStack.Screen name="BecomeProvider" component={BecomeProviderScreen} />
     <ProfileStack.Screen name="Settings" component={ProfileScreen} />
+    <ProfileStack.Screen name="Notifications" component={NotificationSettingsScreen} />
     <ProfileStack.Screen name="Support" component={SupportScreen} />
     <ProfileStack.Screen name="NewTicket" component={NewTicketScreen} />
     <ProfileStack.Screen name="SupportChat" component={SupportChatScreen} />
