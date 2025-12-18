@@ -77,8 +77,9 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
 
             let targetUrl = redirectTo || '/';
 
-            // If no explicit redirect, determine destination based on role
-            if (!redirectTo && authData) {
+            // If no explicit redirect OR redirect is just home, determine destination based on role
+            // This ensures providers go to their dashboard, not home
+            if ((!redirectTo || redirectTo === '/') && authData) {
                 try {
                     const userId = authData.user?.id || authData.session?.user?.id;
 
@@ -90,7 +91,8 @@ export function LoginForm({ onSuccess, redirectTo, isModal = false, onSwitchToSi
                             .eq('id', userId)
                             .single();
 
-                        if (userData && (userData.role === 'PROVIDER' || userData.role === 'contractor')) {
+                        const role = userData?.role?.toLowerCase();
+                        if (role === 'provider' || role === 'contractor') {
                             targetUrl = '/pro/dashboard';
                         } else {
                             targetUrl = '/profile'; // Default for clients

@@ -13,7 +13,7 @@ export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [location, setLocation] = useState<string | null>(null);
     const [user, setUser] = useState<any>(null);
-    const { isContractor } = useUserRole();
+    const { isContractor, loading: roleLoading } = useUserRole();
     const { language, setLanguage, t } = useLanguage();
     const supabase = createClient();
 
@@ -57,6 +57,34 @@ export function Navbar() {
         await supabase.auth.signOut();
         setUser(null);
         window.location.href = '/';
+    };
+
+    // Real-time role check when clicking "Mon Compte" button
+    const handleMyAccountClick = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user?.id) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Check role directly from database at click time
+            const { data } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+
+            const role = data?.role?.toLowerCase();
+            if (role === 'provider' || role === 'contractor') {
+                window.location.href = '/pro/dashboard';
+            } else {
+                window.location.href = '/profile';
+            }
+        } catch (error) {
+            console.error('Error checking role:', error);
+            window.location.href = '/profile';
+        }
     };
 
     return (
@@ -117,12 +145,15 @@ export function Navbar() {
                             <Button variant="ghost" size="sm" className="hidden md:flex gap-2" onClick={handleLogout}>
                                 <span>Se déconnecter</span>
                             </Button>
-                            <Link href={isContractor ? "/pro/dashboard" : "/profile"}>
-                                <Button variant="outline" size="sm" className="hidden md:flex gap-2 rounded-full">
-                                    <User className="h-4 w-4" />
-                                    <span>Mon Compte</span>
-                                </Button>
-                            </Link>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="hidden md:flex gap-2 rounded-full"
+                                onClick={handleMyAccountClick}
+                            >
+                                <User className="h-4 w-4" />
+                                <span>Mon Compte</span>
+                            </Button>
                         </div>
                     ) : (
                         <Link href="/login">
@@ -173,9 +204,16 @@ export function Navbar() {
                     <div className="pt-4 border-t">
                         {user ? (
                             <>
-                                <Link href={isContractor ? "/pro/dashboard" : "/profile"} onClick={() => setIsMenuOpen(false)}>
-                                    <Button className="w-full rounded-full mb-2" variant="outline">Mon Compte</Button>
-                                </Link>
+                                <Button
+                                    className="w-full rounded-full mb-2"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        handleMyAccountClick();
+                                    }}
+                                >
+                                    Mon Compte
+                                </Button>
                                 <Button className="w-full rounded-full" variant="destructive" onClick={() => {
                                     handleLogout();
                                     setIsMenuOpen(false);

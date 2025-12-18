@@ -27,8 +27,15 @@ export function useUserRole() {
                     .eq('id', session.user.id)
                     .single();
 
-                if (data && (data.role === 'PROVIDER' || data.role === 'contractor')) {
-                    setIsContractor(true);
+                console.log('🔍 useUserRole - data:', data, 'error:', error);
+
+                if (data) {
+                    const role = data.role?.toLowerCase();
+                    console.log('🔍 useUserRole - role:', role);
+                    if (role === 'provider' || role === 'contractor') {
+                        console.log('✅ useUserRole - Setting isContractor to TRUE');
+                        setIsContractor(true);
+                    }
                 }
             } catch (error) {
                 console.error("Error checking role:", error);
