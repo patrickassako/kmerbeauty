@@ -192,12 +192,15 @@ export default function CreditsPage() {
                 // Card payment - redirect to Flutterwave checkout
                 window.location.href = result.link;
             } else if (result.transactionId) {
-                // Mobile money - show confirmation message
-                setShowPaymentModal(false);
-                alert(`${result.message}\n\nVeuillez confirmer le paiement sur votre téléphone.\n\nMontant: ${selectedPack.price_fcfa} XAF\nCrédits: ${selectedPack.credits}`);
-
-                // Poll for payment status
-                setTimeout(() => loadData(), 30000);
+                // Mobile money - redirect to verification page
+                const verifyParams = new URLSearchParams({
+                    transactionId: result.transactionId.toString(),
+                    paymentMethod: paymentMethodMap[paymentMethod],
+                    phoneNumber: formattedPhone,
+                    amount: selectedPack.price_fcfa.toString(),
+                    packName: selectedPack.name,
+                });
+                router.push(`/pro/credits/verify?${verifyParams.toString()}`);
             } else {
                 throw new Error('Réponse de paiement invalide');
             }
