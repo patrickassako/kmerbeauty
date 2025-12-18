@@ -149,11 +149,18 @@ export default function CreditsPage() {
                 'CARD': 'card'
             };
 
+            // Format phone number with +237 prefix for Cameroon
+            let formattedPhone = phoneNumber || profile?.phone || '';
+            if (formattedPhone && !formattedPhone.startsWith('+')) {
+                formattedPhone = formattedPhone.replace(/^0/, ''); // Remove leading 0
+                formattedPhone = `+237${formattedPhone}`;
+            }
+
             const paymentData = {
                 amount: selectedPack.price_fcfa,
                 currency: 'XAF',
                 email: user.email,
-                phoneNumber: phoneNumber || profile?.phone || '',
+                phoneNumber: formattedPhone,
                 name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Client',
                 providerId: contractorId,
                 providerType: 'therapist',
