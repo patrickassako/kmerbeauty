@@ -22,28 +22,42 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Check if provider has completed their profile
-            try {
-                const { data: profile } = await supabase
-                    .from('therapists')
-                    .select('id, profile_completed, business_name')
-                    .eq('user_id', session.user.id)
-                    .single();
+            // Check if provider has completed their profile using API
+            const currentPath = window.location.pathname;
 
-                // If no profile or profile not completed, redirect to register
-                // But allow access to /pro/register itself
-                const currentPath = window.location.pathname;
-                if (currentPath !== '/pro/register' && (!profile || !profile.profile_completed)) {
+            // Skip check if already on register page
+            if (currentPath === '/pro/register') {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+                const response = await fetch(`${API_URL}/contractors/profile/user/${session.user.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    // No profile found
+                    router.replace('/pro/register');
+                    return;
+                }
+
+                const profile = await response.json();
+
+                // If profile not completed, redirect to register
+                if (!profile || !profile.profile_completed) {
                     router.replace('/pro/register');
                     return;
                 }
             } catch (error) {
-                // No profile found - redirect to register (unless already on register page)
-                const currentPath = window.location.pathname;
-                if (currentPath !== '/pro/register') {
-                    router.replace('/pro/register');
-                    return;
-                }
+                // API error - redirect to register
+                console.error('Error checking profile:', error);
+                router.replace('/pro/register');
+                return;
             }
 
             setLoading(false);
