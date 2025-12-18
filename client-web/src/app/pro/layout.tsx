@@ -46,11 +46,18 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                 if (!response.ok) {
                     // No profile found - redirect to register
                     router.replace('/pro/register');
-                    // Don't return - let loading stay, the redirect will trigger re-render
                     return;
                 }
 
-                const profile = await response.json();
+                // Check if response body is not empty before parsing
+                const text = await response.text();
+                if (!text || text.trim() === '') {
+                    // Empty response - treat as no profile
+                    router.replace('/pro/register');
+                    return;
+                }
+
+                const profile = JSON.parse(text);
 
                 // If profile not completed, redirect to register
                 if (!profile || !profile.profile_completed) {

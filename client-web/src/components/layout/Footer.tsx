@@ -34,10 +34,8 @@ export function Footer() {
                     <div>
                         <h3 className="font-semibold mb-4">Entreprise</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li><Link href="/about" className="hover:text-primary">À propos</Link></li>
-                            <li><Link href="/partner" className="hover:text-primary">Devenir Partenaire</Link></li>
-                            <li><Link href="/careers" className="hover:text-primary">Carrières</Link></li>
-                            <li><Link href="/contact" className="hover:text-primary">Contact</Link></li>
+                            <li><Link href="/pro" className="hover:text-primary">Devenir Partenaire</Link></li>
+                            <li><Link href="/services" className="hover:text-primary">Nos Services</Link></li>
                         </ul>
                     </div>
 
@@ -57,9 +55,7 @@ export function Footer() {
                 <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
                     <p>© 2025 KMR-BEAUTY. Tous droits réservés.</p>
                     <div className="flex items-center gap-6">
-                        <Link href="/privacy" className="hover:text-foreground">Confidentialité</Link>
-                        <Link href="/terms" className="hover:text-foreground">Conditions d'utilisation</Link>
-                        <Link href="/sitemap" className="hover:text-foreground">Plan du site</Link>
+                        <span>Cameroun 🇨🇲</span>
                     </div>
                 </div>
             </div>
