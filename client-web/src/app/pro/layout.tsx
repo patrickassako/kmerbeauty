@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { ProSidebar } from '@/components/pro/ProSidebar';
 import { Loader2 } from 'lucide-react';
@@ -10,9 +10,15 @@ import { MobileProNav } from '@/components/pro/MobileProNav';
 
 export default function ProLayout({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
+    const [isRegisterPage, setIsRegisterPage] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
+        // Check if we're on the register page
+        const onRegister = pathname === '/pro/register';
+        setIsRegisterPage(onRegister);
+
         const checkAuth = async () => {
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
@@ -22,11 +28,8 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Check if provider has completed their profile using API
-            const currentPath = window.location.pathname;
-
-            // Skip check if already on register page
-            if (currentPath === '/pro/register') {
+            // Skip profile check if already on register page
+            if (onRegister) {
                 setLoading(false);
                 return;
             }
@@ -41,8 +44,9 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                 });
 
                 if (!response.ok) {
-                    // No profile found
+                    // No profile found - redirect to register
                     router.replace('/pro/register');
+                    // Don't return - let loading stay, the redirect will trigger re-render
                     return;
                 }
 
@@ -53,27 +57,34 @@ export default function ProLayout({ children }: { children: React.ReactNode }) {
                     router.replace('/pro/register');
                     return;
                 }
+
+                // Profile exists and is complete
+                setLoading(false);
             } catch (error) {
                 // API error - redirect to register
                 console.error('Error checking profile:', error);
                 router.replace('/pro/register');
-                return;
             }
-
-            setLoading(false);
         };
 
         checkAuth();
-    }, [router]);
+    }, [router, pathname]);
 
+    // Loading spinner
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
             </div>
         );
     }
 
+    // Register page gets simple layout (no sidebar)
+    if (isRegisterPage) {
+        return <>{children}</>;
+    }
+
+    // Full pro layout with sidebar
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
             <ProSidebar />
