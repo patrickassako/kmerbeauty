@@ -61,12 +61,25 @@ export default function RegisterProPage() {
     const [zoneSuggestions, setZoneSuggestions] = useState<any[]>([]);
     const [searchingZones, setSearchingZones] = useState(false);
 
+    // Provider Main Address
+    const [addressSearch, setAddressSearch] = useState('');
+    const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+    const [searchingAddress, setSearchingAddress] = useState(false);
+    const [providerLocation, setProviderLocation] = useState<{
+        latitude: number;
+        longitude: number;
+        city: string;
+        region: string;
+        address: string;
+    } | null>(null);
+
     const [formData, setFormData] = useState({
         business_name: '',
         legal_status: 'independant' as 'independant' | 'salon',
         professional_experience: '',
         experience_years: '1',
         city: 'Douala',
+        siret_number: '', // Registre de commerce for salons
         types_of_services: [] as string[],
         languages_spoken: ['fr'] as string[],
         available_transportation: [] as string[],
@@ -168,6 +181,46 @@ export default function RegisterProPage() {
         setServiceZones(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Address search for main location
+    const searchAddress = async (query: string) => {
+        setAddressSearch(query);
+        if (query.length < 3) {
+            setAddressSuggestions([]);
+            return;
+        }
+
+        try {
+            setSearchingAddress(true);
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cm&addressdetails=1&limit=5`,
+                { headers: { 'User-Agent': 'KMR-Beauty-Web/1.0' } }
+            );
+            const data = await response.json();
+            setAddressSuggestions(data);
+        } catch (error) {
+            console.error('Error searching address:', error);
+        } finally {
+            setSearchingAddress(false);
+        }
+    };
+
+    const selectAddress = (item: any) => {
+        const addr = item.address || {};
+        const city = addr.city || addr.town || addr.village || addr.municipality || 'Unknown';
+        const region = addr.state || addr.region || 'Unknown';
+
+        setProviderLocation({
+            latitude: parseFloat(item.lat),
+            longitude: parseFloat(item.lon),
+            city,
+            region,
+            address: item.display_name,
+        });
+        setAddressSearch(item.display_name);
+        setAddressSuggestions([]);
+        setFormData(prev => ({ ...prev, city }));
+    };
+
     // Toggle functions
     const toggleCategory = (categoryId: string) => {
         setFormData(prev => ({
@@ -213,6 +266,14 @@ export default function RegisterProPage() {
 
         if (serviceZones.length === 0) {
             newErrors.service_zones = 'Ajoutez au moins une zone de service';
+        }
+
+        if (!providerLocation) {
+            newErrors.address = 'Veuillez sélectionner votre adresse principale';
+        }
+
+        if (formData.legal_status === 'salon' && !formData.siret_number.trim()) {
+            newErrors.siret_number = 'Le registre de commerce est requis pour les salons';
         }
 
         if (!formData.terms_accepted || !formData.confidentiality_accepted) {
@@ -276,7 +337,11 @@ export default function RegisterProPage() {
                 legal_status: formData.legal_status,
                 professional_experience: formData.professional_experience,
                 experience: parseInt(formData.experience_years),
-                city: formData.city,
+                city: providerLocation?.city || formData.city,
+                region: providerLocation?.region || '',
+                latitude: providerLocation?.latitude,
+                longitude: providerLocation?.longitude,
+                siret_number: formData.siret_number || null,
                 types_of_services: formData.types_of_services,
                 languages_spoken: formData.languages_spoken,
                 available_transportation: formData.available_transportation,
@@ -401,8 +466,8 @@ export default function RegisterProPage() {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, legal_status: option.value as any })}
                                     className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${formData.legal_status === option.value
-                                            ? 'border-amber-500 bg-amber-50 text-amber-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                        ? 'border-amber-500 bg-amber-50 text-amber-700'
+                                        : 'border-gray-200 hover:border-gray-300'
                                         }`}
                                 >
                                     <option.icon className="w-6 h-6" />
@@ -412,36 +477,85 @@ export default function RegisterProPage() {
                         </div>
                     </div>
 
-                    {/* City & Experience */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Registre de commerce (for salons only) */}
+                    {formData.legal_status === 'salon' && (
                         <div>
                             <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                <MapPin className="w-4 h-4 inline mr-2" />
-                                Ville *
-                            </label>
-                            <select
-                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none"
-                                value={formData.city}
-                                onChange={e => setFormData({ ...formData, city: e.target.value })}
-                            >
-                                {cities.map(city => (
-                                    <option key={city} value={city}>{city}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                Années d'expérience *
+                                <Building2 className="w-4 h-4 inline mr-2" />
+                                Registre de Commerce / SIRET *
                             </label>
                             <input
-                                type="number"
-                                min="0"
-                                max="50"
                                 className="w-full p-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none"
-                                value={formData.experience_years}
-                                onChange={e => setFormData({ ...formData, experience_years: e.target.value })}
+                                placeholder="Numéro de registre de commerce"
+                                value={formData.siret_number}
+                                onChange={e => setFormData({ ...formData, siret_number: e.target.value })}
                             />
                         </div>
+                    )}
+
+                    {/* Main Address */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            <MapPin className="w-4 h-4 inline mr-2" />
+                            {formData.legal_status === 'salon' ? 'Adresse du Salon *' : 'Votre Adresse Principale *'}
+                        </label>
+                        <div className="relative">
+                            <input
+                                className={`w-full p-3 rounded-xl border ${errors.address ? 'border-red-500' : 'border-gray-200'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none`}
+                                placeholder="Rechercher votre adresse..."
+                                value={addressSearch}
+                                onChange={e => searchAddress(e.target.value)}
+                            />
+                            {searchingAddress && <Loader2 className="w-5 h-5 animate-spin absolute right-3 top-3.5 text-gray-400" />}
+
+                            {addressSuggestions.length > 0 && (
+                                <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-60 overflow-y-auto">
+                                    {addressSuggestions.map((item, i) => (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            onClick={() => selectAddress(item)}
+                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b last:border-0 text-sm"
+                                        >
+                                            {item.display_name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+
+                        {/* Map Preview */}
+                        {providerLocation && (
+                            <div className="mt-4 rounded-xl overflow-hidden border border-gray-200">
+                                <iframe
+                                    width="100%"
+                                    height="200"
+                                    frameBorder="0"
+                                    style={{ border: 0 }}
+                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${providerLocation.longitude - 0.01}%2C${providerLocation.latitude - 0.01}%2C${providerLocation.longitude + 0.01}%2C${providerLocation.latitude + 0.01}&layer=mapnik&marker=${providerLocation.latitude}%2C${providerLocation.longitude}`}
+                                    allowFullScreen
+                                />
+                                <div className="p-3 bg-gray-50 text-sm text-gray-600">
+                                    📍 {providerLocation.city}, {providerLocation.region}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Experience Years */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            Années d'expérience *
+                        </label>
+                        <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none"
+                            value={formData.experience_years}
+                            onChange={e => setFormData({ ...formData, experience_years: e.target.value })}
+                        />
                     </div>
 
                     {/* Bio */}
@@ -470,8 +584,8 @@ export default function RegisterProPage() {
                                     type="button"
                                     onClick={() => toggleCategory(cat.category)}
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${formData.types_of_services.includes(cat.category)
-                                            ? 'bg-amber-500 text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-amber-500 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
                                     {formData.types_of_services.includes(cat.category) && <CheckCircle2 className="w-4 h-4 inline mr-1" />}
@@ -608,8 +722,8 @@ export default function RegisterProPage() {
                                     type="button"
                                     onClick={() => toggleLanguage(lang.code)}
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${formData.languages_spoken.includes(lang.code)
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
                                     {lang.name}
@@ -630,8 +744,8 @@ export default function RegisterProPage() {
                                     type="button"
                                     onClick={() => toggleTransport(option.code)}
                                     className={`px-4 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${formData.available_transportation.includes(option.code)
-                                            ? 'border-green-500 bg-green-50 text-green-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                        ? 'border-green-500 bg-green-50 text-green-700'
+                                        : 'border-gray-200 hover:border-gray-300'
                                         }`}
                                 >
                                     <option.icon className="w-5 h-5" />
