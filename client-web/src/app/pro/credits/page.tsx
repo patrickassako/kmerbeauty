@@ -207,8 +207,8 @@ export default function CreditsPage() {
                 <button
                     onClick={() => setActiveTab('recharge')}
                     className={`flex-1 py-3 text-center font-medium transition ${activeTab === 'recharge'
-                            ? 'text-amber-600 border-b-2 border-amber-500'
-                            : 'text-gray-500'
+                        ? 'text-amber-600 border-b-2 border-amber-500'
+                        : 'text-gray-500'
                         }`}
                 >
                     <Plus className="w-4 h-4 inline mr-2" />
@@ -217,8 +217,8 @@ export default function CreditsPage() {
                 <button
                     onClick={() => setActiveTab('history')}
                     className={`flex-1 py-3 text-center font-medium transition ${activeTab === 'history'
-                            ? 'text-amber-600 border-b-2 border-amber-500'
-                            : 'text-gray-500'
+                        ? 'text-amber-600 border-b-2 border-amber-500'
+                        : 'text-gray-500'
                         }`}
                 >
                     <History className="w-4 h-4 inline mr-2" />
@@ -244,8 +244,8 @@ export default function CreditsPage() {
                                         key={pack.id}
                                         onClick={() => handleSelectPack(pack)}
                                         className={`relative bg-white rounded-xl p-5 border-2 cursor-pointer transition-all hover:shadow-md ${pack.popular
-                                                ? 'border-amber-500 shadow-amber-100'
-                                                : 'border-gray-100 hover:border-amber-300'
+                                            ? 'border-amber-500 shadow-amber-100'
+                                            : 'border-gray-100 hover:border-amber-300'
                                             }`}
                                     >
                                         {pack.popular && (
@@ -257,20 +257,20 @@ export default function CreditsPage() {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <h3 className="font-semibold text-gray-900 text-lg">
-                                                    {pack.credits} crédits
-                                                    {pack.bonus_credits > 0 && (
+                                                    {pack.credits || 0} crédits
+                                                    {(pack.bonus_credits || 0) > 0 && (
                                                         <span className="text-amber-500 ml-2">
                                                             +{pack.bonus_credits} bonus
                                                         </span>
                                                     )}
                                                 </h3>
                                                 <p className="text-gray-500 text-sm mt-1">
-                                                    {pack.name}
+                                                    {pack.name || 'Pack de crédits'}
                                                 </p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-2xl font-bold text-gray-900">
-                                                    {pack.price.toLocaleString()}
+                                                    {(pack.price || 0).toLocaleString()}
                                                 </p>
                                                 <p className="text-gray-500 text-sm">XAF</p>
                                             </div>
@@ -301,8 +301,8 @@ export default function CreditsPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.amount > 0
-                                                        ? 'bg-green-100 text-green-600'
-                                                        : 'bg-red-100 text-red-600'
+                                                    ? 'bg-green-100 text-green-600'
+                                                    : 'bg-red-100 text-red-600'
                                                     }`}>
                                                     {tx.amount > 0 ? <Plus className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
                                                 </div>
@@ -356,14 +356,14 @@ export default function CreditsPage() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-gray-900">
-                                        {selectedPack.credits + selectedPack.bonus_credits} crédits
+                                        {(selectedPack.credits || 0) + (selectedPack.bonus_credits || 0)} crédits
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                        {selectedPack.credits} + {selectedPack.bonus_credits} bonus
+                                        {selectedPack.credits || 0} + {selectedPack.bonus_credits || 0} bonus
                                     </p>
                                 </div>
                                 <p className="text-2xl font-bold text-amber-600">
-                                    {selectedPack.price.toLocaleString()} XAF
+                                    {(selectedPack.price || 0).toLocaleString()} XAF
                                 </p>
                             </div>
                         </div>
@@ -376,8 +376,8 @@ export default function CreditsPage() {
                                 {/* Orange Money */}
                                 <label
                                     className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition ${paymentMethod === 'ORANGE_MONEY'
-                                            ? 'border-orange-500 bg-orange-50'
-                                            : 'border-gray-200'
+                                        ? 'border-orange-500 bg-orange-50'
+                                        : 'border-gray-200'
                                         }`}
                                 >
                                     <input
@@ -400,8 +400,8 @@ export default function CreditsPage() {
                                 {/* MTN Mobile Money */}
                                 <label
                                     className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition ${paymentMethod === 'MTN_MOBILE_MONEY'
-                                            ? 'border-yellow-500 bg-yellow-50'
-                                            : 'border-gray-200'
+                                        ? 'border-yellow-500 bg-yellow-50'
+                                        : 'border-gray-200'
                                         }`}
                                 >
                                     <input
@@ -424,8 +424,8 @@ export default function CreditsPage() {
                                 {/* Card */}
                                 <label
                                     className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition ${paymentMethod === 'CARD'
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-200'
                                         }`}
                                 >
                                     <input
@@ -481,7 +481,7 @@ export default function CreditsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        Payer {selectedPack.price.toLocaleString()} XAF
+                                        Payer {(selectedPack.price || 0).toLocaleString()} XAF
                                     </>
                                 )}
                             </Button>
