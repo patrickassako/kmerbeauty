@@ -23,10 +23,10 @@ interface CreditPack {
     id: string;
     name: string;
     credits: number;
-    price: number;
-    bonus_credits: number;
-    popular: boolean;
+    price_fcfa: number;
+    discount_percentage: number;
     display_order: number;
+    active: boolean;
 }
 
 interface Transaction {
@@ -131,8 +131,8 @@ export default function CreditsPage() {
             // For now, simulate payment success and redirect to Flutterwave
 
             const paymentData = {
-                amount: selectedPack.price,
-                credits: selectedPack.credits + selectedPack.bonus_credits,
+                amount: selectedPack.price_fcfa,
+                credits: selectedPack.credits,
                 packId: selectedPack.id,
                 providerId: contractorId,
                 providerType: 'therapist',
@@ -145,7 +145,7 @@ export default function CreditsPage() {
             // Simulate Flutterwave redirect (in production, this would be an actual API call)
             // The backend would create a payment session and return a redirect URL
 
-            alert(`Paiement en cours de traitement...\n\nMontant: ${selectedPack.price} XAF\nCrédits: ${selectedPack.credits + selectedPack.bonus_credits}\n\nVous recevrez une notification ${paymentMethod === 'CARD' ? 'par email' : 'sur votre téléphone'} pour confirmer le paiement.`);
+            alert(`Paiement en cours de traitement...\n\nMontant: ${selectedPack.price_fcfa} XAF\nCrédits: ${selectedPack.credits}\n\nVous recevrez une notification ${paymentMethod === 'CARD' ? 'par email' : 'sur votre téléphone'} pour confirmer le paiement.`);
 
             setShowPaymentModal(false);
             setSelectedPack(null);
@@ -185,7 +185,7 @@ export default function CreditsPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-8">
             {/* Header */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-b-3xl shadow-lg">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 rounded-b-3xl shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold">Mes Crédits</h1>
                     <button onClick={loadData} className="p-2 hover:bg-white/20 rounded-full transition">
@@ -193,11 +193,11 @@ export default function CreditsPage() {
                     </button>
                 </div>
 
-                <div className="bg-white/20 backdrop-blur rounded-2xl p-6">
-                    <p className="text-white/80 text-sm mb-1">Solde disponible</p>
+                <div className="bg-white/10 backdrop-blur rounded-2xl p-6">
+                    <p className="text-white/70 text-sm mb-1">Solde disponible</p>
                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold">{balance.toFixed(1)}</span>
-                        <span className="text-white/80">crédits</span>
+                        <span className="text-4xl font-bold text-amber-400">{balance.toFixed(1)}</span>
+                        <span className="text-white/70">crédits</span>
                     </div>
                 </div>
             </div>
@@ -243,14 +243,14 @@ export default function CreditsPage() {
                                     <div
                                         key={pack.id}
                                         onClick={() => handleSelectPack(pack)}
-                                        className={`relative bg-white rounded-xl p-5 border-2 cursor-pointer transition-all hover:shadow-md ${pack.popular
+                                        className={`relative bg-white rounded-xl p-5 border-2 cursor-pointer transition-all hover:shadow-md ${(pack.discount_percentage || 0) >= 20
                                             ? 'border-amber-500 shadow-amber-100'
                                             : 'border-gray-100 hover:border-amber-300'
                                             }`}
                                     >
-                                        {pack.popular && (
+                                        {(pack.discount_percentage || 0) >= 20 && (
                                             <div className="absolute -top-3 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                                Populaire
+                                                -{pack.discount_percentage}%
                                             </div>
                                         )}
 
@@ -258,11 +258,6 @@ export default function CreditsPage() {
                                             <div>
                                                 <h3 className="font-semibold text-gray-900 text-lg">
                                                     {pack.credits || 0} crédits
-                                                    {(pack.bonus_credits || 0) > 0 && (
-                                                        <span className="text-amber-500 ml-2">
-                                                            +{pack.bonus_credits} bonus
-                                                        </span>
-                                                    )}
                                                 </h3>
                                                 <p className="text-gray-500 text-sm mt-1">
                                                     {pack.name || 'Pack de crédits'}
@@ -270,7 +265,7 @@ export default function CreditsPage() {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-2xl font-bold text-gray-900">
-                                                    {(pack.price || 0).toLocaleString()}
+                                                    {(pack.price_fcfa || 0).toLocaleString()}
                                                 </p>
                                                 <p className="text-gray-500 text-sm">XAF</p>
                                             </div>
@@ -356,14 +351,16 @@ export default function CreditsPage() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-gray-900">
-                                        {(selectedPack.credits || 0) + (selectedPack.bonus_credits || 0)} crédits
+                                        {selectedPack.credits || 0} crédits
                                     </p>
-                                    <p className="text-sm text-gray-500">
-                                        {selectedPack.credits || 0} + {selectedPack.bonus_credits || 0} bonus
-                                    </p>
+                                    {(selectedPack.discount_percentage || 0) > 0 && (
+                                        <p className="text-sm text-green-600">
+                                            -{selectedPack.discount_percentage}% de réduction
+                                        </p>
+                                    )}
                                 </div>
                                 <p className="text-2xl font-bold text-amber-600">
-                                    {(selectedPack.price || 0).toLocaleString()} XAF
+                                    {(selectedPack.price_fcfa || 0).toLocaleString()} XAF
                                 </p>
                             </div>
                         </div>
@@ -481,7 +478,7 @@ export default function CreditsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        Payer {(selectedPack.price || 0).toLocaleString()} XAF
+                                        Payer {(selectedPack.price_fcfa || 0).toLocaleString()} XAF
                                     </>
                                 )}
                             </Button>
