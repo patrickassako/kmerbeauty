@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase';
 import { categoriesApi, contractorApi } from '@/services/api';
@@ -23,6 +24,12 @@ import {
     CreditCard,
     Image as ImageIcon
 } from 'lucide-react';
+
+// Dynamic import for LocationPicker (uses Leaflet which needs window)
+const LocationPicker = dynamic(() => import('@/components/pro/LocationPicker'), {
+    ssr: false,
+    loading: () => <div className="h-64 bg-gray-100 rounded-xl animate-pulse flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+});
 
 interface Category {
     category: string;
@@ -493,55 +500,16 @@ export default function RegisterProPage() {
                         </div>
                     )}
 
-                    {/* Main Address */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            <MapPin className="w-4 h-4 inline mr-2" />
-                            {formData.legal_status === 'salon' ? 'Adresse du Salon *' : 'Votre Adresse Principale *'}
-                        </label>
-                        <div className="relative">
-                            <input
-                                className={`w-full p-3 rounded-xl border ${errors.address ? 'border-red-500' : 'border-gray-200'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none`}
-                                placeholder="Rechercher votre adresse..."
-                                value={addressSearch}
-                                onChange={e => searchAddress(e.target.value)}
-                            />
-                            {searchingAddress && <Loader2 className="w-5 h-5 animate-spin absolute right-3 top-3.5 text-gray-400" />}
-
-                            {addressSuggestions.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-60 overflow-y-auto">
-                                    {addressSuggestions.map((item, i) => (
-                                        <button
-                                            key={i}
-                                            type="button"
-                                            onClick={() => selectAddress(item)}
-                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b last:border-0 text-sm"
-                                        >
-                                            {item.display_name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-
-                        {/* Map Preview */}
-                        {providerLocation && (
-                            <div className="mt-4 rounded-xl overflow-hidden border border-gray-200">
-                                <iframe
-                                    width="100%"
-                                    height="200"
-                                    frameBorder="0"
-                                    style={{ border: 0 }}
-                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${providerLocation.longitude - 0.01}%2C${providerLocation.latitude - 0.01}%2C${providerLocation.longitude + 0.01}%2C${providerLocation.latitude + 0.01}&layer=mapnik&marker=${providerLocation.latitude}%2C${providerLocation.longitude}`}
-                                    allowFullScreen
-                                />
-                                <div className="p-3 bg-gray-50 text-sm text-gray-600">
-                                    📍 {providerLocation.city}, {providerLocation.region}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {/* Main Address with Interactive Map */}
+                    <LocationPicker
+                        label={formData.legal_status === 'salon' ? 'Adresse du Salon *' : 'Votre Adresse Principale *'}
+                        value={providerLocation}
+                        onChange={(location) => {
+                            setProviderLocation(location);
+                            setFormData(prev => ({ ...prev, city: location.city }));
+                        }}
+                        error={errors.address}
+                    />
 
                     {/* Experience Years */}
                     <div>
