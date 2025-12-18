@@ -347,22 +347,24 @@ export default function RegisterProPage() {
                 experience: parseInt(formData.experience_years),
                 city: providerLocation?.city || formData.city,
                 region: providerLocation?.region || '',
-                latitude: providerLocation?.latitude,
-                longitude: providerLocation?.longitude,
+                latitude: providerLocation?.latitude || 0,
+                longitude: providerLocation?.longitude || 0,
                 siret_number: formData.siret_number || null,
                 types_of_services: formData.types_of_services,
                 languages_spoken: formData.languages_spoken,
                 available_transportation: formData.available_transportation,
-                service_zones: serviceZones,
+                // Format service zones as simple strings (city - district)
+                service_zones: serviceZones.map(z => `${z.city} - ${z.district}`),
                 terms_accepted: formData.terms_accepted,
                 confidentiality_accepted: formData.confidentiality_accepted,
                 profile_image: profileImageUrl,
                 id_card_url: Object.keys(idCardUrls).length > 0 ? idCardUrls : null,
-                portfolio_images: portfolioUrls,
+                portfolio_images: portfolioUrls.length > 0 ? portfolioUrls : null,
                 is_mobile: true,
-                travel_radius: 10,
                 profile_completed: true,
             };
+
+            console.log('📤 Sending profile data:', JSON.stringify(profileData, null, 2));
 
             await contractorApi.createProfile(profileData);
 
@@ -370,8 +372,10 @@ export default function RegisterProPage() {
             router.push('/pro/services');
 
         } catch (error: any) {
-            console.error("Error:", error);
-            setErrors({ submit: error.message || 'Une erreur est survenue' });
+            console.error("❌ Error creating profile:", error);
+            console.error("Error response:", error.response?.data);
+            const errorMessage = error.response?.data?.message || error.message || 'Une erreur est survenue';
+            setErrors({ submit: errorMessage });
         } finally {
             setLoading(false);
         }
