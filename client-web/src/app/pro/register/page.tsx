@@ -370,6 +370,8 @@ export default function RegisterProPage() {
                 id_card_url: Object.keys(idCardUrls).length > 0 ? idCardUrls : null,
                 portfolio_images: portfolioUrls.length > 0 ? portfolioUrls : null,
                 is_mobile: true,
+                travel_radius: 10, // Default 10km radius
+                travel_fee: 0, // Default no travel fee
                 profile_completed: true,
             };
 
