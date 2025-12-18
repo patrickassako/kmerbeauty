@@ -37,6 +37,8 @@ async function bootstrap() {
     'https://kmerbeauty-web.vercel.app',
     'https://kmerbeauty.com',
     'https://www.kmerbeauty.com',
+    'https://kmrbeauty.com',
+    'https://www.kmrbeauty.com',
   ].filter(Boolean);
 
   app.enableCors({
