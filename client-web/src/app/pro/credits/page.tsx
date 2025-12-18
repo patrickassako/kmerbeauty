@@ -127,35 +127,77 @@ export default function CreditsPage() {
         setProcessing(true);
 
         try {
-            // TODO: Integrate with Flutterwave payment gateway
-            // For now, simulate payment success and redirect to Flutterwave
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!session || !user) {
+                alert('Veuillez vous reconnecter');
+                return;
+            }
+
+            // Get user profile for name
+            const { data: profile } = await supabase
+                .from('users')
+                .select('first_name, last_name, phone')
+                .eq('id', user.id)
+                .single();
+
+            const paymentMethodMap: Record<PaymentMethod, string> = {
+                'ORANGE_MONEY': 'orange_money',
+                'MTN_MOBILE_MONEY': 'mtn_momo',
+                'CARD': 'card'
+            };
 
             const paymentData = {
                 amount: selectedPack.price_fcfa,
-                credits: selectedPack.credits,
-                packId: selectedPack.id,
+                currency: 'XAF',
+                email: user.email,
+                phoneNumber: phoneNumber || profile?.phone || '',
+                name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Client',
                 providerId: contractorId,
                 providerType: 'therapist',
-                paymentMethod,
-                phoneNumber: paymentMethod !== 'CARD' ? phoneNumber : undefined,
+                packId: selectedPack.id,
+                redirectUrl: `${window.location.origin}/pro/credits?payment=success`,
+                paymentMethod: paymentMethodMap[paymentMethod],
             };
 
-            console.log('Processing payment:', paymentData);
+            console.log('📤 Initiating payment:', paymentData);
 
-            // Simulate Flutterwave redirect (in production, this would be an actual API call)
-            // The backend would create a payment session and return a redirect URL
+            // Call backend to initiate payment
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/initiate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify(paymentData),
+            });
 
-            alert(`Paiement en cours de traitement...\n\nMontant: ${selectedPack.price_fcfa} XAF\nCrédits: ${selectedPack.credits}\n\nVous recevrez une notification ${paymentMethod === 'CARD' ? 'par email' : 'sur votre téléphone'} pour confirmer le paiement.`);
+            const result = await response.json();
+            console.log('📥 Payment response:', result);
 
-            setShowPaymentModal(false);
-            setSelectedPack(null);
+            if (!response.ok) {
+                throw new Error(result.message || 'Erreur lors de l\'initialisation du paiement');
+            }
 
-            // In production, reload data after payment confirmation webhook
-            // For now, we just close the modal
+            if (result.link) {
+                // Card payment - redirect to Flutterwave checkout
+                window.location.href = result.link;
+            } else if (result.transactionId) {
+                // Mobile money - show confirmation message
+                setShowPaymentModal(false);
+                alert(`${result.message}\n\nVeuillez confirmer le paiement sur votre téléphone.\n\nMontant: ${selectedPack.price_fcfa} XAF\nCrédits: ${selectedPack.credits}`);
 
-        } catch (error) {
-            console.error('Payment error:', error);
-            alert('Une erreur est survenue lors du paiement. Veuillez réessayer.');
+                // Poll for payment status
+                setTimeout(() => loadData(), 30000);
+            } else {
+                throw new Error('Réponse de paiement invalide');
+            }
+
+        } catch (error: any) {
+            console.error('❌ Payment error:', error);
+            alert(`Erreur: ${error.message || 'Une erreur est survenue lors du paiement'}`);
         } finally {
             setProcessing(false);
         }
