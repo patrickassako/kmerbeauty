@@ -214,9 +214,9 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
             </label>
 
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative z-50">
                 <input
-                    className={`w-full p-3 pr-12 rounded-xl border ${error ? 'border-red-500' : 'border-gray-200'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none`}
+                    className={`w-full p-3 pr-12 rounded-xl border ${error ? 'border-red-500' : 'border-gray-200'} focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none bg-white`}
                     placeholder="Rechercher votre adresse..."
                     value={search}
                     onChange={e => searchAddress(e.target.value)}
@@ -238,13 +238,13 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
                 {searching && <Loader2 className="w-5 h-5 animate-spin absolute right-12 top-3.5 text-gray-400" />}
 
                 {suggestions.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white rounded-xl shadow-lg border max-h-60 overflow-y-auto">
+                    <div className="absolute z-[9999] w-full mt-1 bg-white rounded-xl shadow-2xl border max-h-60 overflow-y-auto">
                         {suggestions.map((item, i) => (
                             <button
                                 key={i}
                                 type="button"
                                 onClick={() => selectAddress(item)}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b last:border-0 text-sm"
+                                className="w-full px-4 py-3 text-left hover:bg-amber-50 border-b last:border-0 text-sm"
                             >
                                 {item.display_name}
                             </button>
