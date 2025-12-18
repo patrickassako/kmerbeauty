@@ -23,6 +23,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { SearchModule } from './search/search.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { ReportsModule } from './reports/reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ReportsModule } from './reports/reports.module';
     SearchModule,
     GeocodingModule,
     ReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
