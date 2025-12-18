@@ -42,6 +42,23 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
 
+        // Add custom CSS to fix z-index issues
+        const customStyle = document.createElement('style');
+        customStyle.id = 'leaflet-custom-style';
+        customStyle.textContent = `
+            #location-picker-map .leaflet-pane,
+            #location-picker-map .leaflet-tile-pane,
+            #location-picker-map .leaflet-overlay-pane,
+            #location-picker-map .leaflet-control-container {
+                z-index: auto !important;
+            }
+            #location-picker-map .leaflet-top,
+            #location-picker-map .leaflet-bottom {
+                z-index: 5 !important;
+            }
+        `;
+        document.head.appendChild(customStyle);
+
         return () => {
             // Cleanup map on unmount
             if (mapRef.current) {
@@ -52,8 +69,9 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
             }
             try {
                 document.head.removeChild(link);
+                document.head.removeChild(customStyle);
             } catch (e) {
-                // Link might already be removed
+                // Elements might already be removed
             }
         };
     }, []);
@@ -276,13 +294,13 @@ export default function LocationPicker({ value, onChange, label, error }: Locati
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            {/* Map Container */}
+            {/* Map Container - z-index must be lower than search dropdown */}
             {showMap && (
-                <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm relative" style={{ zIndex: 10 }}>
                     <div
                         id="location-picker-map"
                         className="h-64 w-full"
-                        style={{ minHeight: '256px' }}
+                        style={{ minHeight: '256px', position: 'relative', zIndex: 1 }}
                     />
                     <div className="p-3 bg-amber-50 text-sm text-amber-800 flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
