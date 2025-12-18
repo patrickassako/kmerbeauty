@@ -2,14 +2,15 @@
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// TODO: Replace with your Firebase config
+// Firebase configuration
 firebase.initializeApp({
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyA1D-s8zv3MBjJzGyZQh5gyE3nrb3FIFfg",
+    authDomain: "kmerservice-d178f.firebaseapp.com",
+    projectId: "kmerservice-d178f",
+    storageBucket: "kmerservice-d178f.firebasestorage.app",
+    messagingSenderId: "208145625226",
+    appId: "1:208145625226:web:43f3ab41eed1078ff07d73",
+    measurementId: "G-ZRFDYVNQBV"
 });
 
 const messaging = firebase.messaging();
