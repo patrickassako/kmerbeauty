@@ -292,9 +292,10 @@ export default function RegisterProPage() {
     };
 
     const uploadImage = async (file: File, path: string, supabase: any) => {
-        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        // Use contractor-files bucket which has public access policies
+        const { error } = await supabase.storage.from('contractor-files').upload(path, file, { upsert: true });
         if (error) throw error;
-        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+        const { data: { publicUrl } } = supabase.storage.from('contractor-files').getPublicUrl(path);
         return publicUrl;
     };
 
