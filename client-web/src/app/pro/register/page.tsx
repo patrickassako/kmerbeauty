@@ -40,6 +40,8 @@ interface Category {
 interface ServiceZone {
     city: string;
     district: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export default function RegisterProPage() {
@@ -175,9 +177,16 @@ export default function RegisterProPage() {
     const selectZone = (item: any) => {
         const city = item.address?.city || item.address?.town || item.address?.village || item.address?.state || 'Unknown';
         const district = item.address?.suburb || item.address?.neighbourhood || item.address?.quarter || item.name || 'Unknown';
+        const latitude = parseFloat(item.lat);
+        const longitude = parseFloat(item.lon);
 
-        const newZone = { city, district };
-        if (!serviceZones.some(z => z.city === city && z.district === district)) {
+        const newZone: ServiceZone = {
+            city,
+            district,
+            latitude: !isNaN(latitude) ? latitude : undefined,
+            longitude: !isNaN(longitude) ? longitude : undefined,
+        };
+        if (!serviceZones.some(z => z.district === district)) {
             setServiceZones(prev => [...prev, newZone]);
         }
         setZoneSearch('');
@@ -353,8 +362,8 @@ export default function RegisterProPage() {
                 types_of_services: formData.types_of_services,
                 languages_spoken: formData.languages_spoken,
                 available_transportation: formData.available_transportation,
-                // Format service zones as simple strings (city - district)
-                service_zones: serviceZones.map(z => `${z.city} - ${z.district}`),
+                // Send service zones with full data including coordinates
+                service_zones: serviceZones,
                 terms_accepted: formData.terms_accepted,
                 confidentiality_accepted: formData.confidentiality_accepted,
                 profile_image: profileImageUrl,
