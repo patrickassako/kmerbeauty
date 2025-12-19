@@ -1,11 +1,14 @@
 "use client";
 
-import { InstallAppPopup, useInstallAppPopup } from '@/components/InstallAppPopup';
+// TEMPORARILY DISABLED - Uncomment to re-enable
+// import { InstallAppPopup, useInstallAppPopup } from '@/components/InstallAppPopup';
 
 export function InstallAppPopupWrapper() {
-    const { showPopup, closePopup } = useInstallAppPopup();
+    // Popup disabled for now
+    return null;
 
-    if (!showPopup) return null;
-
-    return <InstallAppPopup onClose={closePopup} />;
+    // To re-enable, uncomment below:
+    // const { showPopup, closePopup } = useInstallAppPopup();
+    // if (!showPopup) return null;
+    // return <InstallAppPopup onClose={closePopup} />;
 }
