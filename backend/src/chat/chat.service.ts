@@ -264,8 +264,8 @@ export class ChatService {
     const recipientId = chatInfo.client_id === senderId ? chatInfo.provider_id : chatInfo.client_id;
 
     // Check if either user has blocked the other (mutual block check)
-    const isMutuallyBlocked = await this.reportsService.isMutuallyBlocked(senderId, recipientId);
-    if (isMutuallyBlocked) {
+    const blockStatus = await this.reportsService.isMutuallyBlocked(senderId, recipientId);
+    if (blockStatus.isBlocked) {
       throw new ForbiddenException('Vous ne pouvez pas envoyer de message à cet utilisateur car un blocage existe entre vous.');
     }
 
