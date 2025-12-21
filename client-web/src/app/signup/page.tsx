@@ -9,7 +9,7 @@ function SignupContent() {
     const nextUrl = searchParams.get('next') || '/';
 
     return (
-        <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500">
             <SignupForm redirectTo={nextUrl} />
         </div>
     );
@@ -17,8 +17,8 @@ function SignupContent() {
 
 export default function SignupPage() {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <Suspense fallback={<div className="text-gray-500">Chargement...</div>}>
+        <div className="bg-gray-50 py-12 px-4">
+            <Suspense fallback={<div className="text-gray-500 text-center">Chargement...</div>}>
                 <SignupContent />
             </Suspense>
         </div>

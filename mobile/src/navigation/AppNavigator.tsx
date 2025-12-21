@@ -14,6 +14,7 @@ import * as Linking from 'expo-linking';
 import { ContractorNavigator } from './ContractorNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { TrackedNavigationContainer } from '../components/TrackedNavigationContainer';
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -80,14 +81,14 @@ export const AppNavigator: React.FC = () => {
     const isProviderMode = userMode === 'provider';
 
     return (
-      <NavigationContainer>
+      <TrackedNavigationContainer>
         {isProviderMode ? <ContractorNavigator /> : <MainTabNavigator />}
-      </NavigationContainer>
+      </TrackedNavigationContainer>
     );
   }
 
   return (
-    <NavigationContainer linking={linking}>
+    <TrackedNavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName={showOnboarding ? 'Splash' : 'SignUp'}
         screenOptions={{
@@ -135,9 +136,8 @@ export const AppNavigator: React.FC = () => {
                         authMethod: 'phone'
                       });
                     } else {
-                      // Email signup - show message that account was created
-                      // User will need to login manually
-                      alert('Compte créé ! Vous pouvez maintenant vous connecter avec votre email.');
+                      // Email signup - inform user to check their email
+                      alert('📧 Vérifiez votre email !\n\nUn lien de confirmation a été envoyé à votre adresse email. Cliquez dessus pour activer votre compte.');
                       props.navigation.navigate('SignIn');
                     }
                   }
@@ -173,7 +173,7 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="Verification" component={VerificationScreen} />
       </Stack.Navigator>
-    </NavigationContainer>
+    </TrackedNavigationContainer>
   );
 };
 

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Phone, Lock, User, ArrowRight, Loader2, Briefcase, UserCircle } from 'lucide-react';
+import { Mail, Phone, Lock, User, ArrowRight, Loader2, Briefcase, UserCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface SignupFormProps {
@@ -24,7 +24,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'form' | 'verify'>('form');
+    const [step, setStep] = useState<'form' | 'verify' | 'email-sent'>('form');
     const [otp, setOtp] = useState('');
     const [timer, setTimer] = useState(60);
     const [error, setError] = useState<string | null>(null);
@@ -75,12 +75,17 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                 });
                 if (error) throw error;
 
+                // If email verification is required (no session), show email-sent step
+                if (!data.session) {
+                    setStep('email-sent');
+                    setLoading(false);
+                    return;
+                }
+
                 // Manual Profile Creation for Email (if session exists immediately)
-                // Note: Usually email requires verification, but if disabled:
                 if (data.session?.user) {
                     let formattedPhone = phone?.trim();
                     if (formattedPhone) {
-                        // Basic formatting for Cameroon
                         if (/^6\d{8}$/.test(formattedPhone)) {
                             formattedPhone = `237${formattedPhone}`;
                         }
@@ -92,7 +97,7 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                     const profilePayload = {
                         id: data.session.user.id,
                         email: email,
-                        phone: formattedPhone || null, // Add phone if provided
+                        phone: formattedPhone || null,
                         first_name: name.split(' ')[0] || 'User',
                         last_name: name.split(' ').slice(1).join(' ') || '',
                         role: accountType
@@ -102,7 +107,6 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
                         .from('users')
                         .upsert(profilePayload, { onConflict: 'id' });
 
-                    // Handle Duplicate Phone (23505) by retrying without phone
                     if (profileError && profileError.code === '23505' && (profileError.message?.includes('phone') || profileError.details?.includes('phone'))) {
                         console.warn("Phone already in use, creating profile without phone number.");
                         const { error: retryError } = await supabase
@@ -245,6 +249,49 @@ export function SignupForm({ onSuccess, redirectTo, isModal = false, onSwitchToL
             setLoading(false);
         }
     };
+
+    // Email sent confirmation screen
+    if (step === 'email-sent') {
+        return (
+            <div className={`w-full ${isModal ? 'p-6' : 'max-w-md bg-white border border-gray-200 rounded-3xl p-8 shadow-sm'}`}>
+                <div className="text-center">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Mail className="w-10 h-10 text-green-600" />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-3 text-gray-900">Vérifiez votre email</h1>
+                    <p className="text-gray-500 mb-6">
+                        Nous avons envoyé un lien de confirmation à
+                    </p>
+                    <p className="text-[#2D2D2D] font-semibold text-lg mb-8">{email}</p>
+
+                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                        <p className="text-sm text-gray-600">
+                            Cliquez sur le lien dans l'email pour activer votre compte. Vous serez redirigé vers la page de connexion.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Link href="/login">
+                            <Button className="w-full h-12 bg-[#2D2D2D] hover:bg-black text-white font-medium rounded-xl">
+                                Aller à la connexion
+                            </Button>
+                        </Link>
+
+                        <button
+                            onClick={() => setStep('form')}
+                            className="w-full text-sm text-gray-500 hover:text-gray-900"
+                        >
+                            Modifier l'adresse email
+                        </button>
+                    </div>
+
+                    <p className="text-xs text-gray-400 mt-6">
+                        Vous n'avez pas reçu l'email ? Vérifiez vos spams ou réessayez.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (step === 'verify') {
         return (

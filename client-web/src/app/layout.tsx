@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { InstallAppPopupWrapper } from "@/components/InstallAppPopupWrapper";
 import CountdownWrapper from "@/components/CountdownWrapper";
+import { CSPostHogProvider } from "@/providers/PostHogProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -83,16 +84,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <LanguageProvider>
-          <CountdownWrapper>
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </CountdownWrapper>
-          <InstallAppPopupWrapper />
-        </LanguageProvider>
+        <CSPostHogProvider>
+          <LanguageProvider>
+            <CountdownWrapper>
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </CountdownWrapper>
+            <InstallAppPopupWrapper />
+          </LanguageProvider>
+        </CSPostHogProvider>
       </body>
     </html>
   );

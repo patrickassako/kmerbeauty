@@ -190,10 +190,19 @@ export class ReportsService {
     async isMutuallyBlocked(userId1: string, userId2: string): Promise<{ isBlocked: boolean }> {
         const supabase = this.supabaseService.getClient();
 
-        const { data } = await supabase
+        console.log(`[ReportsService] Checking mutual block between ${userId1} and ${userId2}`);
+
+        const { data, error } = await supabase
             .from('user_blocks')
             .select('id')
             .or(`and(blocker_id.eq.${userId1},blocked_id.eq.${userId2}),and(blocker_id.eq.${userId2},blocked_id.eq.${userId1})`);
+
+        if (error) {
+            console.error('[ReportsService] Error checking mutual block:', error);
+            return { isBlocked: false }; // Fail open if error? Or throw?
+        }
+
+        console.log(`[ReportsService] Block check result:`, data);
 
         return { isBlocked: !!(data && data.length > 0) };
     }

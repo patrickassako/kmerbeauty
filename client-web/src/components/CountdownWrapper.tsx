@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase";
 import Link from "next/link";
-import Image from "next/image";
 
 // Launch date: January 2, 2025
 const LAUNCH_DATE = new Date("2025-01-02T00:00:00");
@@ -49,7 +48,6 @@ export default function CountdownWrapper({ children }: CountdownWrapperProps) {
     const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft());
     const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
     const pathname = usePathname();
-    const supabase = createClientComponentClient();
 
     // Check if countdown is over
     const isLaunched = timeLeft.days === 0 && timeLeft.hours === 0 &&
@@ -60,6 +58,8 @@ export default function CountdownWrapper({ children }: CountdownWrapperProps) {
 
     // Check auth status
     useEffect(() => {
+        const supabase = createClient();
+
         const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setIsLoggedIn(!!session);
@@ -72,7 +72,7 @@ export default function CountdownWrapper({ children }: CountdownWrapperProps) {
         });
 
         return () => subscription.unsubscribe();
-    }, [supabase]);
+    }, []);
 
     // Countdown timer
     useEffect(() => {
@@ -189,7 +189,7 @@ export default function CountdownWrapper({ children }: CountdownWrapperProps) {
                     <p className="mt-8 text-sm text-gray-400">
                         Pas encore inscrit ?{" "}
                         <a
-                            href="https://tester-landing.vercel.app"
+                            href="https://tester.kmrbeauty.com"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[#2D2D2D] underline hover:no-underline"

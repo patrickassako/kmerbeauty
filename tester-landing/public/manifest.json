@@ -1,0 +1,16 @@
+{
+    "name": "KMR-Beauty Beta",
+    "short_name": "KMR Beta",
+    "description": "Programme Beta Testeur KMR-Beauty",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2D2D2D",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

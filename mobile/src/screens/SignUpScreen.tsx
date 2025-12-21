@@ -153,32 +153,36 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onSignUp, onSignIn }
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
-          <Image
-            source={require('../../assets/logo_nobg.png')}
-            style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
-            resizeMode="contain"
-          />
-          <Text style={[styles.title, {
-            fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
-            letterSpacing: isSmallDevice ? 3 : 4
-          }]}>
-            KMR-BEAUTY
-          </Text>
-          <Text style={[styles.subtitle, {
-            fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
-            letterSpacing: 2
-          }]}>
-            {t.onboarding.subtitle.toUpperCase()}
-          </Text>
-        </View>
-
         <ScrollView
           style={styles.formContainer}
           contentContainerStyle={[styles.formContent, { paddingHorizontal: spacing(2.5), paddingBottom: spacing(10) }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
         >
+          {/* Header - Now inside ScrollView */}
+          <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+            <Image
+              source={require('../../assets/logo_nobg.png')}
+              style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
+              resizeMode="contain"
+            />
+            <Text style={[styles.title, {
+              fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
+              letterSpacing: isSmallDevice ? 3 : 4
+            }]}>
+              KMR-BEAUTY
+            </Text>
+            <Text style={[styles.subtitle, {
+              fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
+              letterSpacing: 2
+            }]}>
+              {t.onboarding.subtitle.toUpperCase()}
+            </Text>
+          </View>
+
           <View style={[styles.card, {
             borderRadius: spacing(4),
             padding: isSmallDevice ? spacing(3) : spacing(4),

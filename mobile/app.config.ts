@@ -27,6 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 backgroundColor: '#ffffff',
             },
             package: 'com.kmerservice.beauty',
+            versionCode: 5,
             intentFilters: [
                 {
                     action: 'VIEW',

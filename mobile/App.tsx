@@ -10,6 +10,8 @@ import { WalkthroughProvider } from './src/contexts/WalkthroughContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 import { ToastProvider } from './src/contexts/ToastContext';
+import { PostHogProvider } from 'posthog-react-native';
+import { POSTHOG_API_KEY, POSTHOG_HOST } from './src/services/posthog';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -25,20 +27,27 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <GeolocationProvider>
-                  <WalkthroughProvider>
-                    <StatusBar barStyle="light-content" />
-                    <AppNavigator />
-                  </WalkthroughProvider>
-                </GeolocationProvider>
-              </AuthProvider>
-            </ToastProvider>
-          </I18nProvider>
-        </QueryClientProvider>
+        <PostHogProvider
+          apiKey={POSTHOG_API_KEY}
+          options={{
+            host: POSTHOG_HOST,
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <I18nProvider>
+              <ToastProvider>
+                <AuthProvider>
+                  <GeolocationProvider>
+                    <WalkthroughProvider>
+                      <StatusBar barStyle="light-content" />
+                      <AppNavigator />
+                    </WalkthroughProvider>
+                  </GeolocationProvider>
+                </AuthProvider>
+              </ToastProvider>
+            </I18nProvider>
+          </QueryClientProvider>
+        </PostHogProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
