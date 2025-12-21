@@ -16,9 +16,23 @@ import { useI18n } from '../../i18n/I18nContext';
 import { useTherapists } from '../../hooks/useTherapists';
 import { useSalons } from '../../hooks/useSalons';
 import { useCategories } from '../../hooks/useCategories';
+import { useGeolocation } from '../../contexts/GeolocationContext';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import { SearchFilters } from '../../components/AdvancedSearchModal';
+
+// Calculate distance between two coordinates using Haversine formula
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 type SearchResultsRouteProp = RouteProp<HomeStackParamList, 'SearchResults'>;
 type SearchResultsNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'SearchResults'>;
@@ -31,6 +45,7 @@ export const SearchResultsScreen: React.FC = () => {
   const { normalizeFontSize, spacing, isTablet, containerPaddingHorizontal } = useResponsive();
   const { language } = useI18n();
   const { categories } = useCategories();
+  const { location } = useGeolocation();
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -124,18 +139,31 @@ export const SearchResultsScreen: React.FC = () => {
           }
           return true;
         })
-        .map((salon) => ({
-          type: 'salon' as const,
-          id: salon.id,
-          name: (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut',
-          avatar: salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null),
-          rating: salon.rating,
-          review_count: salon.review_count,
-          price: 0, // Prix moyen à calculer
-          distance: 0, // TODO: Calculate distance based on user location
-          city: salon.city,
-          region: salon.quarter,
-        }));
+        .map((salon) => {
+          // Calculate distance for salons (they have fixed locations)
+          let distance = 0;
+          if (location && salon.latitude && salon.longitude) {
+            distance = calculateDistance(
+              location.latitude,
+              location.longitude,
+              salon.latitude,
+              salon.longitude
+            );
+          }
+
+          return {
+            type: 'salon' as const,
+            id: salon.id,
+            name: (language === 'fr' ? salon.name_fr : salon.name_en) || salon.name_fr || salon.name_en || 'Institut',
+            avatar: salon.logo || salon.cover_image || (salon.ambiance_images && salon.ambiance_images.length > 0 ? salon.ambiance_images[0] : null),
+            rating: salon.rating,
+            review_count: salon.review_count,
+            price: 0,
+            distance,
+            city: salon.city,
+            region: salon.quarter,
+          };
+        });
 
       allProviders = [...allProviders, ...salonProviders];
     }
@@ -157,7 +185,7 @@ export const SearchResultsScreen: React.FC = () => {
     }
 
     return allProviders;
-  }, [therapists, salons, filters, language]);
+  }, [therapists, salons, filters, language, location]);
 
   const handleProviderPress = (provider: typeof providers[0]) => {
     navigation.navigate('ProviderDetails', {
