@@ -296,30 +296,6 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
                 ))}
               </View>
             </View>
-
-            {/* Tri */}
-            <View style={[styles.filterSection, { marginBottom: spacing(2) }]}>
-              <Text style={[styles.filterLabel, { fontSize: normalizeFontSize(14), marginBottom: spacing(1) }]}>
-                {language === 'fr' ? 'Trier par' : 'Sort by'}
-              </Text>
-              {sortOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.radioOption,
-                    { paddingVertical: spacing(1.5), borderBottomWidth: 1 },
-                  ]}
-                  onPress={() => setSortBy(option.value)}
-                >
-                  <View style={[styles.radioCircle, { width: spacing(2.5), height: spacing(2.5), borderRadius: spacing(1.25) }]}>
-                    {sortBy === option.value && <View style={[styles.radioSelected, { width: spacing(1.5), height: spacing(1.5), borderRadius: spacing(0.75) }]} />}
-                  </View>
-                  <Text style={[styles.radioText, { fontSize: normalizeFontSize(14) }]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </ScrollView>
 
           {/* Footer buttons */}
