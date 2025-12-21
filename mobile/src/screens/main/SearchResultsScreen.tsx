@@ -69,7 +69,8 @@ export const SearchResultsScreen: React.FC = () => {
     let allProviders: any[] = [];
 
     // Ajouter les thérapeutes si le filtre le permet
-    if (filters.providerType === 'all' || filters.providerType === 'therapist') {
+    const providerTypeFilter = filters.providerType || 'all';
+    if (providerTypeFilter === 'all' || providerTypeFilter === 'therapist') {
       const therapistProviders = therapists
         .filter((therapist) => {
           // Filtrer par texte de recherche si spécifié
@@ -81,8 +82,11 @@ export const SearchResultsScreen: React.FC = () => {
             }
           }
           // Filtrer par quartier si spécifié
-          if (filters.quarter && therapist.region !== filters.quarter) {
-            return false;
+          if (filters.quarter) {
+            // Therapists use 'region' field for quarter
+            if (therapist.region !== filters.quarter) {
+              return false;
+            }
           }
           return true;
         })
@@ -90,7 +94,7 @@ export const SearchResultsScreen: React.FC = () => {
           type: 'therapist' as const,
           id: therapist.id,
           name: `${therapist.user?.first_name || ''} ${therapist.user?.last_name || ''}`.trim() || 'Thérapeute',
-          avatar: therapist.profile_image || (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null),
+          avatar: (therapist.portfolio_images && therapist.portfolio_images.length > 0 ? therapist.portfolio_images[0] : null),
           rating: therapist.rating,
           review_count: therapist.review_count,
           price: 0, // Prix moyen à calculer
@@ -103,7 +107,7 @@ export const SearchResultsScreen: React.FC = () => {
     }
 
     // Ajouter les salons si le filtre le permet
-    if (filters.providerType === 'all' || filters.providerType === 'salon') {
+    if (providerTypeFilter === 'all' || providerTypeFilter === 'salon') {
       const salonProviders = salons
         .filter((salon) => {
           // Filtrer par texte de recherche si spécifié
@@ -288,64 +292,64 @@ export const SearchResultsScreen: React.FC = () => {
 
         {/* Providers Cards */}
         {!loading && providers.length > 0 &&
-        providers.map((provider) => (
-          <TouchableOpacity
-            key={`${provider.type}-${provider.id}`}
-            style={[styles.providerCard, { borderRadius: spacing(2), padding: spacing(2), marginBottom: spacing(2) }]}
-            onPress={() => handleProviderPress(provider)}
-          >
-            {/* Provider Header */}
-            <View style={styles.providerHeader}>
-              <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
-                {provider.avatar ? (
-                  <Image
-                    source={{ uri: provider.avatar }}
-                    style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
-                    {provider.type === 'salon' ? '🏪' : '👤'}
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.providerInfo}>
-                <View style={styles.providerNameRow}>
-                  <Text style={[styles.providerName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
-                    {provider.name}
-                  </Text>
-                  {provider.type === 'salon' && (
-                    <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1) }]}>
-                      <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
-                    </View>
+          providers.map((provider) => (
+            <TouchableOpacity
+              key={`${provider.type}-${provider.id}`}
+              style={[styles.providerCard, { borderRadius: spacing(2), padding: spacing(2), marginBottom: spacing(2) }]}
+              onPress={() => handleProviderPress(provider)}
+            >
+              {/* Provider Header */}
+              <View style={styles.providerHeader}>
+                <View style={[styles.providerAvatar, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}>
+                  {provider.avatar ? (
+                    <Image
+                      source={{ uri: provider.avatar }}
+                      style={[styles.providerAvatarImage, { width: spacing(8), height: spacing(8), borderRadius: spacing(4) }]}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={[styles.providerAvatarText, { fontSize: normalizeFontSize(20) }]}>
+                      {provider.type === 'salon' ? '🏪' : '👤'}
+                    </Text>
                   )}
                 </View>
 
-                <View style={styles.providerMeta}>
-                  <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12) }]}>
-                    ⭐ {provider.rating != null ? provider.rating.toFixed(1) : '5.0'}
-                  </Text>
-                  <Text style={[styles.providerReviews, { fontSize: normalizeFontSize(12) }]}>
-                    ({provider.review_count != null ? provider.review_count : 0} avis)
-                  </Text>
-                  {provider.distance != null && provider.distance > 0 && (
-                    <>
-                      <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
-                      <Text style={[styles.providerDistance, { fontSize: normalizeFontSize(12) }]}>
-                        📍 {provider.distance.toFixed(1)} km
-                      </Text>
-                    </>
-                  )}
-                </View>
+                <View style={styles.providerInfo}>
+                  <View style={styles.providerNameRow}>
+                    <Text style={[styles.providerName, { fontSize: normalizeFontSize(16) }]} numberOfLines={1}>
+                      {provider.name}
+                    </Text>
+                    {provider.type === 'salon' && (
+                      <View style={[styles.salonBadge, { paddingHorizontal: spacing(1), paddingVertical: spacing(0.3), borderRadius: spacing(1) }]}>
+                        <Text style={[styles.salonBadgeText, { fontSize: normalizeFontSize(10) }]}>Institut</Text>
+                      </View>
+                    )}
+                  </View>
 
-                <Text style={[styles.providerLocation, { fontSize: normalizeFontSize(12) }]}>
-                  {provider.city || 'Ville inconnue'}, {provider.region || 'Région inconnue'}
-                </Text>
+                  <View style={styles.providerMeta}>
+                    <Text style={[styles.providerRating, { fontSize: normalizeFontSize(12) }]}>
+                      ⭐ {provider.rating != null ? provider.rating.toFixed(1) : '5.0'}
+                    </Text>
+                    <Text style={[styles.providerReviews, { fontSize: normalizeFontSize(12) }]}>
+                      ({provider.review_count != null ? provider.review_count : 0} avis)
+                    </Text>
+                    {provider.distance != null && provider.distance > 0 && (
+                      <>
+                        <Text style={[styles.metaSeparator, { fontSize: normalizeFontSize(12) }]}>•</Text>
+                        <Text style={[styles.providerDistance, { fontSize: normalizeFontSize(12) }]}>
+                          📍 {provider.distance.toFixed(1)} km
+                        </Text>
+                      </>
+                    )}
+                  </View>
+
+                  <Text style={[styles.providerLocation, { fontSize: normalizeFontSize(12) }]}>
+                    {provider.city || 'Ville inconnue'}, {provider.region || 'Région inconnue'}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))}
       </ScrollView>
     </View>
   );

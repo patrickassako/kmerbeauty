@@ -52,8 +52,23 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
     initialFilters?.sortBy || 'rating'
   );
 
+  // Reset quarter when city changes
+  useEffect(() => {
+    setQuarter('');
+  }, [city]);
   const cities = ['Douala', 'Yaoundé', 'Bafoussam', 'Garoua', 'Bamenda'];
-  const quarters = ['Akwa', 'Bonanjo', 'Bali', 'Bonapriso', 'Deido', 'Logpom', 'New Bell'];
+
+  // City-to-quarters mapping
+  const quartersByCity: Record<string, string[]> = {
+    'Douala': ['Akwa', 'Bonanjo', 'Bali', 'Bonapriso', 'Deido', 'Logpom', 'New Bell', 'Bonamoussadi', 'Makepe', 'Ndokoti'],
+    'Yaoundé': ['Bastos', 'Centre-ville', 'Nlongkak', 'Mvog-Ada', 'Mvan', 'Essos', 'Omnisport', 'Mfandena', 'Nsimeyong', 'Biyem-Assi'],
+    'Bafoussam': ['Tamdja', 'Djeleng', 'Banengo', 'Kamkop', 'Centre-ville'],
+    'Garoua': ['Centre-ville', 'Djamboutou', 'Poumpoure', 'Yelwa'],
+    'Bamenda': ['Up Station', 'Commercial Avenue', 'Nkwen', 'Mankon', 'Old Town'],
+  };
+
+  // Get quarters based on selected city (or show all if no city selected)
+  const quarters = city ? (quartersByCity[city] || []) : [];
 
   // Icônes pour les catégories
   const categoryIcons: Record<string, string> = {
