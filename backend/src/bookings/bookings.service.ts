@@ -697,7 +697,8 @@ export class BookingsService {
       total: total, // Add travel fee if logic exists
       items: bookingItems,
       region: 'Centre', // Default or derive from city
-      status: 'PENDING'
+      status: 'PENDING',
+      notes: dto.notes, // Notes de réservation du client
     } as any; // Cast to avoid strict type issues with missing optional fields
 
     return this.create(createBookingDto);
