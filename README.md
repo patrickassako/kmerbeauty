@@ -382,9 +382,9 @@ Propriétaire - KmerServices © 2025
 ## 📞 Contact
 
 - **Email** : support@kmerservices.com
-- **WhatsApp** : +237 XXX XXX XXX
+- **WhatsApp** : +237 694 788 215
 - **GitHub** : [github.com/patrickassako/kmerservices](https://github.com/patrickassako/kmerservices)
 
 ---
 
-**Made with ❤️ for Cameroon** 🇨🇲
+**Made with ❤️ for africa** 🇨🇲

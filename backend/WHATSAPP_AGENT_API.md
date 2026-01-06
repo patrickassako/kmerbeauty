@@ -292,18 +292,26 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
   "user_id": "uuid-user",
   "therapist_id": "uuid-therapist",
   "scheduled_at": "2024-01-20T10:00:00.000Z",
-  "duration": 45,
+  "duration": 105,
   "location_type": "HOME",
   "city": "Douala",
   "quarter": "Akwa",
-  "subtotal": 8000,
-  "total": 8000,
+  "street": "Rue de la Liberté",
+  "notes": "Sonner au portail vert. Appartement 3B.",
+  "subtotal": 15000,
+  "total": 15000,
   "status": "PENDING",
   "items": [
     {
-      "id": "uuid-item",
+      "id": "uuid-item-1",
       "service_name": "Coupe Femme",
       "price": 8000,
+      "duration": 60
+    },
+    {
+      "id": "uuid-item-2",
+      "service_name": "Manucure",
+      "price": 7000,
       "duration": 45
     }
   ],
