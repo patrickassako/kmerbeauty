@@ -58,9 +58,17 @@ export class TherapistsService {
           bZones = b.service_zones ? (typeof b.service_zones === 'string' ? JSON.parse(b.service_zones) : b.service_zones) : [];
         } catch { bZones = []; }
 
-        // Check if quarter matches (case-insensitive, with type safety)
-        const aMatches = Array.isArray(aZones) && aZones.some((z) => typeof z === 'string' && z.toLowerCase() === quarter.toLowerCase());
-        const bMatches = Array.isArray(bZones) && bZones.some((z) => typeof z === 'string' && z.toLowerCase() === quarter.toLowerCase());
+        // Check if quarter matches (service_zones is array of {city, district} objects)
+        const aMatches = Array.isArray(aZones) && aZones.some((z) => {
+          if (typeof z === 'string') return z.toLowerCase() === quarter.toLowerCase();
+          if (z && typeof z.district === 'string') return z.district.toLowerCase() === quarter.toLowerCase();
+          return false;
+        });
+        const bMatches = Array.isArray(bZones) && bZones.some((z) => {
+          if (typeof z === 'string') return z.toLowerCase() === quarter.toLowerCase();
+          if (z && typeof z.district === 'string') return z.district.toLowerCase() === quarter.toLowerCase();
+          return false;
+        });
 
         if (aMatches && !bMatches) return -1;
         if (!aMatches && bMatches) return 1;
