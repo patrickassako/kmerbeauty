@@ -9,7 +9,7 @@ export class TherapistsService {
     private readonly eventEmitter: EventEmitter2,
   ) { }
 
-  async findAll(city?: string, serviceId?: string) {
+  async findAll(city?: string, serviceId?: string, quarter?: string) {
     const supabase = this.supabaseService.getClient();
 
     let query = supabase
@@ -42,13 +42,31 @@ export class TherapistsService {
       throw new Error(`Failed to fetch therapists: ${error.message}`);
     }
 
+    let result = data || [];
+
+    // Prioritize by quarter if provided
+    if (quarter && result.length > 0) {
+      result = result.sort((a, b) => {
+        const aZones = a.service_zones ? (typeof a.service_zones === 'string' ? JSON.parse(a.service_zones) : a.service_zones) : [];
+        const bZones = b.service_zones ? (typeof b.service_zones === 'string' ? JSON.parse(b.service_zones) : b.service_zones) : [];
+
+        // Check if quarter matches (case-insensitive for robustness)
+        const aMatches = Array.isArray(aZones) && aZones.some((z: string) => z.toLowerCase() === quarter.toLowerCase());
+        const bMatches = Array.isArray(bZones) && bZones.some((z: string) => z.toLowerCase() === quarter.toLowerCase());
+
+        if (aMatches && !bMatches) return -1;
+        if (!aMatches && bMatches) return 1;
+        return 0;
+      });
+    }
+
     // Filter by service if provided
     if (serviceId) {
-      if (!data || data.length === 0) {
+      if (result.length === 0) {
         return [];
       }
 
-      const therapistIds = data.map((t) => t.id);
+      const therapistIds = result.map((t) => t.id);
       const { data: therapistServices } = await supabase
         .from('therapist_services')
         .select('therapist_id, price, duration')
@@ -64,7 +82,7 @@ export class TherapistsService {
           ]),
         );
 
-        return data
+        return result
           .filter((t) => priceMap.has(t.id))
           .map((t) => ({
             ...t,
@@ -76,7 +94,7 @@ export class TherapistsService {
       return [];
     }
 
-    return data;
+    return result;
   }
 
   async findOne(id: string, userId?: string) {

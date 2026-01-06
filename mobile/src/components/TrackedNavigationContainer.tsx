@@ -1,11 +1,13 @@
 import React, { useRef } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
-import { usePostHog } from 'posthog-react-native';
+// PostHog temporarily disabled for AAB build compatibility
+// import { usePostHog } from 'posthog-react-native';
 
 export const TrackedNavigationContainer = ({ children, ...props }: any) => {
     const navigationRef = useNavigationContainerRef();
     const routeNameRef = useRef<string>();
-    const posthog = usePostHog();
+    // PostHog disabled temporarily
+    // const posthog = usePostHog();
 
     return (
         <NavigationContainer
@@ -18,7 +20,9 @@ export const TrackedNavigationContainer = ({ children, ...props }: any) => {
                 const currentRouteName = navigationRef.getCurrentRoute()?.name;
 
                 if (previousRouteName !== currentRouteName && currentRouteName) {
-                    posthog?.screen(currentRouteName);
+                    // PostHog tracking disabled temporarily
+                    // posthog?.screen(currentRouteName);
+                    console.log('Screen view:', currentRouteName);
                 }
                 routeNameRef.current = currentRouteName;
             }}

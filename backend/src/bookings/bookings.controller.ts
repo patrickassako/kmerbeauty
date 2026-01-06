@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Query, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { BookingsService } from './bookings.service';
 
 export interface BookingItemDto {
@@ -31,6 +32,18 @@ export interface CreateBookingDto {
   items: BookingItemDto[]; // Services in the booking
 }
 
+export interface AgentBookingDto {
+  customerPhone: string;
+  customerName?: string;
+  serviceIds: string[];
+  therapistId?: string;
+  salonId?: string;
+  scheduledAt: string;
+  city: string;
+  quarter?: string;
+  street?: string;
+}
+
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) { }
@@ -38,6 +51,40 @@ export class BookingsController {
   @Post()
   async create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto);
+  }
+
+  @Post('agent')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // Stricter: 10 requests per minute for agent endpoint
+  async createAgentBooking(
+    @Body() body: AgentBookingDto,
+    @Headers('x-agent-key') agentKey: string,
+  ) {
+    // 1. Validate API Key
+    const validAgentKey = process.env.WHATSAPP_AGENT_KEY;
+    if (!validAgentKey || agentKey !== validAgentKey) {
+      console.warn('🚫 [BookingsController] Invalid or missing agent key');
+      throw new UnauthorizedException('Invalid or missing agent key');
+    }
+
+    // 2. Validate phone number format (Cameroon: +237XXXXXXXXX)
+    const phoneRegex = /^\+237[0-9]{9}$/;
+    if (!body.customerPhone || !phoneRegex.test(body.customerPhone)) {
+      throw new BadRequestException('Invalid phone number format. Expected: +237XXXXXXXXX');
+    }
+
+    // 3. Validate required fields
+    if (!body.serviceIds || body.serviceIds.length === 0) {
+      throw new BadRequestException('At least one serviceId is required');
+    }
+    if (!body.scheduledAt) {
+      throw new BadRequestException('scheduledAt is required');
+    }
+    if (!body.city) {
+      throw new BadRequestException('city is required');
+    }
+
+    console.log('✅ [BookingsController] Agent booking request validated');
+    return this.bookingsService.createAgentBooking(body);
   }
 
   @Get()

@@ -26,9 +26,10 @@ export class TherapistsController {
   @Get()
   async findAll(
     @Query('city') city?: string,
+    @Query('quarter') quarter?: string,
     @Query('serviceId') serviceId?: string,
   ) {
-    return this.therapistsService.findAll(city, serviceId);
+    return this.therapistsService.findAll(city, serviceId, quarter);
   }
 
   @Get(':id')

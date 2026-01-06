@@ -27,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 backgroundColor: '#ffffff',
             },
             package: 'com.kmerservice.beauty',
-            versionCode: 5,
+            versionCode: 6,
             intentFilters: [
                 {
                     action: 'VIEW',
@@ -41,7 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ],
             config: {
                 googleMaps: {
-                    apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDLrqBuWSVKkGquPQfodmErX8ci1vI-fgA"
+                    apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSyBhX1SBAKKvEcfgYHSY3G2Z2gibg7lepS4"
                 }
             },
             googleServicesFile: "./google-services.json",
