@@ -5,6 +5,14 @@ import { ServicesService } from './services.service';
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) { }
 
+  @Get('search')
+  async search(@Query('q') query: string) {
+    if (!query || query.trim().length === 0) {
+      return this.servicesService.findAll();
+    }
+    return this.servicesService.search(query);
+  }
+
   @Get()
   async findAll(@Query('category') category?: string) {
     return this.servicesService.findAll(category);
