@@ -330,6 +330,91 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
 
 ---
 
+## 5. Gestion des Réservations
+
+### 📋 Lister les réservations d'un client
+
+Récupère l'historique des réservations d'un client via son numéro de téléphone.
+
+```bash
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/client/+237699123456" \
+  -H "Content-Type: application/json" \
+  -H "x-agent-key: VOTRE_CLE_SECRETE"
+```
+
+**Réponse :**
+```json
+[
+  {
+    "id": "uuid-booking",
+    "scheduled_at": "2024-01-20T10:00:00.000Z",
+    "status": "PENDING",
+    "city": "Douala",
+    "quarter": "Akwa",
+    "total": 15000,
+    "notes": "Sonnez au portail",
+    "therapist": {
+      "id": "uuid-therapist",
+      "profile_image": "https://...",
+      "user": {
+        "first_name": "Marie",
+        "last_name": "Dupont"
+      }
+    },
+    "items": [
+      { "service_name": "Coupe Femme", "price": 8000 },
+      { "service_name": "Manucure", "price": 7000 }
+    ]
+  }
+]
+```
+
+### ✏️ Modifier une réservation
+
+Permet de changer la date, les notes ou l'adresse d'une réservation.
+
+```bash
+curl -X PATCH "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/uuid-booking-id" \
+  -H "Content-Type: application/json" \
+  -H "x-agent-key: VOTRE_CLE_SECRETE" \
+  -d '{
+    "scheduledAt": "2024-01-21T14:00:00Z",
+    "notes": "Nouveau RDV confirmé"
+  }'
+```
+
+**Paramètres modifiables :**
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `scheduledAt` | string | Nouvelle date/heure ISO 8601 |
+| `notes` | string | Nouvelles notes |
+| `quarter` | string | Nouveau quartier |
+| `street` | string | Nouvelle adresse |
+
+### ❌ Annuler une réservation
+
+```bash
+curl -X PATCH "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/uuid-booking-id/cancel" \
+  -H "Content-Type: application/json" \
+  -H "x-agent-key: VOTRE_CLE_SECRETE" \
+  -d '{
+    "reason": "Client indisponible"
+  }'
+```
+
+**Réponse :**
+```json
+{
+  "id": "uuid-booking",
+  "status": "CANCELLED",
+  "cancelled_at": "2024-01-18T12:00:00.000Z",
+  "cancel_reason": "Client indisponible"
+}
+```
+
+---
+
 ## 🔄 Workflow typique de l'Agent
 
 Voici le flux recommandé pour l'agent WhatsApp :

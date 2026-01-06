@@ -726,4 +726,99 @@ export class BookingsService {
     console.log('✅ [BookingsService] Booking started successfully');
     return data;
   }
+
+  /**
+   * Find all bookings for a client by phone number
+   */
+  async findByPhone(phone: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // First find the user by phone
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('phone', phone)
+      .single();
+
+    if (userError || !user) {
+      return []; // No user found with this phone
+    }
+
+    // Then get their bookings
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        scheduled_at,
+        duration,
+        status,
+        city,
+        quarter,
+        total,
+        notes,
+        created_at,
+        therapist:therapists!therapist_id (
+          id,
+          profile_image,
+          user:users!user_id (
+            first_name,
+            last_name
+          )
+        ),
+        items:booking_items (
+          service_name,
+          price,
+          duration
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('scheduled_at', { ascending: false })
+      .limit(20);
+
+    if (bookingsError) {
+      throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
+    }
+
+    return bookings || [];
+  }
+
+  /**
+   * Update a booking via agent (reschedule, update notes, etc.)
+   */
+  async updateAgentBooking(id: string, dto: { scheduledAt?: string; notes?: string; quarter?: string; street?: string }) {
+    const supabase = this.supabaseService.getClient();
+
+    const updateData: any = {};
+    if (dto.scheduledAt) updateData.scheduled_at = dto.scheduledAt;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.quarter) updateData.quarter = dto.quarter;
+    if (dto.street) updateData.street = dto.street;
+    updateData.updated_at = new Date().toISOString();
+
+    if (Object.keys(updateData).length === 1) {
+      throw new Error('No fields to update');
+    }
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        id,
+        scheduled_at,
+        status,
+        notes,
+        quarter,
+        street,
+        total
+      `)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update booking: ${error.message}`);
+    }
+
+    console.log('✅ [BookingsService] Booking updated via agent:', id);
+    return data;
+  }
 }
