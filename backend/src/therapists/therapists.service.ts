@@ -33,7 +33,14 @@ export class TherapistsService {
       .order('rating', { ascending: false });
 
     if (city) {
-      query = query.eq('city', city);
+      const normalizedCity = city.toLowerCase().trim();
+      if (normalizedCity === 'yaounde' || normalizedCity === 'yaoundé') {
+        // Handle Yaounde/Yaoundé variation
+        query = query.in('city', ['Yaounde', 'Yaoundé', 'yaounde', 'yaoundé']);
+      } else {
+        // Case insensitive search for other cities
+        query = query.ilike('city', city);
+      }
     }
 
     const { data, error } = await query;
