@@ -2,7 +2,7 @@
 
 Cette documentation détaille tous les endpoints API disponibles pour l'intégration de l'agent WhatsApp (n8n ou autre).
 
-**Base URL** : `https://kmerbeauty-production.up.railway.app`
+**Base URL** : `https://kmerbeauty-production.up.railway.app/api/v1`
 
 ---
 
@@ -42,7 +42,7 @@ Le numéro de téléphone doit être au format international Cameroun : `+237XXX
 Récupère la liste de tous les services disponibles sur la plateforme.
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/services" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/services" \
   -H "Content-Type: application/json"
 ```
 
@@ -65,7 +65,7 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/services" \
 ### Lister les services par catégorie
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/services?category=HAIRDRESSING" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/services?category=HAIRDRESSING" \
   -H "Content-Type: application/json"
 ```
 
@@ -86,7 +86,7 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/services?category=HAIR
 Cet endpoint permet de chercher des services en **langage naturel**. Il gère les synonymes et les termes approximatifs.
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/services/search?q=coiffure" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/services/search?q=coiffure" \
   -H "Content-Type: application/json"
 ```
 
@@ -126,14 +126,14 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/services/search?q=coif
 ### Lister tous les prestataires
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists" \
   -H "Content-Type: application/json"
 ```
 
 ### Rechercher par ville
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists?city=Douala" \
   -H "Content-Type: application/json"
 ```
 
@@ -142,7 +142,7 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala
 Cette requête **priorise** les prestataires qui couvrent spécifiquement le quartier demandé.
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala&quarter=Akwa" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists?city=Douala&quarter=Akwa" \
   -H "Content-Type: application/json"
 ```
 
@@ -153,7 +153,7 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala
 ### Rechercher par service ET localisation
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala&quarter=Bonanjo&serviceId=uuid-service-coiffure" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists?city=Douala&quarter=Bonanjo&serviceId=uuid-service-coiffure" \
   -H "Content-Type: application/json"
 ```
 
@@ -183,14 +183,14 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/therapists?city=Douala
 ### Obtenir les détails d'un prestataire
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists/uuid-therapist-id" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid-therapist-id" \
   -H "Content-Type: application/json"
 ```
 
 ### Obtenir les services d'un prestataire
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists/uuid-therapist-id/services" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid-therapist-id/services" \
   -H "Content-Type: application/json"
 ```
 
@@ -219,7 +219,7 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/therapists/uuid-therap
 Récupère les créneaux horaires libres pour un prestataire à une date donnée.
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/therapists/uuid-therapist-id/availability?date=2024-01-20" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid-therapist-id/availability?date=2024-01-20" \
   -H "Content-Type: application/json"
 ```
 
@@ -242,7 +242,7 @@ Cet endpoint est **spécialement conçu pour l'agent WhatsApp**. Il gère automa
 - La création de la réservation
 
 ```bash
-curl -X POST "https://kmerbeauty-production.up.railway.app/bookings/agent" \
+curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent" \
   -H "Content-Type: application/json" \
   -H "x-agent-key: VOTRE_CLE_SECRETE" \
   -d '{
