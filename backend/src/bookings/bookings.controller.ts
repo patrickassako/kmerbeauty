@@ -42,6 +42,7 @@ export interface AgentBookingDto {
   city: string;
   quarter?: string;
   street?: string;
+  notes?: string; // Notes de réservation du client
 }
 
 @Controller('bookings')

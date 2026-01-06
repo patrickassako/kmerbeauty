@@ -265,7 +265,8 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
     "scheduledAt": "2024-01-20T10:00:00Z",
     "city": "Douala",
     "quarter": "Akwa",
-    "street": "Rue de la Liberté"
+    "street": "Rue de la Liberté",
+    "notes": "Sonner au portail vert. Appartement 3B."
   }'
 ```
 
@@ -282,6 +283,7 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
 | `city` | string | ✅ | Ville de la prestation |
 | `quarter` | string | ❌ | Quartier |
 | `street` | string | ❌ | Rue / Adresse précise |
+| `notes` | string | ❌ | Notes/instructions du client |
 
 **Réponse (succès) :**
 ```json

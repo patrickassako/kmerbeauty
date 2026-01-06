@@ -596,37 +596,35 @@ export class BookingsService {
       userId = existingUser.id;
     } else {
       console.log('🆕 [BookingsService] Creating new guest user');
-      // Create simplified user
-      // Password is not really usable since they don't know it, but required by schema usually
-      // We'll use a placeholder.
-      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-        phone: dto.customerPhone,
-        password: Math.random().toString(36).slice(-8) + 'Aa1!', // Random password
-        phone_confirm: true,
-        user_metadata: {
+
+      // Generate a UUID for the new user
+      const newUserId = crypto.randomUUID();
+
+      // Insert directly into public.users table (bypass auth for guest users)
+      const { data: insertedUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: newUserId,
+          phone: dto.customerPhone,
+          email: `guest_${Date.now()}@kmerbeauty.guest`, // Placeholder email
+          password: 'GUEST_USER_NO_PASSWORD', // Placeholder - not usable
           first_name: dto.customerName || 'Guest',
           last_name: '',
           role: 'CLIENT',
-        }
-      });
+          is_verified: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
 
-      if (createUserError) {
-        // Fallback: Try inserting directly into public.users if auth.users fails or if we want to bypass auth
-        // BUT Supabase usually syncs auth.users to public.users via triggers.
-        // If we can't use admin api (service role key required), we might fail. 
-        // Assuming we have service role key in SupabaseService.
-        console.error('❌ [BookingsService] Failed to create auth user:', createUserError.message);
-        throw new Error(`Failed to create user for agent booking: ${createUserError.message}`);
+      if (insertError) {
+        console.error('❌ [BookingsService] Failed to create guest user:', insertError.message);
+        throw new Error(`Failed to create guest user: ${insertError.message}`);
       }
 
-      userId = newUser.user.id;
-
-      // Update public profile if needed (triggers usually handle this)
-      // Make sure first_name is set
-      await supabase.from('users').update({
-        first_name: dto.customerName || 'Guest',
-        is_verified: true, // Auto verify phone for agent bookings?
-      }).eq('id', userId);
+      userId = insertedUser.id;
+      console.log('✅ [BookingsService] Guest user created:', userId);
     }
 
     // 2. Calculate Prices & Details
@@ -699,7 +697,8 @@ export class BookingsService {
       total: total, // Add travel fee if logic exists
       items: bookingItems,
       region: 'Centre', // Default or derive from city
-      status: 'PENDING'
+      status: 'PENDING',
+      notes: dto.notes, // Notes de réservation du client
     } as any; // Cast to avoid strict type issues with missing optional fields
 
     return this.create(createBookingDto);
