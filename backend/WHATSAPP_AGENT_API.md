@@ -214,21 +214,31 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid
 
 ## 3. Disponibilités
 
-### Vérifier les créneaux disponibles
+### Vérifier si un prestataire est disponible
 
-Récupère les créneaux horaires libres pour un prestataire à une date donnée.
+Vérifie si le prestataire est actuellement en ligne et disponible.
 
 ```bash
-curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid-therapist-id/availability?date=2024-01-20" \
+curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid-therapist-id/availability" \
   -H "Content-Type: application/json"
 ```
 
 **Réponse :**
 ```json
-["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
+{
+  "available": true,
+  "is_online": true,
+  "is_active": true
+}
 ```
 
-> ⚠️ Le format de date est `YYYY-MM-DD`. Les créneaux retournés sont au format `HH:mm`.
+| Champ | Description |
+|-------|-------------|
+| `available` | `true` si le prestataire peut recevoir des réservations |
+| `is_online` | Le prestataire a activé son statut "en ligne" |
+| `is_active` | Le compte prestataire est actif |
+
+> 💡 L'agent devrait afficher uniquement les prestataires avec `available: true`.
 
 ---
 
@@ -238,8 +248,10 @@ curl -X GET "https://kmerbeauty-production.up.railway.app/api/v1/therapists/uuid
 
 Cet endpoint est **spécialement conçu pour l'agent WhatsApp**. Il gère automatiquement :
 - La création d'un compte utilisateur si le numéro est inconnu
-- Le calcul des prix et durées
+- Le calcul des prix et durées (additionne tous les services)
 - La création de la réservation
+
+> 💡 **Multi-services** : Vous pouvez réserver plusieurs services en une seule commande. Les prix et durées sont automatiquement additionnés.
 
 ```bash
 curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent" \
@@ -248,7 +260,7 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
   -d '{
     "customerPhone": "+237699123456",
     "customerName": "Jean Kamga",
-    "serviceIds": ["uuid-service-coiffure"],
+    "serviceIds": ["uuid-service-coiffure", "uuid-service-manucure"],
     "therapistId": "uuid-therapist-id",
     "scheduledAt": "2024-01-20T10:00:00Z",
     "city": "Douala",
@@ -263,7 +275,7 @@ curl -X POST "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent
 |-------|------|-------------|-------------|
 | `customerPhone` | string | ✅ | Numéro au format `+237XXXXXXXXX` |
 | `customerName` | string | ❌ | Nom du client (défaut: "Guest") |
-| `serviceIds` | string[] | ✅ | Liste des IDs de services à réserver |
+| `serviceIds` | string[] | ✅ | **Un ou plusieurs** IDs de services |
 | `therapistId` | string | ⚠️ | ID du prestataire (ou `salonId`) |
 | `salonId` | string | ⚠️ | ID du salon (si réservation en salon) |
 | `scheduledAt` | string | ✅ | Date/heure ISO 8601 |
