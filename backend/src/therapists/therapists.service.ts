@@ -191,86 +191,33 @@ export class TherapistsService {
   }
   async getAvailability(id: string, date: string) {
     const supabase = this.supabaseService.getClient();
-    const targetDate = new Date(date);
-    const dayOfWeek = targetDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-    // 1. Get therapist's availability for this day of week
-    const { data: availability, error: availError } = await supabase
-      .from('availability')
-      .select('*')
-      .eq('therapist_id', id)
-      .eq('day_of_week', dayOfWeek)
-      .eq('is_active', true)
+    // Simple availability check based on is_online field
+    const { data: therapist, error } = await supabase
+      .from('therapists')
+      .select(`
+        id,
+        is_active,
+        user:users!user_id (
+          is_online
+        )
+      `)
+      .eq('id', id)
       .single();
 
-    if (availError && availError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-      throw new Error(`Failed to fetch availability: ${availError.message}`);
+    if (error) {
+      throw new Error(`Failed to fetch therapist availability: ${error.message}`);
     }
 
-    if (!availability) {
-      return []; // No availability for this day
-    }
+    const userData = therapist?.user as any;
+    const isOnline = Array.isArray(userData) ? userData[0]?.is_online : (userData?.is_online ?? false);
+    const isActive = therapist?.is_active ?? false;
 
-    // 2. Get existing bookings for this therapist on this date
-    // We need to query bookings that overlap with the day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('scheduled_at, duration')
-      .eq('therapist_id', id)
-      .gte('scheduled_at', startOfDay.toISOString())
-      .lte('scheduled_at', endOfDay.toISOString())
-      .neq('status', 'CANCELLED')
-      .neq('status', 'DECLINED');
-
-    if (bookingsError) {
-      throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
-    }
-
-    // 3. Generate slots
-    const slots = [];
-    const [startHour, startMinute] = availability.start_time.split(':').map(Number);
-    const [endHour, endMinute] = availability.end_time.split(':').map(Number);
-
-    let currentSlot = new Date(date);
-    currentSlot.setHours(startHour, startMinute, 0, 0);
-
-    const endTime = new Date(date);
-    endTime.setHours(endHour, endMinute, 0, 0);
-
-    // Default slot duration: 60 minutes (can be adjusted or made dynamic)
-    const slotDuration = 60;
-
-    while (currentSlot < endTime) {
-      const slotEnd = new Date(currentSlot.getTime() + slotDuration * 60000);
-
-      if (slotEnd > endTime) break;
-
-      // Check if this slot overlaps with any existing booking
-      const isBooked = bookings?.some((booking) => {
-        const bookingStart = new Date(booking.scheduled_at);
-        const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
-
-        return (
-          (currentSlot >= bookingStart && currentSlot < bookingEnd) || // Slot starts inside booking
-          (slotEnd > bookingStart && slotEnd <= bookingEnd) || // Slot ends inside booking
-          (currentSlot <= bookingStart && slotEnd >= bookingEnd) // Slot encompasses booking
-        );
-      });
-
-      if (!isBooked) {
-        slots.push(currentSlot.toTimeString().slice(0, 5));
-      }
-
-      // Move to next slot (e.g., every 60 mins)
-      currentSlot = new Date(currentSlot.getTime() + 60 * 60000);
-    }
-
-    return slots;
+    return {
+      available: isOnline && isActive,
+      is_online: isOnline,
+      is_active: isActive,
+    };
   }
   async findNearby(
     lat: number,
