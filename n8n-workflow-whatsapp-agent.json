@@ -19,7 +19,7 @@
         {
             "parameters": {
                 "options": {
-                    "systemMessage": "Tu es l'assistant virtuel KmerBeauty, une plateforme de réservation de services de beauté au Cameroun.\n\n⚠️ RÈGLE CRITIQUE POUR LA RECHERCHE:\n1. Si le client veut un service précis, APPELLE `search_services` pour avoir l'ID.\n2. Si tu n'as pas la ville, DEMANDE-LA au client avant de chercher les prestataires. (Ne cherche pas sans ville sauf si le client insiste).\n3. Une fois que tu as l'ID du service ET la ville, APPELLE `list_therapists(city=..., serviceId=...)`.\n\nCAS TYPIQUE:\nClient: \"Je veux un massage pierre chaude\"\nToi: `search_services(\"massage pierre chaude\")`\n(Tu trouves l'ID \"abc-123\")\nToi à l'utilisateur: \"J'ai trouvé ce massage à 10 000 FCFA. Dans quelle ville êtes-vous (Douala ou Yaoundé) ?\"\nClient: \"Douala\"\nToi: `list_therapists(city=\"Douala\", serviceId=\"abc-123\")`\n\nSI AUCUN RÉSULTAT:\n- Si `list_therapists` renvoie vide pour un quartier précis, réessaie SANS le quartier.\n- Si `list_therapists` renvoie vide pour la ville entière, dis-le honnêtement."
+                    "systemMessage": "Tu es l'assistant virtuel KmerBeauty, une plateforme de réservation de services de beauté au Cameroun.\n\n⚠️ ALGORITHME OBLIGATOIRE (Suis ça pas à pas) :\n1. ANALYSE : Le client veut un service ? -> APPELLE `search_services(q=\"...\")`.\n2. OBSERVE : Tu reçois l'ID du service (ex: \"uuid-123\").\n3. VÉRIFIE VILLE : As-tu la ville ? \n   - NON -> DEMANDE \"Dans quelle ville êtes-vous (Douala ou Yaoundé) ?\" et ARRÊTE-TOI.\n   - OUI -> PASSE À L'ÉTAPE 4.\n4. CHERCHE : APPELLE `list_therapists(city=\"...\", serviceId=\"uuid-123\")`. (Si le client a donné un quartier, mets-le, sinon laisse vide).\n5. RÉPONDS : Utilise uniquement le résultat de l'étape 4.\n\n⛔ INTERDIT :\n- Ne dis JAMAIS \"Je n'ai pas trouvé\" sans avoir appelé `list_therapists`.\n- Ne t'arrête JAMAIS après `search_services` si tu as la ville. ENCHAÎNE immédiatement avec `list_therapists`.\n- N'invente jamais de prestataires."
                 },
                 "agent": "conversationalAgent"
             },
@@ -55,7 +55,7 @@
         {
             "parameters": {
                 "name": "search_services",
-                "toolDescription": "RECHERCHE DISPONIBLE SERVICES. Appelle CECI EN PREMIER quand un client demande un service. Retourne une liste de services avec leurs IDs. Utilise cet ID pour list_therapists.",
+                "description": "RECHERCHE DISPONIBLE SERVICES. Appelle CECI EN PREMIER quand un client demande un service. Retourne une liste de services avec leurs IDs. Utilise cet ID pour list_therapists.",
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/services/search",
                 "sendQuery": true,
@@ -82,7 +82,7 @@
         {
             "parameters": {
                 "name": "list_therapists",
-                "toolDescription": "TROUVE PRESTATAIRES. Utilise 'serviceId' (obtenu via search_services) pour filtrer. 'quarter' est OPTIONNEL: si non fourni, cherche dans toute la ville.",
+                "description": "TROUVE PRESTATAIRES. Utilise 'serviceId' (obtenu via search_services) pour filtrer. 'quarter' est OPTIONNEL: si non fourni, cherche dans toute la ville.",
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/therapists",
                 "sendQuery": true,
@@ -117,7 +117,7 @@
         {
             "parameters": {
                 "name": "check_availability",
-                "toolDescription": "VERIFIE DISPONIBILITE. Appelle ceci avant de proposer une réservation pour voir si le prestataire peut accepter des RDV.",
+                "description": "VERIFIE DISPONIBILITE. Appelle ceci avant de proposer une réservation pour voir si le prestataire peut accepter des RDV.",
                 "method": "GET",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}/availability",
                 "options": {}
@@ -134,7 +134,7 @@
         {
             "parameters": {
                 "name": "create_booking",
-                "toolDescription": "RESERVE UN RDV. Confirme d'abord: service, prestataire, date/heure et numéro client (+237...). Crée le compte client si besoin.",
+                "description": "RESERVE UN RDV. Confirme d'abord: service, prestataire, date/heure et numéro client (+237...). Crée le compte client si besoin.",
                 "method": "POST",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent",
                 "sendHeaders": true,
@@ -164,7 +164,7 @@
         {
             "parameters": {
                 "name": "get_client_bookings",
-                "toolDescription": "HISTORIQUE CLIENT. Utilise ceci si un client demande 'Quels sont mes RDV ?' ou veut voir ses réservations passées/futures.",
+                "description": "HISTORIQUE CLIENT. Utilise ceci si un client demande 'Quels sont mes RDV ?' ou veut voir ses réservations passées/futures.",
                 "method": "GET",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/client/{{ $fromAI('phone', 'Numéro au format +237XXXXXXXXX') }}",
                 "sendHeaders": true,
@@ -191,7 +191,7 @@
         {
             "parameters": {
                 "name": "modify_booking",
-                "toolDescription": "CHANGE RDV. Pour modifier date, lieu ou notes. Nécessite l'ID du booking.",
+                "description": "CHANGE RDV. Pour modifier date, lieu ou notes. Nécessite l'ID du booking.",
                 "method": "PATCH",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/{{ $fromAI('bookingId', 'ID de la réservation') }}",
                 "sendHeaders": true,
@@ -221,7 +221,7 @@
         {
             "parameters": {
                 "name": "cancel_booking",
-                "toolDescription": "ANNULE RDV. Demande toujours une raison. Nécessite l'ID du booking.",
+                "description": "ANNULE RDV. Demande toujours une raison. Nécessite l'ID du booking.",
                 "method": "PATCH",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/{{ $fromAI('bookingId', 'ID de la réservation') }}/cancel",
                 "sendHeaders": true,
@@ -251,7 +251,7 @@
         {
             "parameters": {
                 "name": "list_all_services",
-                "toolDescription": "CATALOGUE COMPLET. Liste TOUS les services. Utilise seulement si le client demande 'Quels services avez-vous ?'. Trop de résultats pour une recherche précise.",
+                "description": "CATALOGUE COMPLET. Liste TOUS les services. Utilise seulement si le client demande 'Quels services avez-vous ?'. Trop de résultats pour une recherche précise.",
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/services",
                 "sendQuery": true,
@@ -278,7 +278,7 @@
         {
             "parameters": {
                 "name": "get_therapist_details",
-                "toolDescription": "DETAILS PRESTATAIRE. Affiche bio, photos, note. Utile pour 'montrez-moi son profil'.",
+                "description": "DETAILS PRESTATAIRE. Affiche bio, photos, note. Utile pour 'montrez-moi son profil'.",
                 "method": "GET",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}",
                 "options": {}
@@ -295,7 +295,7 @@
         {
             "parameters": {
                 "name": "get_therapist_services",
-                "toolDescription": "PRIX PRESTATAIRE. Liste les services et tarifs SPÉCIFIQUES d'un prestataire donné.",
+                "description": "PRIX PRESTATAIRE. Liste les services et tarifs SPÉCIFIQUES d'un prestataire donné.",
                 "method": "GET",
                 "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}/services",
                 "options": {}
