@@ -1,0 +1,481 @@
+{
+    "name": "KmerBeauty WhatsApp Agent",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "systemMessage": "Tu es l'assistant virtuel KmerBeauty, une plateforme de réservation de services de beauté au Cameroun.\n\n⚠️ RÈGLE CRITIQUE POUR LA RECHERCHE:\n1. AVANT de chercher un prestataire, tu DOIS TOUJOURS appeler `search_services` pour trouver l'ID exact du service (ex: 'uuid-123...').\n2. Ensuite, utilise CET ID pour appeler `list_therapists`.\n3. NE JAMAIS inventer un ID ou utiliser le nom du service comme ID.\n\nQUAND UTILISER LES TOOLS:\n- Client demande un service → APPELLE `search_services` D'ABORD, note l'ID, PUIS `list_therapists(serviceId=...)`\n- Client cherche prestataire par lieu → APPELLE `list_therapists(city=..., quarter=...)`\n- Client veut réserver → APPELLE `create_booking` (demande d'abord le numéro +237...)\n- Client veut vérifier prix/dispo → APPELLE `get_therapist_services` ou `check_availability`\n\nEXEMPLE:\nClient: 'Je veux un massage pierre chaude à Akwa'\nToi:\n1. `search_services('massage pierre chaude')` -> Tu reçois l'ID 'abc-123'\n2. `list_therapists(city='Douala', quarter='Akwa', serviceId='abc-123')`\n\nFORMAT DES RÉPONSES:\n- Sois amical et professionnel\n- Prix en XAF\n- Si aucun résultat à `list_therapists` pour un quartier, réessaie SANS le paramètre `quarter` pour voir dans toute la ville."
+                },
+                "agent": "conversationalAgent"
+            },
+            "id": "ai-agent",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1.7,
+            "position": [
+                500,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "model": "claude-3-5-sonnet-20241022",
+                "options": {}
+            },
+            "id": "claude-model",
+            "name": "Claude",
+            "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+            "typeVersion": 1.2,
+            "position": [
+                500,
+                500
+            ],
+            "credentials": {
+                "anthropicApi": {
+                    "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+                    "name": "Anthropic API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "name": "search_services",
+                "description": "Recherche des services de beauté par mot-clé (coiffure, massage, manucure, maquillage, etc.). Comprend les synonymes.",
+                "method": "GET",
+                "url": "https://kmerbeauty-production.up.railway.app/api/v1/services/search",
+                "sendQuery": true,
+                "specifyQuery": "keypair",
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $fromAI('query', 'Le terme de recherche') }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tool-search-services",
+            "name": "search_services",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                300,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "name": "list_therapists",
+                "description": "Liste les prestataires de beauté. Filtre par ville, quartier et/ou service. Les prestataires du quartier demandé apparaissent en premier.",
+                "method": "GET",
+                "url": "https://kmerbeauty-production.up.railway.app/api/v1/therapists",
+                "sendQuery": true,
+                "specifyQuery": "keypair",
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "city",
+                            "value": "={{ $fromAI('city', 'La ville (ex: Douala, Yaoundé)', true) }}"
+                        },
+                        {
+                            "name": "quarter",
+                            "value": "={{ $fromAI('quarter', 'Le quartier (ex: Akwa, Bonanjo)', true) }}"
+                        },
+                        {
+                            "name": "serviceId",
+                            "value": "={{ $fromAI('serviceId', 'ID du service pour filtrer', true) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tool-list-therapists",
+            "name": "list_therapists",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                400,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "name": "check_availability",
+                "description": "Vérifie si un prestataire est actuellement disponible pour recevoir des réservations.",
+                "method": "GET",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}/availability",
+                "options": {}
+            },
+            "id": "tool-check-availability",
+            "name": "check_availability",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                500,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "name": "create_booking",
+                "description": "Crée une nouvelle réservation. Peut réserver plusieurs services. Crée automatiquement un compte client si le numéro est nouveau.",
+                "method": "POST",
+                "url": "https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent",
+                "sendHeaders": true,
+                "specifyHeaders": "keypair",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-agent-key",
+                            "value": "={{ $env.WHATSAPP_AGENT_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"customerPhone\": \"{{ $fromAI('customerPhone', 'Numéro au format +237XXXXXXXXX') }}\",\n  \"customerName\": \"{{ $fromAI('customerName', 'Nom du client', true) }}\",\n  \"serviceIds\": {{ $fromAI('serviceIds', 'Tableau des IDs de services ex: [\"id1\", \"id2\"]') }},\n  \"therapistId\": \"{{ $fromAI('therapistId', 'ID du prestataire') }}\",\n  \"scheduledAt\": \"{{ $fromAI('scheduledAt', 'Date ISO 8601 ex: 2024-01-20T10:00:00Z') }}\",\n  \"city\": \"{{ $fromAI('city', 'Ville') }}\",\n  \"quarter\": \"{{ $fromAI('quarter', 'Quartier', true) }}\",\n  \"street\": \"{{ $fromAI('street', 'Adresse précise', true) }}\",\n  \"notes\": \"{{ $fromAI('notes', 'Notes du client', true) }}\"\n}",
+                "options": {}
+            },
+            "id": "tool-create-booking",
+            "name": "create_booking",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                600,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "name": "get_client_bookings",
+                "description": "Récupère l'historique des réservations d'un client à partir de son numéro de téléphone.",
+                "method": "GET",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/client/{{ $fromAI('phone', 'Numéro au format +237XXXXXXXXX') }}",
+                "sendHeaders": true,
+                "specifyHeaders": "keypair",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-agent-key",
+                            "value": "={{ $env.WHATSAPP_AGENT_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tool-get-bookings",
+            "name": "get_client_bookings",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                700,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "name": "modify_booking",
+                "description": "Modifie une réservation existante (changer date, notes, adresse).",
+                "method": "PATCH",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/{{ $fromAI('bookingId', 'ID de la réservation') }}",
+                "sendHeaders": true,
+                "specifyHeaders": "keypair",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-agent-key",
+                            "value": "={{ $env.WHATSAPP_AGENT_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"scheduledAt\": \"{{ $fromAI('scheduledAt', 'Nouvelle date ISO 8601', true) }}\",\n  \"notes\": \"{{ $fromAI('notes', 'Nouvelles notes', true) }}\",\n  \"quarter\": \"{{ $fromAI('quarter', 'Nouveau quartier', true) }}\",\n  \"street\": \"{{ $fromAI('street', 'Nouvelle adresse', true) }}\"\n}",
+                "options": {}
+            },
+            "id": "tool-modify-booking",
+            "name": "modify_booking",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                300,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "name": "cancel_booking",
+                "description": "Annule une réservation existante.",
+                "method": "PATCH",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/bookings/agent/{{ $fromAI('bookingId', 'ID de la réservation') }}/cancel",
+                "sendHeaders": true,
+                "specifyHeaders": "keypair",
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "x-agent-key",
+                            "value": "={{ $env.WHATSAPP_AGENT_KEY }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"reason\": \"{{ $fromAI('reason', 'Raison de l annulation', true) }}\"\n}",
+                "options": {}
+            },
+            "id": "tool-cancel-booking",
+            "name": "cancel_booking",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                400,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "name": "list_all_services",
+                "description": "Liste tous les services de beauté disponibles. Peut filtrer par catégorie (HAIRDRESSING, MASSAGE, NAIL_CARE, MAKEUP, SKINCARE, etc.).",
+                "method": "GET",
+                "url": "https://kmerbeauty-production.up.railway.app/api/v1/services",
+                "sendQuery": true,
+                "specifyQuery": "keypair",
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "category",
+                            "value": "={{ $fromAI('category', 'Catégorie de service (optionnel)', true) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tool-list-services",
+            "name": "list_all_services",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                500,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "name": "get_therapist_details",
+                "description": "Récupère les détails complets d'un prestataire: informations personnelles, note, photo, localisation.",
+                "method": "GET",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}",
+                "options": {}
+            },
+            "id": "tool-get-therapist",
+            "name": "get_therapist_details",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                600,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "name": "get_therapist_services",
+                "description": "Récupère la liste des services offerts par un prestataire avec ses prix et durées personnalisés.",
+                "method": "GET",
+                "url": "=https://kmerbeauty-production.up.railway.app/api/v1/therapists/{{ $fromAI('therapistId', 'ID du prestataire') }}/services",
+                "options": {}
+            },
+            "id": "tool-get-therapist-services",
+            "name": "get_therapist_services",
+            "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+            "typeVersion": 1.1,
+            "position": [
+                700,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json.output }}",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                750,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Claude": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "search_services": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "list_therapists": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "check_availability": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "create_booking": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "get_client_bookings": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "modify_booking": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "cancel_booking": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "list_all_services": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "get_therapist_details": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "get_therapist_services": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 1,
+    "updatedAt": "2024-01-20T00:00:00.000Z",
+    "versionId": "1"
+}

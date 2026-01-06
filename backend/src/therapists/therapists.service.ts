@@ -33,7 +33,14 @@ export class TherapistsService {
       .order('rating', { ascending: false });
 
     if (city) {
-      query = query.eq('city', city);
+      const normalizedCity = city.toLowerCase().trim();
+      if (normalizedCity === 'yaounde' || normalizedCity === 'yaoundé') {
+        // Handle Yaounde/Yaoundé variation
+        query = query.in('city', ['Yaounde', 'Yaoundé', 'yaounde', 'yaoundé']);
+      } else {
+        // Case insensitive search for other cities
+        query = query.ilike('city', city);
+      }
     }
 
     const { data, error } = await query;
@@ -78,17 +85,27 @@ export class TherapistsService {
 
     // Filter by service if provided
     if (serviceId) {
+      console.log(`🔍 [TherapistsService] Filtering by serviceId: ${serviceId}`);
       if (result.length === 0) {
+        console.log('⚠️ [TherapistsService] No therapists found before service filter');
         return [];
       }
 
       const therapistIds = result.map((t) => t.id);
-      const { data: therapistServices } = await supabase
+      console.log(`ℹ️ [TherapistsService] Checking ${therapistIds.length} therapists`);
+
+      const { data: therapistServices, error: serviceError } = await supabase
         .from('therapist_services')
         .select('therapist_id, price, duration')
         .eq('service_id', serviceId)
         .eq('is_active', true)
         .in('therapist_id', therapistIds);
+
+      if (serviceError) {
+        console.error('❌ [TherapistsService] Error querying therapist_services:', serviceError);
+      }
+
+      console.log(`✅ [TherapistsService] Found ${therapistServices?.length || 0} matching services`);
 
       if (therapistServices && therapistServices.length > 0) {
         const priceMap = new Map(
@@ -98,16 +115,17 @@ export class TherapistsService {
           ]),
         );
 
-        return result
+        result = result
           .filter((t) => priceMap.has(t.id))
           .map((t) => ({
             ...t,
             service_price: priceMap.get(t.id)?.price,
             service_duration: priceMap.get(t.id)?.duration,
           }));
+        console.log(`ℹ️ [TherapistsService] ${result.length} therapists remain after filter`);
+      } else {
+        result = [];
       }
-
-      return [];
     }
 
     return result;
