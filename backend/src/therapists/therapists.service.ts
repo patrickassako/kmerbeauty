@@ -47,12 +47,20 @@ export class TherapistsService {
     // Prioritize by quarter if provided
     if (quarter && result.length > 0) {
       result = result.sort((a, b) => {
-        const aZones = a.service_zones ? (typeof a.service_zones === 'string' ? JSON.parse(a.service_zones) : a.service_zones) : [];
-        const bZones = b.service_zones ? (typeof b.service_zones === 'string' ? JSON.parse(b.service_zones) : b.service_zones) : [];
+        let aZones: any[] = [];
+        let bZones: any[] = [];
 
-        // Check if quarter matches (case-insensitive for robustness)
-        const aMatches = Array.isArray(aZones) && aZones.some((z: string) => z.toLowerCase() === quarter.toLowerCase());
-        const bMatches = Array.isArray(bZones) && bZones.some((z: string) => z.toLowerCase() === quarter.toLowerCase());
+        try {
+          aZones = a.service_zones ? (typeof a.service_zones === 'string' ? JSON.parse(a.service_zones) : a.service_zones) : [];
+        } catch { aZones = []; }
+
+        try {
+          bZones = b.service_zones ? (typeof b.service_zones === 'string' ? JSON.parse(b.service_zones) : b.service_zones) : [];
+        } catch { bZones = []; }
+
+        // Check if quarter matches (case-insensitive, with type safety)
+        const aMatches = Array.isArray(aZones) && aZones.some((z) => typeof z === 'string' && z.toLowerCase() === quarter.toLowerCase());
+        const bMatches = Array.isArray(bZones) && bZones.some((z) => typeof z === 'string' && z.toLowerCase() === quarter.toLowerCase());
 
         if (aMatches && !bMatches) return -1;
         if (!aMatches && bMatches) return 1;
