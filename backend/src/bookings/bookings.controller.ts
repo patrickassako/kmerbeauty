@@ -144,4 +144,59 @@ export class BookingsController {
     console.log('📥 [BookingsController] PATCH /bookings/' + id + '/start');
     return this.bookingsService.startBooking(id);
   }
+
+  // ============ AGENT ENDPOINTS ============
+
+  /**
+   * Get all bookings for a client by phone number
+   */
+  @Get('agent/client/:phone')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async getClientBookings(
+    @Param('phone') phone: string,
+    @Headers('x-agent-key') agentKey: string,
+  ) {
+    const validAgentKey = process.env.WHATSAPP_AGENT_KEY;
+    if (!validAgentKey || agentKey !== validAgentKey) {
+      throw new UnauthorizedException('Invalid or missing agent key');
+    }
+
+    return this.bookingsService.findByPhone(phone);
+  }
+
+  /**
+   * Modify a booking via agent (change date, notes, etc.)
+   */
+  @Patch('agent/:id')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async modifyAgentBooking(
+    @Param('id') id: string,
+    @Body() body: { scheduledAt?: string; notes?: string; quarter?: string; street?: string },
+    @Headers('x-agent-key') agentKey: string,
+  ) {
+    const validAgentKey = process.env.WHATSAPP_AGENT_KEY;
+    if (!validAgentKey || agentKey !== validAgentKey) {
+      throw new UnauthorizedException('Invalid or missing agent key');
+    }
+
+    return this.bookingsService.updateAgentBooking(id, body);
+  }
+
+  /**
+   * Cancel a booking via agent
+   */
+  @Patch('agent/:id/cancel')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async cancelAgentBooking(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @Headers('x-agent-key') agentKey: string,
+  ) {
+    const validAgentKey = process.env.WHATSAPP_AGENT_KEY;
+    if (!validAgentKey || agentKey !== validAgentKey) {
+      throw new UnauthorizedException('Invalid or missing agent key');
+    }
+
+    return this.bookingsService.cancel(id, body.reason || 'Annulé via WhatsApp');
+  }
 }
