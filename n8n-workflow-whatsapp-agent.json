@@ -59,15 +59,8 @@
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/services/search",
                 "sendQuery": true,
-                "specifyQuery": "keypair",
-                "queryParameters": {
-                    "parameters": [
-                        {
-                            "name": "q",
-                            "value": "={{ $fromAI('query', 'Le terme de recherche') }}"
-                        }
-                    ]
-                },
+                "specifyQuery": "json",
+                "jsonQuery": "={ \"q\": \"{{ $fromAI('query', 'Le terme de recherche') }}\" }",
                 "options": {}
             },
             "id": "tool-search-services",
@@ -86,23 +79,8 @@
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/therapists",
                 "sendQuery": true,
-                "specifyQuery": "keypair",
-                "queryParameters": {
-                    "parameters": [
-                        {
-                            "name": "city",
-                            "value": "={{ $fromAI('city', 'La ville (ex: Douala, Yaoundé)', true) }}"
-                        },
-                        {
-                            "name": "quarter",
-                            "value": "={{ $fromAI('quarter', 'Le quartier (ex: Akwa, Bonanjo)', false) }}"
-                        },
-                        {
-                            "name": "serviceId",
-                            "value": "={{ $fromAI('serviceId', 'ID du service pour filtrer', true) }}"
-                        }
-                    ]
-                },
+                "specifyQuery": "json",
+                "jsonQuery": "={ \"city\": \"{{ $fromAI('city', 'La ville (ex: Douala, Yaoundé)', true) }}\", \"quarter\": \"{{ $fromAI('quarter', 'Le quartier (ex: Akwa, Bonanjo)', false) }}\", \"serviceId\": \"{{ $fromAI('serviceId', 'ID du service pour filtrer', true) }}\" }",
                 "options": {}
             },
             "id": "tool-list-therapists",
@@ -255,15 +233,8 @@
                 "method": "GET",
                 "url": "https://kmerbeauty-production.up.railway.app/api/v1/services",
                 "sendQuery": true,
-                "specifyQuery": "keypair",
-                "queryParameters": {
-                    "parameters": [
-                        {
-                            "name": "category",
-                            "value": "={{ $fromAI('category', 'Catégorie de service (optionnel)', true) }}"
-                        }
-                    ]
-                },
+                "specifyQuery": "json",
+                "jsonQuery": "={ \"category\": \"{{ $fromAI('category', 'Catégorie de service (optionnel)', false) }}\" }",
                 "options": {}
             },
             "id": "tool-list-services",
