@@ -26,6 +26,8 @@ import { SearchModule } from './search/search.module';
 import { GeocodingModule } from './geocoding/geocoding.module';
 import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { StoriesModule } from './stories/stories.module';
+import { PacksModule } from './packs/packs.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     GeocodingModule,
     ReportsModule,
     NotificationsModule,
+    StoriesModule,
+    PacksModule,
   ],
   controllers: [AppController],
   providers: [
