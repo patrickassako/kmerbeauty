@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useI18n } from '../i18n/I18nContext';
 import { useResponsive } from '../hooks/useResponsive';
 import { Input } from '../components/Input';
@@ -107,12 +107,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/auth-bg.jpg')}
+    <LinearGradient
+      colors={['#221510', '#1A1A1A']}
       style={[styles.background, { width, height }]}
-      resizeMode="cover"
     >
-      <View style={styles.overlay} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -126,25 +124,13 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
           keyboardShouldPersistTaps="handled"
           bounces={true}
         >
-          {/* Header - Now inside ScrollView */}
-          <View style={[styles.header, { paddingTop: spacing(8), paddingBottom: spacing(2.5) }]}>
+          {/* Header */}
+          <View style={[styles.header, { paddingTop: spacing(6), paddingBottom: spacing(3) }]}>
             <Image
-              source={require('../../assets/logo_nobg.png')}
-              style={[styles.logo, { width: spacing(10), height: spacing(10) }]}
+              source={require('../../assets/logo-kmr.png')}
+              style={[styles.logo, { width: 200, height: 65 }]}
               resizeMode="contain"
             />
-            <Text style={[styles.title, {
-              fontSize: normalizeFontSize(isSmallDevice ? 24 : 28),
-              letterSpacing: isSmallDevice ? 3 : 4
-            }]}>
-              KMR-BEAUTY
-            </Text>
-            <Text style={[styles.subtitle, {
-              fontSize: normalizeFontSize(isSmallDevice ? 9 : 11),
-              letterSpacing: 2
-            }]}>
-              {t.onboarding.subtitle.toUpperCase()}
-            </Text>
           </View>
 
           <View style={[styles.card, {
@@ -255,19 +241,13 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <View style={[styles.indicator, { bottom: spacing(5), width: spacing(15), height: spacing(0.5) }]} />
-    </ImageBackground>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   container: {
     flex: 1,
@@ -276,17 +256,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    marginBottom: 10,
-    borderRadius: 12,
-  },
-  title: {
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontWeight: '400',
-    color: '#FFFFFF',
+    marginBottom: 16,
+    tintColor: '#FFFFFF',
   },
   formContainer: {
     flex: 1,
@@ -294,16 +265,18 @@ const styles = StyleSheet.create({
   formContent: {
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(45, 45, 45, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   cardTitle: {
     fontWeight: '700',
-    color: '#2D2D2D',
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   cardSubtitle: {
     fontWeight: '400',
-    color: '#666',
+    color: '#c9a092',
     textAlign: 'center',
   },
   form: {
@@ -321,25 +294,26 @@ const styles = StyleSheet.create({
   checkbox: {
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#CCC',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#2A1D18',
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#2D2D2D',
-    borderColor: '#2D2D2D',
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
   },
   checkmark: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
   rememberMeText: {
-    color: '#666',
+    color: '#c9a092',
   },
   forgotPasswordText: {
     fontWeight: '500',
-    color: '#2D2D2D',
+    color: '#FF6B6B',
   },
   divider: {
     flexDirection: 'row',
@@ -375,17 +349,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#666',
+    color: '#c9a092',
   },
   footerLink: {
     fontWeight: '600',
-    color: '#2D2D2D',
+    color: '#FF6B6B',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#2A1D18',
     borderRadius: 12,
     padding: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   tab: {
     flex: 1,
@@ -394,28 +370,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#FF6B6B',
   },
   tabText: {
     fontWeight: '600',
-    color: '#666',
+    color: '#c9a092',
   },
   activeTabText: {
-    color: '#2D2D2D',
-  },
-  indicator: {
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -60,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
+    color: '#FFFFFF',
   },
 });

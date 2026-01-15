@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KMR-BEAUTY Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff6b6b",
+                        "background-light": "#f8f5f5",
+                        "background-dark": "#230f0f",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased">
+<!-- Main Container -->
+<div class="relative flex h-screen w-full flex-col overflow-hidden bg-background-dark">
+<!-- Background Image Layer -->
+<div class="absolute inset-0 z-0 h-full w-full">
+<div class="absolute inset-0 z-10 bg-gradient-to-b from-background-dark/30 via-transparent to-background-dark"></div>
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-background-dark via-background-dark/80 to-transparent"></div>
+<!-- Image with specified alt text -->
+<div class="h-full w-full bg-cover bg-center bg-no-repeat" data-alt="Stylish Cameroonian woman looking in mirror during salon treatment" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCJ-CNZ5WhZgnsDIKWYMrYCs_apOJ624ys-mzr-kV8sU8Rgip-ndUEnbdEIcUoMvGk_O7hB8gWZ6xqfbwwrSDn-LRxs3Yv3xozARkHmkH9ATsfKb1zCvBCbexPqhWCVZ79fjoOCqkhVgHSLBD8Si2vKRYnzJVtt0srlKs1S7LzG0dda-kOGiRIAvNmpQLbJ9HBf3L8ClEEZhZRP3QHNX0K_daZOIhk2Ay_FLFVB8Vheo_bDsAMFwM_5KNnLbf4ro4_bqgMwy9g45ND');">
+</div>
+</div>
+<!-- Content Overlay Layer -->
+<div class="relative z-20 flex h-full w-full flex-col justify-between px-6 pt-12 pb-8">
+<!-- Top Navigation / Header -->
+<div class="flex w-full items-center justify-between">
+<!-- Logo -->
+<div class="flex items-center gap-2 rounded-full bg-background-dark/30 px-3 py-1 backdrop-blur-sm border border-white/10">
+<span class="material-symbols-outlined text-primary text-[24px]">spa</span>
+<span class="text-lg font-bold tracking-wider text-white">KMR-BEAUTY</span>
+</div>
+<!-- Skip Button -->
+<button class="group flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
+<span>Passer</span>
+</button>
+</div>
+<!-- Bottom Content Section -->
+<div class="flex flex-col gap-8">
+<!-- Text Block -->
+<div class="flex flex-col gap-3 text-center md:text-left">
+<h1 class="font-display text-4xl font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-sm md:text-5xl">
+                        La beauté à <br/>
+<span class="text-primary">votre porte</span>
+</h1>
+<p class="font-body text-base font-medium leading-relaxed text-white/80 md:text-lg">
+                        Découvrez les meilleurs experts beauté de Douala et Yaoundé directement chez vous.
+                    </p>
+</div>
+<!-- Controls & Actions -->
+<div class="flex flex-col items-center gap-8">
+<!-- Page Indicators -->
+<div class="flex items-center justify-center gap-3">
+<div class="h-2.5 w-8 rounded-full bg-primary transition-all"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-white/20 transition-all hover:bg-white/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-white/20 transition-all hover:bg-white/40"></div>
+</div>
+<!-- Primary Action Button -->
+<button class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full bg-primary px-8 py-4 text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 active:scale-[0.98]">
+<span class="relative z-10 text-lg font-bold tracking-wide">Suivant</span>
+<span class="material-symbols-outlined relative z-10 text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+<!-- Subtle shine effect -->
+<div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

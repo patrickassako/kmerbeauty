@@ -1,0 +1,199 @@
+{
+    "brand": {
+        "name": "KMR-BEAUTY Local Market Specifications",
+        "version": "1.0",
+        "region": "Cameroon & Central Africa"
+    },
+    "currency": {
+        "code": "XAF",
+        "name": "Franc CFA",
+        "symbol": "XAF",
+        "format": {
+            "display": "XAF {amount}",
+            "thousandsSeparator": ",",
+            "decimalSeparator": ".",
+            "decimals": 0,
+            "examples": [
+                "XAF 15,000",
+                "XAF 3,500",
+                "XAF 25,000"
+            ]
+        },
+        "priceDisplay": {
+            "large": {
+                "fontSize": "24px",
+                "fontWeight": "700"
+            },
+            "medium": {
+                "fontSize": "18px",
+                "fontWeight": "600"
+            },
+            "small": {
+                "fontSize": "14px",
+                "fontWeight": "500"
+            }
+        }
+    },
+    "paymentMethods": [
+        {
+            "id": "orange_money",
+            "name": "Orange Money",
+            "displayName": "Payer avec Orange Money",
+            "icon": "orange-money",
+            "primaryColor": "#FF6600",
+            "available": true
+        },
+        {
+            "id": "mtn_momo",
+            "name": "MTN Mobile Money",
+            "displayName": "Payer avec MTN Mobile Money",
+            "icon": "mtn-momo",
+            "primaryColor": "#FFCC00",
+            "available": true
+        },
+        {
+            "id": "flutterwave",
+            "name": "Flutterwave",
+            "displayName": "Payer avec Flutterwave",
+            "icon": "flutterwave",
+            "available": true
+        }
+    ],
+    "languages": {
+        "primary": {
+            "code": "fr",
+            "name": "Français",
+            "flag": "🇫🇷",
+            "usage": "Interface and content"
+        },
+        "secondary": {
+            "code": "en",
+            "name": "English",
+            "flag": "🇬🇧",
+            "usage": "Toggle option"
+        },
+        "toggle": {
+            "format": "Langue: FR | EN",
+            "position": "header or settings"
+        }
+    },
+    "locations": {
+        "cities": [
+            {
+                "id": "douala",
+                "name": "Douala",
+                "landmarks": [
+                    "Douala Port",
+                    "Bonanjo",
+                    "Akwa",
+                    "Bonapriso",
+                    "Deido"
+                ],
+                "default": true
+            },
+            {
+                "id": "yaounde",
+                "name": "Yaoundé",
+                "landmarks": [
+                    "Place du 20 Mai",
+                    "Palais des Congrès",
+                    "Bastos",
+                    "Mvan",
+                    "Nlongkak"
+                ]
+            }
+        ],
+        "selector": {
+            "placeholder": "Sélectionner votre ville",
+            "format": "Dropdown"
+        },
+        "addressFormat": {
+            "pattern": "{quartier}, {ville}",
+            "examples": [
+                "Rue du Gouverneur, Akwa, Douala",
+                "Quartier Bastos, Yaoundé"
+            ]
+        }
+    },
+    "dateTime": {
+        "dateFormat": {
+            "display": "DD MMMM YYYY",
+            "examples": [
+                "15 Janvier 2024",
+                "20 Février 2024"
+            ],
+            "locale": "fr-FR"
+        },
+        "timeFormat": {
+            "display": "24-hour",
+            "format": "HH:mm",
+            "examples": [
+                "14:30",
+                "09:00",
+                "18:45"
+            ]
+        },
+        "booking": {
+            "display": "Rendez-vous: {time_start} - {time_end}",
+            "example": "Rendez-vous: 10:00 - 11:00"
+        }
+    },
+    "phoneFormat": {
+        "countryCode": "+237",
+        "format": "6XX XXX XXX",
+        "example": "+237 699 123 456",
+        "keyboard": "numeric"
+    },
+    "uiLabels": {
+        "screens": {
+            "home": "Accueil",
+            "services": "Services",
+            "bookings": "Réservations",
+            "profile": "Profil",
+            "marketplace": "Boutique",
+            "chat": "Messages"
+        },
+        "actions": {
+            "bookNow": "RÉSERVER MAINTENANT",
+            "viewDetails": "VOIR DÉTAILS",
+            "cancel": "Annuler",
+            "confirm": "Confirmer",
+            "save": "Enregistrer",
+            "search": "Rechercher",
+            "filter": "Filtrer"
+        },
+        "status": {
+            "pending": "En attente",
+            "confirmed": "Confirmé",
+            "inProgress": "En cours",
+            "completed": "Terminé",
+            "cancelled": "Annulé"
+        }
+    },
+    "accessibility": {
+        "highContrastMode": {
+            "available": true,
+            "toggle": "Settings"
+        },
+        "textSizeAdjustment": {
+            "levels": [
+                "Low",
+                "Regular",
+                "High"
+            ],
+            "default": "Regular"
+        },
+        "voiceoverSupport": {
+            "enabled": true,
+            "buttonLabels": "Descriptive (e.g., 'Bouton: Réserver')"
+        },
+        "touchTargets": {
+            "minimum": "44px",
+            "recommended": "48px"
+        },
+        "colorblindFriendly": {
+            "enabled": true,
+            "note": "Color combinations pass WCAG standards"
+        }
+    }
+}

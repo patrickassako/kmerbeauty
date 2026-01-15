@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KMR-BEAUTY Connexion</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff6b6b",
+                        "background-light": "#f8f5f5",
+                        "background-dark": "#1A1A1A", /* Adjusted to match Charcoal request */
+                        "surface-dark": "#2D2D2D", /* Matching the requested Black #2D2D2D */
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Plus Jakarta Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>/* Custom styles to ensure consistent look */
+body {
+    font-family: "Plus Jakarta Sans", sans-serif
+    }
+/* Custom checkbox style handling */
+input[type="checkbox"]:checked {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAOLwJYsOUZOzclgUNZ32Uyc1L1aQ4gPqmO88T695JQK3kZo8lG6tIbNUhvtui3RGoXQUXpyw1nTwlQ3T3WNlNKOflNGHch1_ucb5dX63wKM8dkqH7dF-GJyNXyGwQk7UxgTy4mZiv38_bcQUreJGKqsmfa__EqtCYOw3e1ak2PdQeNOz_n1MHZBCKRW2s-4zYs0tn3F-pFfa9Uy4Z6fMUtTRd9w642u1-IUQIYJlbQh9o2ROrp7zsuAjSgMzcwfxLn8zRB_Yy8K52v)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4">
+<!-- Main Container - Mobile Form Factor -->
+<div class="relative flex w-full max-w-[400px] flex-col overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Branding Area -->
+<div class="flex flex-col items-center justify-center pt-12 pb-6">
+<div class="relative flex h-24 w-24 items-center justify-center rounded-full bg-surface-dark/50 dark:bg-surface-dark mb-4">
+<!-- Abstract representation of female profile in coral -->
+<div class="w-16 h-16 bg-primary mask mask-squircle flex items-center justify-center rounded-full bg-cover bg-center" data-alt="Illustration of a female profile silhouette in coral color" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIK-__wBGzSAeOgS3nFtX52wT0UOSMT1IDPYEHfbFDbM7PJky0gLNb-Hs8UY1WU3frsvULN0AZSGAxRj5SnCKtLiMlx5KS6qbvVn1SyxY1jDw8pBXqDC0ciAXdVs8fipKsbkfoqqakebYghBG7DvxWYRmvDftnFXQw4YJ6mLTL7FXYRC5pf1x0IeEQ5lCFPeASCdGSULedd2L1bNY5iGexff-B2MydD5vDUv468OO5Ad6T6c0Wr3PuAxtqswY_lvzlU1dutpwJRslv');">
+</div>
+</div>
+</div>
+<!-- Headline -->
+<h1 class="font-display text-3xl font-bold tracking-tight text-gray-900 dark:text-white text-center pb-8">
+            Connexion
+        </h1>
+<!-- Form Section -->
+<form class="flex flex-col gap-5 px-2" onsubmit="event.preventDefault();">
+<!-- Email/Phone Input -->
+<div class="flex flex-col gap-1.5">
+<label class="sr-only" for="identity">Email ou Téléphone</label>
+<div class="relative flex items-center">
+<span class="absolute left-4 text-gray-400 dark:text-gray-500 material-symbols-outlined">person</span>
+<input class="form-input block w-full rounded-lg border-0 bg-white dark:bg-surface-dark py-3.5 pl-12 pr-4 text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-2 focus:ring-primary h-12 text-base shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-transparent" id="identity" placeholder="Email ou Téléphone (+237)" type="text"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-1.5">
+<label class="sr-only" for="password">Mot de passe</label>
+<div class="relative flex items-center group">
+<span class="absolute left-4 text-gray-400 dark:text-gray-500 material-symbols-outlined">lock</span>
+<input class="form-input block w-full rounded-lg border-0 bg-white dark:bg-surface-dark py-3.5 pl-12 pr-12 text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-2 focus:ring-primary h-12 text-base shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-transparent" id="password" placeholder="Mot de passe" type="password"/>
+<button class="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-gray-400 hover:text-primary transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Options Row: Remember Me & Forgot Password -->
+<div class="flex items-center justify-between py-1">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-surface-dark text-primary focus:ring-offset-0 focus:ring-primary/20 cursor-pointer" type="checkbox"/>
+<span class="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Se souvenir de moi</span>
+</label>
+<a class="text-sm font-medium text-primary hover:text-primary/80 transition-colors whitespace-nowrap" href="#">
+                    Mot de passe oublié?
+                </a>
+</div>
+<!-- Submit Button -->
+<button class="mt-4 flex w-full items-center justify-center rounded-lg bg-primary py-3.5 px-4 text-base font-bold text-white shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark transition-all h-12" type="submit">
+                Se connecter
+            </button>
+</form>
+<!-- Footer / Sign Up Link -->
+<div class="mt-8 flex flex-col items-center gap-4 text-center">
+<p class="text-sm text-gray-500 dark:text-gray-400">
+                Nouveau sur KMR-BEAUTY ? 
+                <a class="font-bold text-primary hover:text-primary/80 transition-colors ml-1" href="#">Créer un compte</a>
+</p>
+</div>
+<!-- Decorative Bottom Spacer -->
+<div class="h-10"></div>
+</div>
+</body></html>

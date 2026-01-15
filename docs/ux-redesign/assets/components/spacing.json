@@ -1,0 +1,107 @@
+{
+    "brand": {
+        "name": "KMR-BEAUTY Spacing & Layout",
+        "version": "1.0"
+    },
+    "baseUnit": 8,
+    "spacing": {
+        "0": "0px",
+        "1": "4px",
+        "2": "8px",
+        "3": "12px",
+        "4": "16px",
+        "5": "20px",
+        "6": "24px",
+        "7": "28px",
+        "8": "32px",
+        "10": "40px",
+        "12": "48px",
+        "16": "64px",
+        "20": "80px",
+        "24": "96px"
+    },
+    "semanticSpacing": {
+        "xs": "4px",
+        "sm": "8px",
+        "md": "16px",
+        "lg": "24px",
+        "xl": "32px",
+        "2xl": "48px",
+        "3xl": "64px"
+    },
+    "layout": {
+        "screenPadding": {
+            "horizontal": "16px",
+            "vertical": "16px"
+        },
+        "cardPadding": "16px",
+        "cardSpacing": "8px",
+        "sectionSpacing": "24px",
+        "headerHeight": "56px",
+        "tabBarHeight": "60px",
+        "buttonHeight": "48px",
+        "inputHeight": "48px"
+    },
+    "grid": {
+        "baseline": "8px",
+        "columns": 4,
+        "gutter": "16px",
+        "margin": "16px"
+    },
+    "borderRadius": {
+        "none": "0px",
+        "sm": "4px",
+        "md": "8px",
+        "lg": "12px",
+        "xl": "16px",
+        "full": "9999px"
+    },
+    "elementSizes": {
+        "avatar": {
+            "sm": "32px",
+            "md": "48px",
+            "lg": "64px",
+            "xl": "96px"
+        },
+        "icon": {
+            "sm": "16px",
+            "md": "24px",
+            "lg": "32px",
+            "xl": "48px"
+        },
+        "button": {
+            "sm": "32px",
+            "md": "40px",
+            "lg": "48px",
+            "xl": "56px"
+        },
+        "touchTarget": {
+            "minimum": "44px",
+            "recommended": "48px"
+        }
+    },
+    "screenSpacing": {
+        "headings": {
+            "marginBottom": "16px"
+        },
+        "cardPadding": "16px",
+        "topNavigation": {
+            "paddingHorizontal": "16px"
+        },
+        "buttonPadding": {
+            "horizontal": "24px",
+            "vertical": "12px"
+        },
+        "sectionSpacing": "24px",
+        "textSpacing": {
+            "paragraph": "16px",
+            "heading": "8px"
+        }
+    },
+    "breakpoints": {
+        "sm": "320px",
+        "md": "375px",
+        "lg": "414px",
+        "xl": "768px"
+    }
+}

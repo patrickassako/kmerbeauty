@@ -130,7 +130,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, n
                     disabled={timer > 0}
                     style={{ marginTop: spacing(3), alignItems: 'center' }}
                 >
-                    <Text style={{ color: timer > 0 ? '#999' : '#1E3A5F' }}>
+                    <Text style={{ color: timer > 0 ? '#8a6a5e' : '#FF6B6B', fontSize: 14 }}>
                         {timer > 0 ? `Renvoyer le code dans ${timer}s` : 'Renvoyer le code'}
                     </Text>
                 </TouchableOpacity>
@@ -142,7 +142,7 @@ export const VerificationScreen: React.FC<VerificationScreenProps> = ({ route, n
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#1A1A1A',
     },
     content: {
         flex: 1,
@@ -152,10 +152,10 @@ const styles = StyleSheet.create({
     title: {
         fontWeight: 'bold',
         textAlign: 'center',
-        color: '#1E3A5F',
+        color: '#FFFFFF',
     },
     subtitle: {
         textAlign: 'center',
-        color: '#666',
+        color: '#c9a092',
     },
 });

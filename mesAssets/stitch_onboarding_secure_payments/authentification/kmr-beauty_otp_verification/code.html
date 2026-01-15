@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KMR-BEAUTY OTP Verification</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#f45c25",
+              "background-light": "#f8f6f5",
+              "background-dark": "#221510",
+              "surface-dark": "#36241d",
+            },
+            fontFamily: {
+              "display": ["Plus Jakarta Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "1rem", 
+              "lg": "1.5rem", 
+              "xl": "2rem", 
+              "2xl": "2.5rem",
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom utilities to hide scrollbar for cleaner mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Custom input styles to remove spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display antialiased text-slate-900 dark:text-white bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-center selection:bg-primary selection:text-white">
+<!-- Main Container -->
+<div class="relative flex h-full min-h-screen w-full max-w-md flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+<!-- Decorative Ambient Glow -->
+<div class="absolute top-[-10%] left-[-20%] w-[80%] h-[40%] bg-primary/10 blur-[100px] rounded-full pointer-events-none" data-alt="Soft coral gradient glow in top left corner"></div>
+<!-- Top Navigation -->
+<div class="flex items-center justify-between p-6 z-10">
+<button class="flex size-10 items-center justify-center rounded-full text-slate-800 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back_ios_new</span>
+</button>
+</div>
+<!-- Content Section -->
+<div class="flex-1 flex flex-col px-6 pt-4 pb-8 z-10">
+<!-- Headline -->
+<div class="mb-2 text-center">
+<h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-4">
+                    Vérification
+                </h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-medium leading-relaxed max-w-[80%] mx-auto">
+                    Nous avons envoyé un code au <br/>
+<span class="text-slate-900 dark:text-white font-semibold">+237 6•• ••• •89</span>
+</p>
+</div>
+<!-- OTP Input Grid -->
+<div class="flex justify-center my-10 w-full">
+<fieldset class="flex gap-2 sm:gap-3 justify-center w-full">
+<!-- Input 1: Active/Focused State -->
+<input autofocus="" class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border-2 border-primary ring-4 ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number" value="4"/>
+<!-- Input 2 -->
+<input class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number"/>
+<!-- Input 3 -->
+<input class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number"/>
+<!-- Input 4 -->
+<input class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number"/>
+<!-- Input 5 -->
+<input class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number"/>
+<!-- Input 6 -->
+<input class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center text-center text-xl font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white rounded shadow-sm focus:outline-none transition-all caret-primary" maxlength="1" type="number"/>
+</fieldset>
+</div>
+<!-- Timer / Resend -->
+<div class="text-center mb-10">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    Renvoyer le code dans <span class="text-primary font-bold">54s</span>
+</p>
+</div>
+<!-- Action Button -->
+<div class="mt-auto mb-6">
+<button class="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-white font-bold text-lg py-4 rounded-full shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2">
+<span>Vérifier</span>
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</button>
+</div>
+<!-- Virtual Keyboard Area Placeholder (Simulating iOS Layout) -->
+<div class="h-[280px] w-full rounded-t-xl bg-slate-100 dark:bg-[#1a100c] flex flex-col items-center justify-center border-t border-slate-200 dark:border-white/5 opacity-50">
+<p class="text-xs text-slate-400 dark:text-white/30 font-medium uppercase tracking-widest">Clavier numérique iOS</p>
+</div>
+</div>
+</div>
+</body></html>
