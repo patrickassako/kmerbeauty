@@ -72,19 +72,19 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
-            .eq('isActive', true)
-            .lte('startDate', now)
-            .order('createdAt', { ascending: false });
+            .eq('is_active', true)
+            .lte('start_date', now)
+            .order('created_at', { ascending: false });
 
         const { data: packs, error } = await query;
         if (error) throw error;
 
         // Filter by end date and city in memory
         const filtered = packs.filter((pack: any) => {
-            if (pack.endDate && new Date(pack.endDate) < new Date()) return false;
-            if (city && pack.targetCities?.length > 0 && !pack.targetCities.includes(city)) return false;
+            if (pack.end_date && new Date(pack.end_date) < new Date()) return false;
+            if (city && pack.target_cities?.length > 0 && !pack.target_cities.includes(city)) return false;
             return true;
         });
 
@@ -100,7 +100,7 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
             .eq('id', id)
             .single();
@@ -141,17 +141,17 @@ export class PacksService {
                 title: dto.title,
                 subtitle: dto.subtitle,
                 description: dto.description,
-                imageUrl: dto.imageUrl,
+                image_url: dto.imageUrl,
                 badge: dto.badge,
-                ctaText: dto.ctaText,
-                ctaLink: dto.ctaLink,
-                serviceId: dto.serviceId,
-                discountType: dto.discountType,
-                discountValue: dto.discountValue,
-                endDate: dto.endDate,
-                targetCities: dto.targetCities,
-                isActive: dto.isActive,
-                updatedAt: new Date().toISOString(),
+                cta_text: dto.ctaText,
+                cta_link: dto.ctaLink,
+                service_id: dto.serviceId,
+                discount_type: dto.discountType,
+                discount_value: dto.discountValue,
+                end_date: dto.endDate,
+                target_cities: dto.targetCities,
+                is_active: dto.isActive,
+                updated_at: new Date().toISOString(),
             })
             .eq('id', id)
             .select()
@@ -219,14 +219,14 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
-            .order('createdAt', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (therapist) {
-            query = query.eq('therapistId', therapist.id);
+            query = query.eq('therapist_id', therapist.id);
         } else if (salon) {
-            query = query.eq('salonId', salon.id);
+            query = query.eq('salon_id', salon.id);
         }
 
         const { data: packs, error } = await query;

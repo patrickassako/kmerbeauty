@@ -71,11 +71,11 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
-            .eq('isActive', true)
-            .gt('expiresAt', new Date().toISOString())
-            .order('createdAt', { ascending: false });
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
@@ -84,9 +84,9 @@ export class StoriesService {
         if (userId) {
             const { data: views } = await this.supabase
                 .from('story_views')
-                .select('storyId')
-                .eq('userId', userId);
-            viewedStoryIds = views?.map((v: any) => v.storyId) || [];
+                .select('story_id')
+                .eq('user_id', userId);
+            viewedStoryIds = views?.map((v: any) => v.story_id) || [];
         }
 
         return stories.map((story: any) =>
@@ -103,7 +103,7 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
             .eq('id', id)
             .single();
@@ -115,8 +115,8 @@ export class StoriesService {
             const { data: view } = await this.supabase
                 .from('story_views')
                 .select('id')
-                .eq('storyId', id)
-                .eq('userId', userId)
+                .eq('story_id', id)
+                .eq('user_id', userId)
                 .single();
             isViewed = !!view;
         }
@@ -141,8 +141,8 @@ export class StoriesService {
         await this.supabase
             .from('story_views')
             .upsert(
-                { storyId, userId, viewedAt: new Date().toISOString() },
-                { onConflict: 'storyId,userId' }
+                { story_id: storyId, user_id: userId, viewed_at: new Date().toISOString() },
+                { onConflict: 'story_id,user_id' }
             );
 
         // Increment view count
@@ -201,14 +201,14 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, name, logo)
+        salon:salons(id, salon_name:name, logo)
       `)
-            .order('createdAt', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (therapist) {
-            query = query.eq('therapistId', therapist.id);
+            query = query.eq('therapist_id', therapist.id);
         } else if (salon) {
-            query = query.eq('salonId', salon.id);
+            query = query.eq('salon_id', salon.id);
         }
 
         const { data: stories, error } = await query;
@@ -225,7 +225,7 @@ export class StoriesService {
         const { count } = await this.supabase
             .from('stories')
             .delete()
-            .lt('expiresAt', new Date().toISOString());
+            .lt('expires_at', new Date().toISOString());
 
         if (count && count > 0) {
             console.log(`Deleted ${count} expired stories`);
