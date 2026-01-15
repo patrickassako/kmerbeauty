@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { CreatePackDto, UpdatePackDto, PackResponseDto } from './dto/packs.dto';
 
 @Injectable()
 export class PacksService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly supabase: SupabaseService) { }
 
     /**
      * Create a new promotional pack
@@ -19,21 +19,26 @@ export class PacksService {
         let salonId: string | undefined;
 
         if (providerType === 'therapist') {
-            const therapist = await this.prisma.therapist.findUnique({
-                where: { userId },
-            });
+            const { data: therapist } = await this.supabase
+                .from('therapists')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
             if (!therapist) throw new ForbiddenException('User is not a therapist');
             therapistId = therapist.id;
         } else {
-            const salon = await this.prisma.salon.findUnique({
-                where: { userId },
-            });
+            const { data: salon } = await this.supabase
+                .from('salons')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
             if (!salon) throw new ForbiddenException('User is not a salon owner');
             salonId = salon.id;
         }
 
-        const pack = await this.prisma.promotionalPack.create({
-            data: {
+        const { data: pack, error } = await this.supabase
+            .from('promotional_packs')
+            .insert({
                 therapistId,
                 salonId,
                 title: dto.title,
@@ -46,17 +51,13 @@ export class PacksService {
                 serviceId: dto.serviceId,
                 discountType: dto.discountType,
                 discountValue: dto.discountValue,
-                endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+                endDate: dto.endDate,
                 targetCities: dto.targetCities || [],
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-        });
+            })
+            .select()
+            .single();
 
+        if (error) throw error;
         return this.formatPackResponse(pack);
     }
 
@@ -64,50 +65,47 @@ export class PacksService {
      * Get all active packs (optionally filtered by city)
      */
     async getAll(city?: string): Promise<PackResponseDto[]> {
-        const now = new Date();
+        const now = new Date().toISOString();
 
-        const packs = await this.prisma.promotionalPack.findMany({
-            where: {
-                isActive: true,
-                startDate: { lte: now },
-                OR: [
-                    { endDate: null },
-                    { endDate: { gte: now } },
-                ],
-                ...(city && {
-                    OR: [
-                        { targetCities: { isEmpty: true } },
-                        { targetCities: { has: city } },
-                    ],
-                }),
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-            orderBy: { createdAt: 'desc' },
+        let query = this.supabase
+            .from('promotional_packs')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .eq('isActive', true)
+            .lte('startDate', now)
+            .order('createdAt', { ascending: false });
+
+        const { data: packs, error } = await query;
+        if (error) throw error;
+
+        // Filter by end date and city in memory
+        const filtered = packs.filter((pack: any) => {
+            if (pack.endDate && new Date(pack.endDate) < new Date()) return false;
+            if (city && pack.targetCities?.length > 0 && !pack.targetCities.includes(city)) return false;
+            return true;
         });
 
-        return packs.map((pack) => this.formatPackResponse(pack));
+        return filtered.map((pack: any) => this.formatPackResponse(pack));
     }
 
     /**
      * Get pack by ID
      */
     async getById(id: string): Promise<PackResponseDto> {
-        const pack = await this.prisma.promotionalPack.findUnique({
-            where: { id },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-        });
+        const { data: pack, error } = await this.supabase
+            .from('promotional_packs')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .eq('id', id)
+            .single();
 
-        if (!pack) throw new NotFoundException('Pack not found');
+        if (error || !pack) throw new NotFoundException('Pack not found');
 
         return this.formatPackResponse(pack);
     }
@@ -116,26 +114,28 @@ export class PacksService {
      * Update pack
      */
     async update(id: string, userId: string, dto: UpdatePackDto): Promise<PackResponseDto> {
-        const pack = await this.prisma.promotionalPack.findUnique({
-            where: { id },
-            include: {
-                therapist: true,
-                salon: true,
-            },
-        });
+        const { data: pack } = await this.supabase
+            .from('promotional_packs')
+            .select(`
+        id,
+        therapist:therapists(user_id),
+        salon:salons(user_id)
+      `)
+            .eq('id', id)
+            .single();
 
         if (!pack) throw new NotFoundException('Pack not found');
 
         // Check ownership
         const isOwner =
-            (pack.therapist && pack.therapist.userId === userId) ||
-            (pack.salon && pack.salon.userId === userId);
+            (pack.therapist && pack.therapist.user_id === userId) ||
+            (pack.salon && pack.salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to update this pack');
 
-        const updated = await this.prisma.promotionalPack.update({
-            where: { id },
-            data: {
+        const { data: updated, error } = await this.supabase
+            .from('promotional_packs')
+            .update({
                 title: dto.title,
                 subtitle: dto.subtitle,
                 description: dto.description,
@@ -146,18 +146,16 @@ export class PacksService {
                 serviceId: dto.serviceId,
                 discountType: dto.discountType,
                 discountValue: dto.discountValue,
-                endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+                endDate: dto.endDate,
                 targetCities: dto.targetCities,
                 isActive: dto.isActive,
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-        });
+                updatedAt: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select()
+            .single();
 
+        if (error) throw error;
         return this.formatPackResponse(updated);
     }
 
@@ -165,64 +163,72 @@ export class PacksService {
      * Delete pack
      */
     async delete(id: string, userId: string): Promise<void> {
-        const pack = await this.prisma.promotionalPack.findUnique({
-            where: { id },
-            include: {
-                therapist: true,
-                salon: true,
-            },
-        });
+        const { data: pack } = await this.supabase
+            .from('promotional_packs')
+            .select(`
+        id,
+        therapist:therapists(user_id),
+        salon:salons(user_id)
+      `)
+            .eq('id', id)
+            .single();
 
         if (!pack) throw new NotFoundException('Pack not found');
 
         // Check ownership
         const isOwner =
-            (pack.therapist && pack.therapist.userId === userId) ||
-            (pack.salon && pack.salon.userId === userId);
+            (pack.therapist && pack.therapist.user_id === userId) ||
+            (pack.salon && pack.salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to delete this pack');
 
-        await this.prisma.promotionalPack.delete({ where: { id } });
+        await this.supabase.from('promotional_packs').delete().eq('id', id);
     }
 
     /**
      * Track pack click
      */
     async trackClick(id: string): Promise<void> {
-        await this.prisma.promotionalPack.update({
-            where: { id },
-            data: { clickCount: { increment: 1 } },
-        });
+        await this.supabase.rpc('increment_pack_click_count', { pack_id: id });
     }
 
     /**
      * Get provider's own packs
      */
     async getMine(userId: string): Promise<PackResponseDto[]> {
-        const therapist = await this.prisma.therapist.findUnique({ where: { userId } });
-        const salon = await this.prisma.salon.findUnique({ where: { userId } });
+        const { data: therapist } = await this.supabase
+            .from('therapists')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
 
-        if (!therapist && !salon) {
-            return [];
+        const { data: salon } = await this.supabase
+            .from('salons')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!therapist && !salon) return [];
+
+        let query = this.supabase
+            .from('promotional_packs')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .order('createdAt', { ascending: false });
+
+        if (therapist) {
+            query = query.eq('therapistId', therapist.id);
+        } else if (salon) {
+            query = query.eq('salonId', salon.id);
         }
 
-        const packs = await this.prisma.promotionalPack.findMany({
-            where: {
-                OR: [
-                    { therapistId: therapist?.id },
-                    { salonId: salon?.id },
-                ],
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const { data: packs, error } = await query;
+        if (error) throw error;
 
-        return packs.map((pack) => this.formatPackResponse(pack));
+        return packs.map((pack: any) => this.formatPackResponse(pack));
     }
 
     /**
@@ -232,8 +238,8 @@ export class PacksService {
         const provider = pack.therapist
             ? {
                 id: pack.therapist.id,
-                name: pack.therapist.user?.firstName || 'Provider',
-                image: pack.therapist.profileImage || pack.therapist.user?.avatar,
+                name: pack.therapist.user?.first_name || 'Provider',
+                image: pack.therapist.profile_image || pack.therapist.user?.avatar,
                 type: 'therapist' as const,
             }
             : pack.salon

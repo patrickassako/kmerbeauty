@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { CreateStoryDto, StoryResponseDto } from './dto/stories.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class StoriesService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly supabase: SupabaseService) { }
 
     /**
      * Create a new story (24h expiration)
@@ -20,15 +20,19 @@ export class StoriesService {
         let salonId: string | undefined;
 
         if (providerType === 'therapist') {
-            const therapist = await this.prisma.therapist.findUnique({
-                where: { userId },
-            });
+            const { data: therapist } = await this.supabase
+                .from('therapists')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
             if (!therapist) throw new ForbiddenException('User is not a therapist');
             therapistId = therapist.id;
         } else {
-            const salon = await this.prisma.salon.findUnique({
-                where: { userId },
-            });
+            const { data: salon } = await this.supabase
+                .from('salons')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
             if (!salon) throw new ForbiddenException('User is not a salon owner');
             salonId = salon.id;
         }
@@ -37,24 +41,24 @@ export class StoriesService {
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
 
-        const story = await this.prisma.story.create({
-            data: {
+        const { data: story, error } = await this.supabase
+            .from('stories')
+            .insert({
                 therapistId,
                 salonId,
                 mediaType: dto.mediaType,
                 mediaUrl: dto.mediaUrl,
                 thumbnailUrl: dto.thumbnailUrl,
                 caption: dto.caption,
-                expiresAt,
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-        });
+                textContent: dto.textContent,
+                backgroundColor: dto.backgroundColor || '#000000',
+                textColor: dto.textColor || '#FFFFFF',
+                expiresAt: expiresAt.toISOString(),
+            })
+            .select()
+            .single();
 
+        if (error) throw error;
         return this.formatStoryResponse(story);
     }
 
@@ -62,46 +66,62 @@ export class StoriesService {
      * Get all active stories (for home feed)
      */
     async getAll(userId?: string): Promise<StoryResponseDto[]> {
-        const stories = await this.prisma.story.findMany({
-            where: {
-                isActive: true,
-                expiresAt: { gt: new Date() },
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-                views: userId ? {
-                    where: { userId },
-                } : false,
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const { data: stories, error } = await this.supabase
+            .from('stories')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .eq('isActive', true)
+            .gt('expiresAt', new Date().toISOString())
+            .order('createdAt', { ascending: false });
 
-        return stories.map((story) => this.formatStoryResponse(story, userId));
+        if (error) throw error;
+
+        // Get viewed status if userId provided
+        let viewedStoryIds: string[] = [];
+        if (userId) {
+            const { data: views } = await this.supabase
+                .from('story_views')
+                .select('storyId')
+                .eq('userId', userId);
+            viewedStoryIds = views?.map((v: any) => v.storyId) || [];
+        }
+
+        return stories.map((story: any) =>
+            this.formatStoryResponse(story, viewedStoryIds.includes(story.id))
+        );
     }
 
     /**
      * Get story by ID
      */
     async getById(id: string, userId?: string): Promise<StoryResponseDto> {
-        const story = await this.prisma.story.findUnique({
-            where: { id },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-                views: userId ? {
-                    where: { userId },
-                } : false,
-            },
-        });
+        const { data: story, error } = await this.supabase
+            .from('stories')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .eq('id', id)
+            .single();
 
-        if (!story) throw new NotFoundException('Story not found');
+        if (error || !story) throw new NotFoundException('Story not found');
 
-        return this.formatStoryResponse(story, userId);
+        let isViewed = false;
+        if (userId) {
+            const { data: view } = await this.supabase
+                .from('story_views')
+                .select('id')
+                .eq('storyId', id)
+                .eq('userId', userId)
+                .single();
+            isViewed = !!view;
+        }
+
+        return this.formatStoryResponse(story, isViewed);
     }
 
     /**
@@ -109,47 +129,50 @@ export class StoriesService {
      */
     async markViewed(storyId: string, userId: string): Promise<void> {
         // Check story exists
-        const story = await this.prisma.story.findUnique({ where: { id: storyId } });
+        const { data: story } = await this.supabase
+            .from('stories')
+            .select('id')
+            .eq('id', storyId)
+            .single();
+
         if (!story) throw new NotFoundException('Story not found');
 
-        // Create view (ignore if already exists)
-        await this.prisma.storyView.upsert({
-            where: {
-                storyId_userId: { storyId, userId },
-            },
-            create: { storyId, userId },
-            update: {},
-        });
+        // Upsert view
+        await this.supabase
+            .from('story_views')
+            .upsert(
+                { storyId, userId, viewedAt: new Date().toISOString() },
+                { onConflict: 'storyId,userId' }
+            );
 
         // Increment view count
-        await this.prisma.story.update({
-            where: { id: storyId },
-            data: { viewCount: { increment: 1 } },
-        });
+        await this.supabase.rpc('increment_story_view_count', { story_id: storyId });
     }
 
     /**
      * Delete story (owner only)
      */
     async delete(id: string, userId: string): Promise<void> {
-        const story = await this.prisma.story.findUnique({
-            where: { id },
-            include: {
-                therapist: true,
-                salon: true,
-            },
-        });
+        const { data: story } = await this.supabase
+            .from('stories')
+            .select(`
+        id,
+        therapist:therapists(user_id),
+        salon:salons(user_id)
+      `)
+            .eq('id', id)
+            .single();
 
         if (!story) throw new NotFoundException('Story not found');
 
         // Check ownership
         const isOwner =
-            (story.therapist && story.therapist.userId === userId) ||
-            (story.salon && story.salon.userId === userId);
+            (story.therapist && story.therapist.user_id === userId) ||
+            (story.salon && story.salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to delete this story');
 
-        await this.prisma.story.delete({ where: { id } });
+        await this.supabase.from('stories').delete().eq('id', id);
     }
 
     /**
@@ -157,30 +180,39 @@ export class StoriesService {
      */
     async getMine(userId: string): Promise<StoryResponseDto[]> {
         // Find therapist or salon
-        const therapist = await this.prisma.therapist.findUnique({ where: { userId } });
-        const salon = await this.prisma.salon.findUnique({ where: { userId } });
+        const { data: therapist } = await this.supabase
+            .from('therapists')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
 
-        if (!therapist && !salon) {
-            return [];
+        const { data: salon } = await this.supabase
+            .from('salons')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!therapist && !salon) return [];
+
+        let query = this.supabase
+            .from('stories')
+            .select(`
+        *,
+        therapist:therapists(id, profile_image, user:users(first_name, avatar)),
+        salon:salons(id, name, logo)
+      `)
+            .order('createdAt', { ascending: false });
+
+        if (therapist) {
+            query = query.eq('therapistId', therapist.id);
+        } else if (salon) {
+            query = query.eq('salonId', salon.id);
         }
 
-        const stories = await this.prisma.story.findMany({
-            where: {
-                OR: [
-                    { therapistId: therapist?.id },
-                    { salonId: salon?.id },
-                ],
-            },
-            include: {
-                therapist: {
-                    include: { user: true },
-                },
-                salon: true,
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const { data: stories, error } = await query;
+        if (error) throw error;
 
-        return stories.map((story) => this.formatStoryResponse(story));
+        return stories.map((story: any) => this.formatStoryResponse(story));
     }
 
     /**
@@ -188,26 +220,25 @@ export class StoriesService {
      */
     @Cron(CronExpression.EVERY_HOUR)
     async deleteExpiredStories(): Promise<void> {
-        const result = await this.prisma.story.deleteMany({
-            where: {
-                expiresAt: { lt: new Date() },
-            },
-        });
+        const { count } = await this.supabase
+            .from('stories')
+            .delete()
+            .lt('expiresAt', new Date().toISOString());
 
-        if (result.count > 0) {
-            console.log(`Deleted ${result.count} expired stories`);
+        if (count && count > 0) {
+            console.log(`Deleted ${count} expired stories`);
         }
     }
 
     /**
      * Format story response
      */
-    private formatStoryResponse(story: any, userId?: string): StoryResponseDto {
+    private formatStoryResponse(story: any, isViewed?: boolean): StoryResponseDto {
         const provider = story.therapist
             ? {
                 id: story.therapist.id,
-                name: story.therapist.user?.firstName || 'Provider',
-                image: story.therapist.profileImage || story.therapist.user?.avatar,
+                name: story.therapist.user?.first_name || 'Provider',
+                image: story.therapist.profile_image || story.therapist.user?.avatar,
                 type: 'therapist' as const,
             }
             : story.salon
@@ -227,11 +258,14 @@ export class StoriesService {
             mediaUrl: story.mediaUrl,
             thumbnailUrl: story.thumbnailUrl,
             caption: story.caption,
+            textContent: story.textContent,
+            backgroundColor: story.backgroundColor,
+            textColor: story.textColor,
             isActive: story.isActive,
             expiresAt: story.expiresAt,
             viewCount: story.viewCount,
             createdAt: story.createdAt,
-            isViewed: userId ? (story.views?.length > 0) : undefined,
+            isViewed,
             provider,
         };
     }
