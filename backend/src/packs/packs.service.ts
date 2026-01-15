@@ -126,10 +126,12 @@ export class PacksService {
 
         if (!pack) throw new NotFoundException('Pack not found');
 
-        // Check ownership
+        // Check ownership - relations come as objects from Supabase
+        const therapist = (pack as any).therapist;
+        const salon = (pack as any).salon;
         const isOwner =
-            (pack.therapist && pack.therapist.user_id === userId) ||
-            (pack.salon && pack.salon.user_id === userId);
+            (therapist && therapist.user_id === userId) ||
+            (salon && salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to update this pack');
 
@@ -175,10 +177,12 @@ export class PacksService {
 
         if (!pack) throw new NotFoundException('Pack not found');
 
-        // Check ownership
+        // Check ownership - relations come as objects from Supabase
+        const therapist = (pack as any).therapist;
+        const salon = (pack as any).salon;
         const isOwner =
-            (pack.therapist && pack.therapist.user_id === userId) ||
-            (pack.salon && pack.salon.user_id === userId);
+            (therapist && therapist.user_id === userId) ||
+            (salon && salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to delete this pack');
 
