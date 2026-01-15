@@ -72,7 +72,7 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .eq('is_active', true)
             .lte('start_date', now)
@@ -100,7 +100,7 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .eq('id', id)
             .single();
@@ -219,7 +219,7 @@ export class PacksService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .order('created_at', { ascending: false });
 
@@ -249,7 +249,7 @@ export class PacksService {
             : pack.salon
                 ? {
                     id: pack.salon.id,
-                    name: pack.salon.name,
+                    name: pack.salon.name_fr || pack.salon.name_en,
                     image: pack.salon.logo,
                     type: 'salon' as const,
                 }

@@ -71,7 +71,7 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .eq('is_active', true)
             .gt('expires_at', new Date().toISOString())
@@ -103,7 +103,7 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .eq('id', id)
             .single();
@@ -201,7 +201,7 @@ export class StoriesService {
             .select(`
         *,
         therapist:therapists(id, profile_image, user:users(first_name, avatar)),
-        salon:salons(id, salon_name:name, logo)
+        salon:salons(*)
       `)
             .order('created_at', { ascending: false });
 
@@ -246,7 +246,7 @@ export class StoriesService {
             : story.salon
                 ? {
                     id: story.salon.id,
-                    name: story.salon.name,
+                    name: story.salon.name_fr || story.salon.name_en,
                     image: story.salon.logo,
                     type: 'salon' as const,
                 }
