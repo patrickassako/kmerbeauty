@@ -1,0 +1,125 @@
+{
+    "brand": {
+        "name": "KMR-BEAUTY Color Palette",
+        "version": "1.0"
+    },
+    "colors": {
+        "primary": {
+            "black": {
+                "hex": "#2D2D2D",
+                "rgb": "rgb(45, 45, 45)",
+                "usage": "Background principal, texte primaire, navigation"
+            },
+            "charcoal": {
+                "hex": "#1A1A1A",
+                "rgb": "rgb(26, 26, 26)",
+                "usage": "Backgrounds dark, headers, overlays"
+            },
+            "white": {
+                "hex": "#FFFFFF",
+                "rgb": "rgb(255, 255, 255)",
+                "usage": "Backgrounds clairs, texte sur fond sombre"
+            }
+        },
+        "accent": {
+            "coral": {
+                "hex": "#FF6B6B",
+                "rgb": "rgb(255, 107, 107)",
+                "usage": "Boutons primaires, CTA, liens actifs, highlights"
+            },
+            "coralLight": {
+                "hex": "#FF8B8B",
+                "rgb": "rgb(255, 139, 139)",
+                "usage": "États hover, backgrounds légers"
+            },
+            "coralDark": {
+                "hex": "#FF4B4B",
+                "rgb": "rgb(255, 75, 75)",
+                "usage": "États pressed, accents forts"
+            }
+        },
+        "gray": {
+            "gray50": {
+                "hex": "#F9F9F9",
+                "rgb": "rgb(249, 249, 249)",
+                "usage": "Backgrounds très clairs"
+            },
+            "gray100": {
+                "hex": "#F5F5F5",
+                "rgb": "rgb(245, 245, 245)",
+                "usage": "Backgrounds secondaires"
+            },
+            "gray150": {
+                "hex": "#EEEEEE",
+                "rgb": "rgb(238, 238, 238)",
+                "usage": "Dividers légers"
+            },
+            "gray300": {
+                "hex": "#E0E0E0",
+                "rgb": "rgb(224, 224, 224)",
+                "usage": "Borders légères"
+            },
+            "gray400": {
+                "hex": "#BDBDBD",
+                "rgb": "rgb(189, 189, 189)",
+                "usage": "Borders, icônes disabled"
+            },
+            "gray500": {
+                "hex": "#9E9E9E",
+                "rgb": "rgb(158, 158, 158)",
+                "usage": "Placeholder text, icônes inactives"
+            },
+            "gray600": {
+                "hex": "#757575",
+                "rgb": "rgb(117, 117, 117)",
+                "usage": "Texte tertiaire"
+            },
+            "gray700": {
+                "hex": "#616161",
+                "rgb": "rgb(97, 97, 97)",
+                "usage": "Texte secondaire"
+            },
+            "gray800": {
+                "hex": "#424242",
+                "rgb": "rgb(66, 66, 66)",
+                "usage": "Texte moyen"
+            },
+            "gray900": {
+                "hex": "#121212",
+                "rgb": "rgb(18, 18, 18)",
+                "usage": "Texte primaire fort"
+            }
+        },
+        "functional": {
+            "success": {
+                "hex": "#10B981",
+                "rgb": "rgb(16, 185, 129)",
+                "usage": "Confirmations, validations, badges positifs"
+            },
+            "error": {
+                "hex": "#EF4444",
+                "rgb": "rgb(239, 68, 68)",
+                "usage": "Erreurs, alertes, annulations"
+            },
+            "warning": {
+                "hex": "#F59E0B",
+                "rgb": "rgb(245, 158, 11)",
+                "usage": "Avertissements, pending"
+            },
+            "info": {
+                "hex": "#3B82F6",
+                "rgb": "rgb(59, 130, 246)",
+                "usage": "Informations, tips"
+            },
+            "gold": {
+                "hex": "#FFB800",
+                "rgb": "rgb(255, 184, 0)",
+                "usage": "Notes, étoiles, premium"
+            }
+        }
+    },
+    "gradients": {
+        "darkOverlay": "linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%)",
+        "coralOverlay": "linear-gradient(135deg, rgba(255, 107, 107, 0.3) 0%, rgba(26, 26, 26, 0.7) 100%)"
+    }
+}

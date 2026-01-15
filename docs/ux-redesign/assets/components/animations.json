@@ -1,0 +1,152 @@
+{
+    "brand": {
+        "name": "KMR-BEAUTY Animations & Micro-interactions",
+        "version": "1.0"
+    },
+    "timing": {
+        "fast": "150ms",
+        "normal": "300ms",
+        "slow": "500ms"
+    },
+    "easing": {
+        "default": "ease-out",
+        "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        "smooth": "cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "microInteractions": {
+        "buttonPress": {
+            "description": "Animation when pressing a button",
+            "properties": {
+                "transform": "scale(0.98)",
+                "opacity": 0.9
+            },
+            "duration": "150ms",
+            "easing": "ease-out"
+        },
+        "buttonRelease": {
+            "description": "Animation when releasing a button",
+            "properties": {
+                "transform": "scale(1)",
+                "opacity": 1
+            },
+            "duration": "150ms",
+            "easing": "ease-out"
+        },
+        "cardPress": {
+            "description": "Subtle press effect on cards",
+            "properties": {
+                "transform": "scale(0.99)",
+                "shadow": "reduced"
+            },
+            "duration": "100ms"
+        }
+    },
+    "loading": {
+        "spinner": {
+            "type": "circular",
+            "color": "#FF6B6B",
+            "sizes": {
+                "sm": "16px",
+                "md": "24px",
+                "lg": "48px"
+            },
+            "animation": "rotate 1s linear infinite"
+        },
+        "skeleton": {
+            "backgroundColor": "#E0E0E0",
+            "shimmerColor": "#F5F5F5",
+            "animation": "shimmer 1.5s ease-in-out infinite"
+        },
+        "pulse": {
+            "animation": "pulse 2s ease-in-out infinite",
+            "keyframes": "0% { opacity: 1 } 50% { opacity: 0.5 } 100% { opacity: 1 }"
+        }
+    },
+    "feedback": {
+        "success": {
+            "icon": "checkmark-circle",
+            "color": "#10B981",
+            "animation": {
+                "type": "scale + fade",
+                "duration": "300ms",
+                "easing": "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+            }
+        },
+        "error": {
+            "icon": "x-circle",
+            "color": "#EF4444",
+            "animation": {
+                "type": "shake + fade",
+                "duration": "400ms",
+                "shake": "translateX(-5px) → translateX(5px) → translateX(0)"
+            }
+        },
+        "warning": {
+            "icon": "alert-circle",
+            "color": "#F59E0B"
+        }
+    },
+    "transitions": {
+        "screenTransition": {
+            "type": "slide",
+            "direction": "horizontal",
+            "duration": "300ms",
+            "easing": "ease-out"
+        },
+        "modalOpen": {
+            "type": "slide-up + fade",
+            "duration": "300ms",
+            "overlay": "fade to rgba(0,0,0,0.5)"
+        },
+        "modalClose": {
+            "type": "slide-down + fade",
+            "duration": "200ms"
+        },
+        "tabSwitch": {
+            "type": "fade",
+            "duration": "150ms"
+        }
+    },
+    "gestures": {
+        "swipe": {
+            "threshold": "80px",
+            "revealAnimation": "slide + fade"
+        },
+        "pullToRefresh": {
+            "threshold": "60px",
+            "spinnerAppear": "scale from 0 to 1"
+        },
+        "longPress": {
+            "duration": "500ms",
+            "feedback": "haptic + scale(0.95)"
+        }
+    },
+    "scrollAnimations": {
+        "fadeInOnScroll": {
+            "initialOpacity": 0,
+            "finalOpacity": 1,
+            "translateY": "20px → 0px",
+            "duration": "300ms"
+        },
+        "parallax": {
+            "ratio": 0.5,
+            "direction": "vertical"
+        }
+    },
+    "statusChange": {
+        "booking": {
+            "pending": {
+                "pulse": true,
+                "color": "#F59E0B"
+            },
+            "confirmed": {
+                "checkAnimation": true,
+                "color": "#10B981"
+            },
+            "cancelled": {
+                "fadeToGray": true,
+                "strikethrough": true
+            }
+        }
+    }
+}

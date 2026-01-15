@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
-import { SplashScreen } from '../screens/SplashScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { SignInScreen } from '../screens/SignInScreen';
@@ -17,7 +16,6 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { TrackedNavigationContainer } from '../components/TrackedNavigationContainer';
 
 export type AuthStackParamList = {
-  Splash: undefined;
   Onboarding: undefined;
   SignUp: undefined;
   SignIn: undefined;
@@ -90,34 +88,24 @@ export const AppNavigator: React.FC = () => {
   return (
     <TrackedNavigationContainer linking={linking}>
       <Stack.Navigator
-        initialRouteName={showOnboarding ? 'Splash' : 'SignUp'}
+        initialRouteName={showOnboarding ? 'Onboarding' : 'SignUp'}
         screenOptions={{
           headerShown: false,
           animation: 'fade',
         }}
       >
         {showOnboarding && (
-          <>
-            <Stack.Screen name="Splash">
-              {(props) => (
-                <SplashScreen
-                  {...props}
-                  onContinue={() => props.navigation.navigate('Onboarding')}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="Onboarding">
-              {(props) => (
-                <OnboardingScreen
-                  {...props}
-                  onComplete={() => {
-                    handleOnboardingComplete();
-                    props.navigation.replace('SignUp');
-                  }}
-                />
-              )}
-            </Stack.Screen>
-          </>
+          <Stack.Screen name="Onboarding">
+            {(props) => (
+              <OnboardingScreen
+                {...props}
+                onComplete={() => {
+                  handleOnboardingComplete();
+                  props.navigation.replace('SignUp');
+                }}
+              />
+            )}
+          </Stack.Screen>
         )}
 
         <Stack.Screen name="SignUp">

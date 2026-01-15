@@ -24,20 +24,13 @@ import { useSalons } from '../../hooks/useSalons';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { formatCurrency, type CountryCode } from '../../utils/currency';
 import { HomeStackParamList, PackageWithProviders } from '../../navigation/HomeStackNavigator';
-import type { Service, Booking } from '../../types/models';
+import type { Service, ServicePackage, GiftCard, Booking } from '../../types/models';
 import { AdvancedSearchModal, SearchFilters } from '../../components/AdvancedSearchModal';
 import { bookingsApi } from '../../services/api';
 import { SimpleMap } from '../../components/SimpleMap';
 import { BetaTesterModal } from '../../components/modals/BetaTesterModal';
 import { CopilotStep, walkthroughable, useCopilot, CopilotProvider } from 'react-native-copilot';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { HomeHeader, HomeSearchBar, StoriesSection, PromoBanners, ServicesGrid, ProviderCard, NearbyProviders, SpecialPackagesSection, type PromoBanner, type ServiceItem, type Provider } from '../../components/home';
-import { MOCK_PROMO_BANNERS, SERVICE_ICON_MAP } from '../../components/home/mockData';
-import { useStories } from '../../hooks/useStories';
-import { usePacks } from '../../hooks/usePacks';
-import { useServicePackages } from '../../hooks/useServicePackages';
-import { StoryViewer } from '../../components/StoryViewer';
-import type { Story } from '../../services/storiesApi';
 
 // Create walkthroughable components
 const WalkthroughableView = walkthroughable(View);
@@ -139,6 +132,7 @@ const HomeScreenContent: React.FC = () => {
 
   const [countryCode] = useState<CountryCode>('CM');
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<'home' | 'institute'>('home');
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [manualCity, setManualCity] = useState('');
@@ -148,15 +142,6 @@ const HomeScreenContent: React.FC = () => {
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [showBetaModal, setShowBetaModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{ id: string; name: string; category?: string }[]>([]);
-
-  // Stories and Packs from API
-  const { stories, loading: storiesLoading, markViewed } = useStories();
-  const { packs, loading: packsLoading, trackClick } = usePacks(city ?? undefined);
-  const { packages: featuredPackages, loading: packagesLoading } = useServicePackages();
-  const [storyViewerVisible, setStoryViewerVisible] = useState(false);
-  const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
   // Copilot walkthrough - DISABLED (will be replaced by video tutorials)
   // const { start: startCopilot, copilotEvents } = useCopilot();
@@ -287,6 +272,7 @@ const HomeScreenContent: React.FC = () => {
 
   // Mock data pour les packages (à implémenter plus tard)
   const servicePackages: PackageWithProviders[] = [];
+  const giftCards: GiftCard[] = [];
 
   const handleServicePress = (service: Service) => {
     navigation.navigate('ServiceDetails', { service });
@@ -340,64 +326,94 @@ const HomeScreenContent: React.FC = () => {
     navigation.navigate('SearchResults', { filters });
   };
 
-  // Dynamic search as user types
-  const handleDynamicSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    // Filter services by name (case-insensitive)
-    const filtered = services
-      .filter(s =>
-        (s.name_fr?.toLowerCase().includes(query.toLowerCase())) ||
-        (s.name_en?.toLowerCase().includes(query.toLowerCase()))
-      )
-      .slice(0, 5)
-      .map(s => ({
-        id: s.id,
-        name: language === 'fr' ? (s.name_fr || s.name_en || '') : (s.name_en || s.name_fr || ''),
-        category: s.category,
-      }));
-
-    setSearchResults(filtered);
-  };
-
-  // Handle search result selection
-  const handleSearchResultPress = (result: { id: string; name: string; category?: string }) => {
-    const service = services.find(s => s.id === result.id);
-    if (service) {
-      handleServicePress(service);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {/* Header with new design */}
-      <HomeHeader
-        city={city ?? null}
-        district={district ?? null}
-        onLocationPress={() => setLocationModalVisible(true)}
-        onNotificationsPress={() => console.log('Notifications pressed')}
-        hasUnreadNotifications={true}
-      />
+      {/* Header */}
+      <View style={[styles.header, { paddingHorizontal: spacing(2.5), paddingTop: spacing(6), paddingBottom: spacing(2) }]}>
+        <View>
+          <Image
+            source={require('../../../assets/logo_outline.png')}
+            style={{ width: spacing(6), height: spacing(6) }}
+            resizeMode="contain"
+          />
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing(0.5) }}
+            onPress={() => setLocationModalVisible(true)}
+          >
+            <Text style={{ fontSize: normalizeFontSize(12), color: '#666', marginRight: spacing(0.5) }}>
+              📍 {city ? `${city}${district ? `, ${district}` : ''}` : 'Localisation...'}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color="#666" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Search Bar */}
-      <HomeSearchBar
-        onSearch={handleDynamicSearch}
-        onFilterPress={() => setSearchModalVisible(true)}
-        onResultPress={handleSearchResultPress}
-        searchResults={searchResults}
-        placeholder={t.home.searchServices}
-        loading={servicesLoading}
-      />
+        <View style={styles.headerRight}>
+          {/* Language Toggle */}
+          <TouchableOpacity
+            style={[styles.languageToggle, { paddingHorizontal: spacing(1.5), paddingVertical: spacing(0.5), borderRadius: spacing(2), marginRight: spacing(1.5) }]}
+            onPress={toggleLanguage}
+          >
+            <Text style={[styles.languageText, { fontSize: normalizeFontSize(12) }]}>
+              {language.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Profile Button */}
+          <TouchableOpacity style={[styles.profileButton, { width: spacing(6), height: spacing(6) }]}>
+            <View style={styles.profilePlaceholder}>
+              <Text style={[styles.profileInitial, { fontSize: normalizeFontSize(16) }]}>
+                {user?.firstName?.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={[styles.profileName, { fontSize: normalizeFontSize(10) }]} numberOfLines={1}>
+              {user?.firstName}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Search Bar - Step 1 */}
+      <CopilotStep
+        text="🔍 Recherchez un service de beauté en appuyant ici. Vous pouvez filtrer par nom, catégorie ou lieu."
+        order={1}
+        name="search"
+      >
+        <WalkthroughableView style={[styles.searchContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(2) }]}>
+          <TouchableOpacity
+            style={[styles.searchBar, { height: spacing(6), borderRadius: spacing(1.5), paddingHorizontal: spacing(2) }]}
+            onPress={() => setSearchModalVisible(true)}
+          >
+            <Text style={[styles.searchPlaceholder, { fontSize: normalizeFontSize(14) }]}>{t.home.searchServices}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.searchButton, { width: spacing(6), height: spacing(6), borderRadius: spacing(3) }]}
+            onPress={() => setSearchModalVisible(true)}
+          >
+            <Text style={[styles.searchIcon, { fontSize: normalizeFontSize(20) }]}>🔍</Text>
+          </TouchableOpacity>
+        </WalkthroughableView>
+      </CopilotStep>
 
       {/* Advanced Search Modal */}
       <AdvancedSearchModal
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
         onApply={handleSearch}
+      />
+
+      {/* Floating Beta Tester Button */}
+      <TouchableOpacity
+        style={styles.betaButton}
+        onPress={() => setShowBetaModal(true)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.betaButtonText}>🧪</Text>
+      </TouchableOpacity>
+
+      {/* Beta Tester Modal */}
+      <BetaTesterModal
+        visible={showBetaModal}
+        onClose={() => setShowBetaModal(false)}
       />
 
       <ScrollView
@@ -411,80 +427,47 @@ const HomeScreenContent: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Stories Section */}
-        <StoriesSection
-          stories={stories.map(s => ({
-            id: s.id,
-            name: s.provider?.name || 'Provider',
-            image: s.provider?.image || s.mediaUrl || '',
-            viewed: s.isViewed || false,
-          }))}
-          onStoryPress={(story) => {
-            const index = stories.findIndex(s => s.id === story.id);
-            if (index >= 0) {
-              setSelectedStoryIndex(index);
-              setStoryViewerVisible(true);
-            }
-          }}
-          onAddStoryPress={user?.role === 'provider' ? () => console.log('Add story pressed') : undefined}
-        />
-
-        {/* Promo Banners - Use API data or fallback to mock */}
-        <PromoBanners
-          banners={packs.length > 0 ? packs.map(p => ({
-            id: p.id,
-            title: p.title,
-            subtitle: p.subtitle,
-            image: p.imageUrl,
-            badge: p.badge,
-          })) : MOCK_PROMO_BANNERS}
-          onBannerPress={(banner: PromoBanner) => {
-            trackClick(banner.id);
-            // Navigate to provider/service based on pack's ctaLink
-            const pack = packs.find(p => p.id === banner.id);
-            if (pack?.ctaLink) {
-              console.log('Navigate to:', pack.ctaLink);
-            }
-          }}
-        />
-
-        {/* Special Packages / Offres Spéciales */}
-        <SpecialPackagesSection
-          packages={featuredPackages}
-          loading={packagesLoading}
-          onPackagePress={(pkg) => {
-            console.log('Package pressed:', pkg.id);
-            // TODO: Navigate to package details or booking
-          }}
-        />
-
-        {/* Prestataires à proximité */}
-        <NearbyProviders
-          providers={nearbyProviders.map(p => ({
-            id: p.id,
-            name: p.name || 'Prestataire',
-            image: p.image ?? undefined,
-            rating: p.rating,
-            location: p.city || 'Douala',
-            distance: undefined,
-            services: [],
-            verified: false,
-          }))}
-          onProviderPress={(provider) => {
-            const originalProvider = nearbyProviders.find(np => np.id === provider.id);
-            if (originalProvider) {
-              handleSalonPress(originalProvider);
-            }
-          }}
-          onBookPress={(provider) => {
-            const originalProvider = nearbyProviders.find(np => np.id === provider.id);
-            if (originalProvider) {
-              handleSalonPress(originalProvider);
-            }
-          }}
-          onSeeAllPress={() => console.log('See all providers')}
-        />
-
+        {/* Toggle Home/Institute - Step 2 */}
+        <CopilotStep
+          text="📂 Basculez entre les services à domicile et les instituts de beauté. Appuyez pour explorer !"
+          order={2}
+          name="toggle"
+        >
+          <WalkthroughableView style={[styles.toggleContainer, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                viewMode === 'home' && styles.toggleButtonActive,
+                { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3) }
+              ]}
+              onPress={() => setViewMode('home')}
+            >
+              <Text style={[
+                styles.toggleText,
+                viewMode === 'home' && styles.toggleTextActive,
+                { fontSize: normalizeFontSize(14) }
+              ]}>
+                {t.home.home || 'Services'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                viewMode === 'institute' && styles.toggleButtonActive,
+                { flex: 1, paddingVertical: spacing(1.5), borderRadius: spacing(3), marginLeft: spacing(1) }
+              ]}
+              onPress={() => setViewMode('institute')}
+            >
+              <Text style={[
+                styles.toggleText,
+                viewMode === 'institute' && styles.toggleTextActive,
+                { fontSize: normalizeFontSize(14) }
+              ]}>
+                {t.home.institute || 'Instituts'}
+              </Text>
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
         {/* Loading State */}
         {servicesLoading && !refreshing && (
           <View style={{ padding: spacing(4), alignItems: 'center' }}>
@@ -506,8 +489,8 @@ const HomeScreenContent: React.FC = () => {
           </View>
         )}
 
-        {/* Upcoming Bookings */}
-        {upcomingBookings.length > 0 && (
+        {/* Upcoming Bookings - Show only in Home mode */}
+        {viewMode === 'home' && upcomingBookings.length > 0 && (
           <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>{t.home.upcomingBookings}</Text>
@@ -775,8 +758,8 @@ const HomeScreenContent: React.FC = () => {
           </View>
         )}
 
-        {/* Near Me (Services) - Step 3 */}
-        {(
+        {/* Near Me (Services) - Mode Home - Step 3 */}
+        {viewMode === 'home' && (
           <CopilotStep
             text="💅 Découvrez les services de beauté près de chez vous. Appuyez sur un service pour voir les détails et les prestataires disponibles."
             order={3}
@@ -832,7 +815,7 @@ const HomeScreenContent: React.FC = () => {
         )}
 
         {/* Nearby Institutes */}
-        {nearbyProviders.filter(p => p.type === 'salon').length > 0 && (
+        {viewMode === 'institute' && nearbyProviders.filter(p => p.type === 'salon').length > 0 && (
           <View style={[styles.section, { paddingHorizontal: spacing(2.5), marginBottom: spacing(3) }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { fontSize: normalizeFontSize(20) }]}>Instituts Proches</Text>
@@ -923,7 +906,7 @@ const HomeScreenContent: React.FC = () => {
         )}
 
         {/* Nearby Independent Providers - Step 4 */}
-        {nearbyProviders.filter(p => p.type === 'therapist').length > 0 && (
+        {viewMode === 'home' && nearbyProviders.filter(p => p.type === 'therapist').length > 0 && (
           <CopilotStep
             text="🗺️ Visualisez les prestataires indépendants sur la carte. Vous pouvez voir leur distance et les contacter directement."
             order={4}
@@ -1211,28 +1194,6 @@ const HomeScreenContent: React.FC = () => {
         </View>
         */}
       </ScrollView>
-
-      {/* Story Viewer Modal */}
-      <StoryViewer
-        stories={stories}
-        initialIndex={selectedStoryIndex}
-        visible={storyViewerVisible}
-        onClose={() => setStoryViewerVisible(false)}
-        onStoryViewed={markViewed}
-        onBookPress={(story) => {
-          setStoryViewerVisible(false);
-          // Navigate to provider
-          if (story.provider) {
-            const providerData = {
-              id: story.provider.id,
-              name: story.provider.name,
-              type: story.provider.type,
-            };
-            // Could navigate to provider profile here
-            console.log('Book with provider:', providerData);
-          }
-        }}
-      />
 
       {/* Location Selection Modal */}
       <Modal

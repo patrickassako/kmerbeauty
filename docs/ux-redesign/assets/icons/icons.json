@@ -1,0 +1,366 @@
+{
+    "brand": {
+        "name": "KMR-BEAUTY Iconography",
+        "version": "1.0",
+        "style": "Line / Outline",
+        "strokeWidth": "1.5px - 2px"
+    },
+    "sizes": {
+        "sm": "20px",
+        "md": "24px",
+        "lg": "32px",
+        "xl": "48px"
+    },
+    "navigation": [
+        {
+            "name": "home",
+            "label": "Home",
+            "description": "House icon for home tab"
+        },
+        {
+            "name": "search",
+            "label": "Search",
+            "description": "Magnifying glass for search"
+        },
+        {
+            "name": "compass",
+            "label": "Explore",
+            "description": "Compass for explore/discover"
+        },
+        {
+            "name": "person",
+            "label": "Profile",
+            "description": "Person silhouette for profile"
+        },
+        {
+            "name": "calendar",
+            "label": "Bookings",
+            "description": "Calendar for appointments"
+        },
+        {
+            "name": "bag",
+            "label": "Marketplace",
+            "description": "Shopping bag for marketplace"
+        },
+        {
+            "name": "cart",
+            "label": "Cart",
+            "description": "Shopping cart"
+        },
+        {
+            "name": "chat-bubble",
+            "label": "Chat",
+            "description": "Chat bubble for conversations"
+        }
+    ],
+    "actions": [
+        {
+            "name": "edit",
+            "label": "Edit",
+            "description": "Pencil icon for edit actions"
+        },
+        {
+            "name": "delete",
+            "label": "Delete",
+            "description": "Trash can for delete"
+        },
+        {
+            "name": "phone",
+            "label": "Call",
+            "description": "Phone handset for calling"
+        },
+        {
+            "name": "microphone",
+            "label": "Voice",
+            "description": "Microphone for voice input"
+        },
+        {
+            "name": "camera",
+            "label": "Photo",
+            "description": "Camera for photo/upload"
+        },
+        {
+            "name": "image",
+            "label": "Gallery",
+            "description": "Image icon for gallery"
+        },
+        {
+            "name": "heart",
+            "label": "Favorite",
+            "description": "Heart for favorites/likes"
+        },
+        {
+            "name": "heart-filled",
+            "label": "Favorited",
+            "description": "Filled heart when liked"
+        },
+        {
+            "name": "star",
+            "label": "Rating",
+            "description": "Star for ratings"
+        },
+        {
+            "name": "star-filled",
+            "label": "Rated",
+            "description": "Filled star"
+        },
+        {
+            "name": "location",
+            "label": "Location",
+            "description": "Map pin for location"
+        },
+        {
+            "name": "bell",
+            "label": "Notifications",
+            "description": "Bell for notifications"
+        },
+        {
+            "name": "settings",
+            "label": "Settings",
+            "description": "Gear for settings"
+        },
+        {
+            "name": "share",
+            "label": "Share",
+            "description": "Share arrow"
+        },
+        {
+            "name": "download",
+            "label": "Download",
+            "description": "Download arrow"
+        },
+        {
+            "name": "upload",
+            "label": "Upload",
+            "description": "Upload arrow"
+        },
+        {
+            "name": "refresh",
+            "label": "Refresh",
+            "description": "Circular arrows for refresh"
+        },
+        {
+            "name": "close",
+            "label": "Close",
+            "description": "X icon for close/dismiss"
+        },
+        {
+            "name": "check",
+            "label": "Check",
+            "description": "Checkmark for confirmation"
+        },
+        {
+            "name": "plus",
+            "label": "Add",
+            "description": "Plus sign for add"
+        },
+        {
+            "name": "minus",
+            "label": "Remove",
+            "description": "Minus sign for remove"
+        }
+    ],
+    "serviceCategories": [
+        {
+            "name": "scissors",
+            "label": "Coiffure",
+            "description": "Scissors for hair services"
+        },
+        {
+            "name": "nail-polish",
+            "label": "Ongles",
+            "description": "Nail polish bottle for nail services"
+        },
+        {
+            "name": "spa",
+            "label": "Massage/Spa",
+            "description": "Lotus or hands for massage"
+        },
+        {
+            "name": "lipstick",
+            "label": "Maquillage",
+            "description": "Lipstick for makeup services"
+        },
+        {
+            "name": "face",
+            "label": "Soins visage",
+            "description": "Face icon for facial treatments"
+        },
+        {
+            "name": "bottle",
+            "label": "Soins peau",
+            "description": "Bottle for skincare"
+        },
+        {
+            "name": "brush",
+            "label": "Brushing",
+            "description": "Hair brush"
+        },
+        {
+            "name": "razor",
+            "label": "Barber",
+            "description": "Razor for barber services"
+        }
+    ],
+    "payment": [
+        {
+            "name": "orange-money",
+            "label": "Orange Money",
+            "color": "#FF6600",
+            "description": "Orange Money logo"
+        },
+        {
+            "name": "mtn-momo",
+            "label": "MTN Mobile Money",
+            "color": "#FFCC00",
+            "description": "MTN MoMo logo"
+        },
+        {
+            "name": "flutterwave",
+            "label": "Flutterwave",
+            "description": "Flutterwave logo"
+        },
+        {
+            "name": "credit-card",
+            "label": "Card",
+            "description": "Credit card icon"
+        }
+    ],
+    "location": [
+        {
+            "name": "map-pin",
+            "label": "Location Pin",
+            "description": "Map marker"
+        },
+        {
+            "name": "map",
+            "label": "Map View",
+            "description": "Map icon"
+        },
+        {
+            "name": "navigation",
+            "label": "Navigate",
+            "description": "Navigation arrow"
+        },
+        {
+            "name": "compass",
+            "label": "Direction",
+            "description": "Compass for direction"
+        }
+    ],
+    "language": [
+        {
+            "name": "globe",
+            "label": "Language",
+            "description": "Globe for language selection"
+        },
+        {
+            "name": "flag-fr",
+            "label": "French",
+            "description": "French flag"
+        },
+        {
+            "name": "flag-en",
+            "label": "English",
+            "description": "UK/US flag"
+        }
+    ],
+    "notification": [
+        {
+            "name": "bell",
+            "label": "Notification",
+            "description": "Bell icon"
+        },
+        {
+            "name": "bell-off",
+            "label": "Muted",
+            "description": "Bell with slash"
+        },
+        {
+            "name": "bell-badge",
+            "label": "New Notification",
+            "description": "Bell with badge dot"
+        }
+    ],
+    "status": [
+        {
+            "name": "check-circle",
+            "label": "Success",
+            "color": "#10B981"
+        },
+        {
+            "name": "x-circle",
+            "label": "Error",
+            "color": "#EF4444"
+        },
+        {
+            "name": "alert-circle",
+            "label": "Warning",
+            "color": "#F59E0B"
+        },
+        {
+            "name": "info-circle",
+            "label": "Info",
+            "color": "#3B82F6"
+        },
+        {
+            "name": "clock",
+            "label": "Pending",
+            "color": "#F59E0B"
+        },
+        {
+            "name": "loader",
+            "label": "Loading",
+            "color": "#FF6B6B"
+        }
+    ],
+    "arrows": [
+        {
+            "name": "chevron-right",
+            "label": "Next",
+            "description": "Right chevron"
+        },
+        {
+            "name": "chevron-left",
+            "label": "Back",
+            "description": "Left chevron"
+        },
+        {
+            "name": "chevron-down",
+            "label": "Expand",
+            "description": "Down chevron"
+        },
+        {
+            "name": "chevron-up",
+            "label": "Collapse",
+            "description": "Up chevron"
+        },
+        {
+            "name": "arrow-left",
+            "label": "Back Arrow",
+            "description": "Back navigation"
+        },
+        {
+            "name": "arrow-right",
+            "label": "Forward Arrow",
+            "description": "Forward navigation"
+        }
+    ],
+    "recommended_libraries": [
+        {
+            "name": "Ionicons",
+            "url": "https://ionic.io/ionicons",
+            "package": "@expo/vector-icons (Ionicons)"
+        },
+        {
+            "name": "Feather Icons",
+            "url": "https://feathericons.com/",
+            "package": "react-native-feather"
+        },
+        {
+            "name": "Lucide",
+            "url": "https://lucide.dev/",
+            "package": "lucide-react-native"
+        }
+    ]
+}

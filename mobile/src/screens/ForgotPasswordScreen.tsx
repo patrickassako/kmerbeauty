@@ -62,7 +62,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
                 <View style={styles.successContent}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="mail-open-outline" size={64} color={colors.primary} />
+                        <Ionicons name="mail-open-outline" size={64} color="#FF6B6B" />
                     </View>
                     <Text style={styles.successTitle}>Email envoyé !</Text>
                     <Text style={styles.successText}>
@@ -93,7 +93,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                     onPress={() => navigation.goBack()}
                     style={styles.backButton}
                 >
-                    <Ionicons name="arrow-back" size={24} color={colors.black} />
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -121,7 +121,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                                 value={email}
                                 onChangeText={setEmail}
                                 placeholder="exemple@email.com"
-                                placeholderTextColor={colors.gray400}
+                                placeholderTextColor="#8a6a5e"
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoCorrect={false}
@@ -156,7 +156,7 @@ export const ForgotPasswordScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: '#1A1A1A',
     },
     header: {
         paddingTop: Platform.OS === 'ios' ? 60 : 40,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: radius.full,
-        backgroundColor: colors.gray50,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
     scrollView: {
         flex: 1,
@@ -183,12 +183,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: typography.fontSize['3xl'],
         fontWeight: typography.fontWeight.bold,
-        color: colors.black,
+        color: '#FFFFFF',
         marginBottom: spacing.sm,
     },
     subtitle: {
         fontSize: typography.fontSize.base,
-        color: colors.textSecondary,
+        color: '#c9a092',
         lineHeight: 24,
     },
     form: {
@@ -200,20 +200,20 @@ const styles = StyleSheet.create({
     label: {
         fontSize: typography.fontSize.sm,
         fontWeight: typography.fontWeight.bold,
-        color: colors.textSecondary,
+        color: '#e0d0cb',
         textTransform: 'uppercase',
     },
     input: {
-        backgroundColor: colors.white,
+        backgroundColor: '#2A1D18',
         borderWidth: 1,
-        borderColor: colors.borderLight,
+        borderColor: '#674032',
         borderRadius: radius.lg,
         padding: spacing.md,
         fontSize: typography.fontSize.base,
-        color: colors.black,
+        color: '#FFFFFF',
     },
     primaryButton: {
-        backgroundColor: colors.black,
+        backgroundColor: '#FF6B6B',
         paddingVertical: spacing.md,
         borderRadius: radius.full,
         alignItems: 'center',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     secondaryButtonText: {
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.medium,
-        color: colors.textSecondary,
+        color: '#c9a092',
     },
     successContent: {
         flex: 1,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: colors.primary + '10', // 10% opacity
+        backgroundColor: 'rgba(255, 107, 107, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.xl,
@@ -251,20 +251,20 @@ const styles = StyleSheet.create({
     successTitle: {
         fontSize: typography.fontSize['2xl'],
         fontWeight: typography.fontWeight.bold,
-        color: colors.black,
+        color: '#FFFFFF',
         marginBottom: spacing.md,
         textAlign: 'center',
     },
     successText: {
         fontSize: typography.fontSize.base,
-        color: colors.textSecondary,
-        textAlign: 'center',
+        color: '#c9a092',
+        textAlignment: 'center',
         marginBottom: spacing.sm,
         lineHeight: 24,
     },
     successSubText: {
         fontSize: typography.fontSize.sm,
-        color: colors.textTertiary,
+        color: '#8a6a5e',
         textAlign: 'center',
         marginBottom: spacing.xl,
     },

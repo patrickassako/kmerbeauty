@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KMR-BEAUTY Home Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&amp;family=Poppins:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#FF6B6B", // Coral from charter
+              secondary: "#1A1A1A", // Charcoal from charter
+              "background-light": "#F9F9F9", // Gray 50
+              "background-dark": "#121212", // Dark mode background
+              "surface-light": "#FFFFFF",
+              "surface-dark": "#1E1E1E",
+              "text-main-light": "#1A1A1A",
+              "text-main-dark": "#FFFFFF",
+              "text-muted-light": "#9C120%", 
+              "text-muted-dark": "#A0A0A0",
+            },
+            fontFamily: {
+              sans: ["Poppins", "sans-serif"],
+              display: ["Montserrat", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "12px",
+              "xl": "16px",
+              "2xl": "24px",
+            },
+            boxShadow: {
+              'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
+              'card': '0 2px 8px rgba(0, 0, 0, 0.04)',
+            }
+          },
+        },
+      };
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark font-sans transition-colors duration-300 antialiased pb-24">
+<div class="h-12 w-full flex justify-between items-center px-6 pt-2 text-sm font-medium">
+<span>14:30</span>
+<div class="flex items-center gap-1">
+<span class="material-icons-round text-lg">signal_cellular_alt</span>
+<span class="material-icons-round text-lg">wifi</span>
+<span class="material-icons-round text-lg">battery_full</span>
+</div>
+</div>
+<header class="px-6 py-4 flex justify-between items-center sticky top-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm z-50">
+<div class="flex flex-col">
+<span class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-0.5">Localisation actuelle</span>
+<div class="flex items-center gap-1 text-secondary dark:text-white">
+<span class="material-icons-round text-primary text-xl">location_on</span>
+<span class="font-display font-bold text-lg">Douala, Akwa</span>
+<span class="material-icons-round text-gray-400 text-lg">expand_more</span>
+</div>
+</div>
+<button class="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-icons-round text-2xl text-secondary dark:text-white">notifications_none</span>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full border border-white dark:border-gray-900"></span>
+</button>
+</header>
+<div class="px-6 mb-6">
+<div class="relative group">
+<span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">
+<span class="material-icons-round">search</span>
+</span>
+<input class="w-full bg-surface-light dark:bg-surface-dark border-none py-3.5 pl-12 pr-4 rounded-xl shadow-card text-sm focus:ring-2 focus:ring-primary/20 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Rechercher un service..." type="text"/>
+<button class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 bg-secondary dark:bg-gray-700 rounded-lg text-white">
+<span class="material-icons-round text-lg">tune</span>
+</button>
+</div>
+</div>
+<section class="px-6 mb-6">
+<div class="flex overflow-x-auto no-scrollbar gap-5 py-1">
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+<div class="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+<span class="material-icons-round text-gray-400">add</span>
+</div>
+</div>
+</div>
+<span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">Ajouter</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-primary">
+<img alt="Sarah" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv4-HM9p0WyHXufssiKjDBBQ58_HEY2hoR9ud5aHhFzmFR7EHdR-IwkgEajgtYmeN_YYptueFDaNes3EfZp_VofuzHHCNJPo3ntRRCb69uTSSQTRqakSFcveT7V1ln5vUcmlav6eWJOoXXyzsiPzDB-gC6wpe-G5YB93BkXze0wrM1dDModYEC_ErfD_QrY0HPBaSrFtwRwjPP-_hzcp3a2bPH-c7pkau2zQvmsJcvGAVZ8IdBAgFA0iDkvZ4u8qvLLGwuOqeVDBzO"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-secondary dark:text-gray-200">Éclat</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-primary">
+<img alt="Divine" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxGkpgIQSnTrHXvs_GqODk_Anf6f6F7r7o6omdql9pY8B33eZtcHC10R0h153PlW38RPyP293Os7JGahtHK0hk94hT2orl49O-KSPSKYdAbbZ_e2vavV0nVDhI1SiibrXseqKpyt6HmOzebyCcvmRc5U4lEK0w7yRUPKuMGCfGA5QQPkrAy1HVDUSNrmXLkVTh0sjfBtq_r6yb_6-roVfOsGCrNu8HbCcm3iOjoDKLKiZGwIizWu0k3u8rTVS2eqMrTnVEllFYrmWc"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-secondary dark:text-gray-200">Divine</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-primary">
+<img alt="Sarah Nails" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAedgq8NwTIHTW0A6qFlJxZOBWaS2saOnNv58JX6bfMUTRx4Gr-aSSjftNCI35RE-IV4ptmBcZndqoUVbGiA_EeqLL_HfLObwpZId5cMp5hs9vxPXENjXcIE7G-Ne_QuvF256aq2DWSk3cAucygDXwJAaEktfEG9h5f4dGCxJzldZFMRA4ZUO_SpKAf92OxcwzsZJHAbfHc-JdOQFQLyXqDRXDt7prs03W3cUPTwciRLe8CewqRJ_4YBd0MdNEoBJ1zzzyfF6rAqOxP"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-secondary dark:text-gray-200">Sarah</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-primary">
+<img alt="Rose" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt1N3aj427P872H80eXymTAGtBzXykNGP6eCTpAtwQFYTojrATxHol0qEfRmuFxKcpHxQFSXYHsOVLHIwsMPD3EAd88O2q0PetD3WjioEuH_VqXaySJwR5AK_fut4mEeR67lQYJBsOIZf_goR9QNUg-FfPJ8rZh_AV6JxSCxGPhvzMJGzQwckbA-Tjzsj5Xd3N07ORml44Or7JEYu6uQzjfbVuf8npXBSa6MbBv1d4mvMw6NhS72msWBIuo1Jd8iUu_P5vm7vH32U_"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-secondary dark:text-gray-200">Rose</span>
+</div>
+<div class="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
+<div class="relative">
+<div class="w-16 h-16 rounded-full p-0.5 border-2 border-primary">
+<img alt="Belle" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-background-dark" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmSG8LlGUhRleS_Uck90mvL1D6c5GJHQKputLMQPXdPZxxxQeeIG8t9nyOcvOml3P9sNV2pN9aJ4PL9sayBBvvdhecmtgJNqqYlrE3hpDhx0qEfgfti49tRsUuuefUiWJRRyrRy4DD_oWMKr1s9cGlJGTMh0GHIdxaAAfUdahnROemUCYNMgv5cwPP8tf5evVhvzI-mVBNJPUx_OK66-98R8y4u5OWXE8XhUiasbTd8B4RfN7cenlCamLJr4_JPTx6Ilt66UMBtFrx"/>
+</div>
+</div>
+<span class="text-[10px] font-medium text-secondary dark:text-gray-200">Belle</span>
+</div>
+</div>
+</section>
+<section class="px-6 mb-8 overflow-x-auto no-scrollbar">
+<div class="flex gap-4 w-max">
+<div class="w-[300px] h-[160px] rounded-2xl relative overflow-hidden shadow-soft group">
+<img alt="Femme recevant un soin de beauté" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt1N3aj427P872H80eXymTAGtBzXykNGP6eCTpAtwQFYTojrATxHol0qEfRmuFxKcpHxQFSXYHsOVLHIwsMPD3EAd88O2q0PetD3WjioEuH_VqXaySJwR5AK_fut4mEeR67lQYJBsOIZf_goR9QNUg-FfPJ8rZh_AV6JxSCxGPhvzMJGzQwckbA-Tjzsj5Xd3N07ORml44Or7JEYu6uQzjfbVuf8npXBSa6MbBv1d4mvMw6NhS72msWBIuo1Jd8iUu_P5vm7vH32U_"/>
+<div class="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6">
+<span class="text-white/80 text-xs font-medium tracking-wider mb-1 uppercase">Offre Spéciale</span>
+<h2 class="text-white font-display font-bold text-2xl mb-1">Pack Mariage</h2>
+<p class="text-primary font-bold text-3xl mb-3">-20%</p>
+<button class="bg-primary text-white text-xs font-semibold py-2 px-4 rounded-full w-fit hover:bg-opacity-90 transition active:scale-95">
+                        Réserver Maintenant
+                    </button>
+</div>
+</div>
+<div class="w-[300px] h-[160px] rounded-2xl relative overflow-hidden shadow-soft group">
+<img alt="Palette de maquillage" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmSG8LlGUhRleS_Uck90mvL1D6c5GJHQKputLMQPXdPZxxxQeeIG8t9nyOcvOml3P9sNV2pN9aJ4PL9sayBBvvdhecmtgJNqqYlrE3hpDhx0qEfgfti49tRsUuuefUiWJRRyrRy4DD_oWMKr1s9cGlJGTMh0GHIdxaAAfUdahnROemUCYNMgv5cwPP8tf5evVhvzI-mVBNJPUx_OK66-98R8y4u5OWXE8XhUiasbTd8B4RfN7cenlCamLJr4_JPTx6Ilt66UMBtFrx"/>
+<div class="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex flex-col justify-center px-6">
+<span class="text-white/80 text-xs font-medium tracking-wider mb-1 uppercase">Nouveauté</span>
+<h2 class="text-white font-display font-bold text-2xl mb-1">Soins Visage</h2>
+<p class="text-primary font-bold text-3xl mb-3">Premium</p>
+<button class="bg-primary text-white text-xs font-semibold py-2 px-4 rounded-full w-fit hover:bg-opacity-90 transition active:scale-95">
+                        Découvrir
+                    </button>
+</div>
+</div>
+</div>
+</section>
+<section class="px-6 mb-8">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-display font-bold text-lg text-secondary dark:text-white">Services</h3>
+<button class="text-primary text-sm font-medium hover:underline">Voir tout</button>
+</div>
+<div class="grid grid-cols-4 gap-4">
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">content_cut</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Coiffure</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">brush</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Maquillage</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">spa</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Massage</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">dry_cleaning</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Onglerie</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer mt-2">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">face_retouching_natural</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Soins</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer mt-2">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">event_seat</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Barbier</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer mt-2">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-surface-dark shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-primary/50 transition-colors">
+<span class="material-icons-round text-primary text-2xl">volunteer_activism</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Bien-être</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer mt-2">
+<div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 shadow-inner flex items-center justify-center">
+<span class="material-icons-round text-gray-500 text-2xl">grid_view</span>
+</div>
+<span class="text-xs font-medium text-gray-600 dark:text-gray-300">Autre</span>
+</div>
+</div>
+</section>
+<section class="px-6 mb-4">
+<h3 class="font-display font-bold text-lg text-secondary dark:text-white mb-4">Prestataires à proximité</h3>
+<div class="flex flex-col gap-4">
+<div class="bg-surface-light dark:bg-surface-dark p-3 rounded-xl shadow-card flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<div class="relative w-20 h-20 flex-shrink-0">
+<img alt="Salon Éclat" class="w-full h-full rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv4-HM9p0WyHXufssiKjDBBQ58_HEY2hoR9ud5aHhFzmFR7EHdR-IwkgEajgtYmeN_YYptueFDaNes3EfZp_VofuzHHCNJPo3ntRRCb69uTSSQTRqakSFcveT7V1ln5vUcmlav6eWJOoXXyzsiPzDB-gC6wpe-G5YB93BkXze0wrM1dDModYEC_ErfD_QrY0HPBaSrFtwRwjPP-_hzcp3a2bPH-c7pkau2zQvmsJcvGAVZ8IdBAgFA0iDkvZ4u8qvLLGwuOqeVDBzO"/>
+<div class="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 p-1 rounded-full shadow-sm">
+<span class="material-icons-round text-primary text-xs bg-red-100 dark:bg-red-900/30 p-1 rounded-full">verified</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col justify-between h-full min-h-[5rem]">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-display font-bold text-sm text-secondary dark:text-white">Salon Éclat</h4>
+<div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs">
+<span class="material-icons-round text-yellow-400 text-[10px]">star</span>
+<span class="font-bold text-secondary dark:text-white">4.8</span>
+</div>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+<span class="material-icons-round text-[10px]">location_on</span>
+                            Bonanjo, Douala • 0.8 km
+                        </p>
+</div>
+<div class="flex justify-between items-end mt-2">
+<div class="flex gap-1">
+<span class="text-[10px] px-2 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-500 dark:text-pink-300 font-medium">Coiffure</span>
+<span class="text-[10px] px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-500 dark:text-purple-300 font-medium">Onglerie</span>
+</div>
+<button class="bg-primary text-white text-xs font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md active:scale-95 transition-all">
+                            RÉSERVER
+                        </button>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-3 rounded-xl shadow-card flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<div class="relative w-20 h-20 flex-shrink-0">
+<img alt="Divine Beauty" class="w-full h-full rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxGkpgIQSnTrHXvs_GqODk_Anf6f6F7r7o6omdql9pY8B33eZtcHC10R0h153PlW38RPyP293Os7JGahtHK0hk94hT2orl49O-KSPSKYdAbbZ_e2vavV0nVDhI1SiibrXseqKpyt6HmOzebyCcvmRc5U4lEK0w7yRUPKuMGCfGA5QQPkrAy1HVDUSNrmXLkVTh0sjfBtq_r6yb_6-roVfOsGCrNu8HbCcm3iOjoDKLKiZGwIizWu0k3u8rTVS2eqMrTnVEllFYrmWc"/>
+</div>
+<div class="flex-1 flex flex-col justify-between h-full min-h-[5rem]">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-display font-bold text-sm text-secondary dark:text-white">Divine Beauty</h4>
+<div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs">
+<span class="material-icons-round text-yellow-400 text-[10px]">star</span>
+<span class="font-bold text-secondary dark:text-white">4.5</span>
+</div>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+<span class="material-icons-round text-[10px]">location_on</span>
+                            Akwa, Douala • 1.2 km
+                        </p>
+</div>
+<div class="flex justify-between items-end mt-2">
+<div class="flex gap-1">
+<span class="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-300 font-medium">Massage</span>
+</div>
+<button class="bg-primary text-white text-xs font-semibold py-1.5 px-3 rounded-lg shadow-sm hover:shadow-md active:scale-95 transition-all">
+                            RÉSERVER
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<nav class="fixed bottom-0 left-0 w-full bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 px-6 py-3 pb-8 z-50 shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">
+<ul class="flex justify-between items-center">
+<li>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-icons-round text-2xl">home</span>
+<span class="text-[10px] font-medium">Accueil</span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" href="#">
+<span class="material-icons-round text-2xl">grid_view</span>
+<span class="text-[10px] font-medium">Services</span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors relative" href="#">
+<span class="material-icons-round text-2xl">calendar_today</span>
+<span class="text-[10px] font-medium">Rendez-vous</span>
+<span class="absolute top-0 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" href="#">
+<span class="material-icons-round text-2xl">chat_bubble_outline</span>
+<span class="text-[10px] font-medium">Messages</span>
+</a>
+</li>
+<li>
+<a class="flex flex-col items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" href="#">
+<span class="material-icons-round text-2xl">person_outline</span>
+<span class="text-[10px] font-medium">Profil</span>
+</a>
+</li>
+</ul>
+</nav>
+
+</body></html>

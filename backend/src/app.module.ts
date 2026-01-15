@@ -28,6 +28,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { StoriesModule } from './stories/stories.module';
 import { PacksModule } from './packs/packs.module';
+import { ServicePackagesModule } from './service-packages/service-packages.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { PacksModule } from './packs/packs.module';
     NotificationsModule,
     StoriesModule,
     PacksModule,
+    ServicePackagesModule,
   ],
   controllers: [AppController],
   providers: [

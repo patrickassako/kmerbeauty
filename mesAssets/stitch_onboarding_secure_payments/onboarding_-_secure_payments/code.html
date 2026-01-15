@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Onboarding - Verified Providers</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&amp;family=Poppins:wght@400..800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff6b6b", // Coral
+                        "background-light": "#f8f5f5",
+                        "background-dark": "#230f0f",
+                        "surface-dark": "#2f1515",
+                        "verified-green": "#22c55e", // Custom green for trust badges
+                    },
+                    fontFamily: {
+                        "display": ["Poppins", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }@keyframes pulse-soft {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+        .verified-pulse {
+            animation: pulse-soft 3s infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-sans antialiased overflow-hidden selection:bg-primary selection:text-white">
+<div class="relative flex h-full min-h-screen w-full flex-col justify-between overflow-x-hidden">
+<div class="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="flex-1 flex flex-col items-center w-full max-w-md mx-auto relative z-10 pt-8 pb-6 px-6">
+<div class="w-full flex justify-between items-center mb-4 opacity-0"></div>
+<div class="flex-1 w-full flex items-center justify-center relative mb-6">
+<div class="absolute inset-0 bg-center bg-contain bg-no-repeat opacity-60" data-alt="Abstract 3D smooth dark shapes background pattern" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBfjdbYUIXsTdbKUS4lQ8UFAyzcAOfnL1EAXqJ8GrJsz4Igj10_mddyoFf_MzHn1-Rixx6hvRtztRsA--unTV2sKVBWLCkJSKDXsAHxspftEjzykEib_XN7kmEbJekuwQ8POvrdOnRday5nOqGBd3UB5SoTRSJfacYgsJhbkf_7odSCrrmBdlZQY5HhN2hFSsaU7uInUSzJuV1x1pr7Qh0lJhg_PSWYg-vBnUAiml58xogb_W9aEPF2yrOTJMe2RSLAPGUuX3wwVl8e'); mask-image: linear-gradient(to bottom, black, transparent);">
+</div>
+<div class="relative w-64 h-[460px] bg-[#1a1a1a] border-[8px] border-[#2a2a2a] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/10 transform rotate-[-4deg] hover:rotate-0 transition-transform duration-500 ease-out">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-32 bg-[#2a2a2a] rounded-b-2xl z-20"></div>
+<div class="w-full h-full bg-gradient-to-b from-[#230f0f] to-[#120505] flex flex-col items-center pt-16 px-4 relative">
+<div class="absolute top-3 right-6 flex gap-1">
+<div class="w-4 h-2 border border-white/30 rounded-[1px]"></div>
+</div>
+<div class="flex flex-col items-center w-full mt-4">
+<div class="relative mb-5">
+<div class="w-28 h-28 rounded-full bg-surface-dark border-2 border-white/5 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-white/20 text-6xl">person</span>
+</div>
+<div class="absolute bottom-0 right-0 w-10 h-10 bg-verified-green rounded-full border-[4px] border-[#180a0a] flex items-center justify-center verified-pulse">
+<span class="material-symbols-outlined text-white text-[22px] font-bold">check</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 mb-8">
+<div class="h-4 w-32 bg-white/20 rounded-full"></div>
+<div class="flex gap-1">
+<span class="material-symbols-outlined text-amber-400 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-amber-400 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-amber-400 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-amber-400 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-amber-400 text-[18px] fill-1" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+</div>
+<div class="w-full bg-verified-green/10 border border-verified-green/30 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-verified-green/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-verified-green">verified_user</span>
+<div class="flex flex-col">
+<span class="text-verified-green font-bold text-sm tracking-wide">Vérifié manuellement</span>
+<span class="text-verified-green/60 text-[10px]">Identité confirmée par KMR</span>
+</div>
+</div>
+</div>
+<div class="w-full mt-6 space-y-2 opacity-20 px-2">
+<div class="h-2 w-full bg-white rounded-full"></div>
+<div class="h-2 w-5/6 bg-white rounded-full"></div>
+<div class="h-2 w-4/6 bg-white rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="w-full flex flex-col items-center text-center space-y-6">
+<div class="flex flex-row items-center justify-center gap-2">
+<div class="h-2 w-2 rounded-full bg-primary/20"></div>
+<div class="h-2 w-2 rounded-full bg-primary/20"></div>
+<div class="h-2 w-8 rounded-full bg-primary transition-all duration-300"></div>
+</div>
+<div class="space-y-3 px-2">
+<h1 class="text-white font-display tracking-tight text-[28px] md:text-[32px] font-bold leading-tight">
+                    Votre Sécurité, <br/>Notre Priorité
+                </h1>
+<p class="text-white/70 text-base font-normal leading-relaxed max-w-[320px] mx-auto font-sans">
+                    Tous nos prestataires sont vérifiés manuellement pour vous garantir une expérience sereine et sécurisée.
+                </p>
+</div>
+<div class="w-full pt-4 space-y-5">
+<button class="w-full cursor-pointer flex items-center justify-center rounded-full h-14 bg-primary hover:bg-red-400 active:scale-[0.98] transition-all text-white text-lg font-bold tracking-wide shadow-lg shadow-primary/25 group font-display">
+<span>Commencer l'aventure</span>
+<span class="material-symbols-outlined ml-2 group-hover:translate-x-1 transition-transform text-xl">arrow_forward</span>
+</button>
+<a class="block text-sm text-white/50 hover:text-white transition-colors font-sans" href="#">
+                    Déjà un compte ? <span class="text-primary font-semibold">Se connecter</span>
+</a>
+</div>
+<div class="flex items-center justify-center gap-2 opacity-30 pt-2">
+<span class="material-symbols-outlined text-[14px] text-white">gpp_good</span>
+<span class="text-[10px] text-white uppercase tracking-widest font-sans">100% Vérifié</span>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

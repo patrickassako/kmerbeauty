@@ -50,7 +50,7 @@ export const Input: React.FC<InputProps> = ({
             styles.input,
             { fontSize: normalizeFontSize(16), paddingLeft: isPhone ? spacing(1) : 0 }
           ]}
-          placeholderTextColor="#999"
+          placeholderTextColor="#8a6a5e"
           secureTextEntry={isPassword && !showPassword}
           {...props}
         />
@@ -77,25 +77,27 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#2D2D2D',
+    color: '#e0d0cb',
     marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
+    backgroundColor: '#2A1D18',
+    borderRadius: 8,
     paddingHorizontal: 16,
-    height: 54,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#674032',
   },
   inputError: {
-    borderWidth: 1,
-    borderColor: '#FF4444',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2D2D2D',
+    color: '#FFFFFF',
   },
   eyeIcon: {
     padding: 8,
