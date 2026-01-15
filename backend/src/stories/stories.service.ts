@@ -165,10 +165,12 @@ export class StoriesService {
 
         if (!story) throw new NotFoundException('Story not found');
 
-        // Check ownership
+        // Check ownership - relations come as arrays from Supabase
+        const therapist = (story as any).therapist;
+        const salon = (story as any).salon;
         const isOwner =
-            (story.therapist && story.therapist.user_id === userId) ||
-            (story.salon && story.salon.user_id === userId);
+            (therapist && therapist.user_id === userId) ||
+            (salon && salon.user_id === userId);
 
         if (!isOwner) throw new ForbiddenException('Not authorized to delete this story');
 
