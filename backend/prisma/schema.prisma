@@ -256,6 +256,8 @@ model Therapist {
   bookings          Booking[]
   reviews           Review[]
   education         Education[]
+  stories           Story[]
+  promotionalPacks  PromotionalPack[]
 
   // Stats (Legacy/Duplicate?)
   rating            Float     @default(0)
@@ -330,6 +332,8 @@ model Salon {
   // Relations
   bookings          Booking[]
   reviews           Review[]
+  stories           Story[]
+  promotionalPacks  PromotionalPack[]
 
   // Stats
   rating            Float     @default(0)
@@ -674,4 +678,129 @@ enum MessageType {
   VOICE
   SERVICE_SUGGESTION
   SYSTEM
+}
+
+// ============ STORIES ============
+
+model Story {
+  id            String    @id @default(uuid())
+  
+  // Owner (either therapist OR salon)
+  therapistId   String?
+  therapist     Therapist? @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+  
+  salonId       String?
+  salon         Salon?     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  // Content
+  mediaType     StoryMediaType
+  mediaUrl      String?       // URL to image/video (optional for TEXT type)
+  thumbnailUrl  String?       // For videos
+  caption       String?
+  
+  // Text-only story fields
+  textContent   String?       // Main text for TEXT type stories
+  backgroundColor String?     @default("#000000") // Background color (hex)
+  textColor     String?       @default("#FFFFFF") // Text color (hex)
+  
+  // Visibility
+  isActive      Boolean   @default(true)
+  
+  // Auto-delete after 24h
+  expiresAt     DateTime
+  
+  // Stats
+  viewCount     Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  views         StoryView[]
+  
+  @@index([therapistId])
+  @@index([salonId])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("stories")
+}
+
+enum StoryMediaType {
+  IMAGE
+  VIDEO
+  TEXT
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  
+  userId    String   // User who viewed the story
+  
+  viewedAt  DateTime @default(now())
+  
+  @@unique([storyId, userId])
+  @@index([storyId])
+  @@index([userId])
+  @@map("story_views")
+}
+
+// ============ PROMOTIONAL PACKS ============
+
+model PromotionalPack {
+  id            String   @id @default(uuid())
+  
+  // Owner
+  therapistId   String?
+  therapist     Therapist? @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+  
+  salonId       String?
+  salon         Salon?     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  // Content
+  title         String
+  subtitle      String?
+  description   String?
+  imageUrl      String
+  
+  // Badge (e.g., "Offre Spéciale", "Nouveauté", "-20%")
+  badge         String?
+  
+  // CTA
+  ctaText       String   @default("Réserver")
+  ctaLink       String?  // Deep link to service/provider
+  
+  // Linked service (optional)
+  serviceId     String?
+  
+  // Discount
+  discountType  DiscountType?
+  discountValue Float?        // Percentage or fixed amount
+  
+  // Validity
+  startDate     DateTime @default(now())
+  endDate       DateTime?
+  isActive      Boolean  @default(true)
+  
+  // Targeting
+  targetCities  String[] // Empty = all cities
+  
+  // Stats
+  viewCount     Int      @default(0)
+  clickCount    Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([therapistId])
+  @@index([salonId])
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@map("promotional_packs")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
