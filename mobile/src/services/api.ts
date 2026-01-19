@@ -130,7 +130,24 @@ export const servicesApi = {
 };
 
 // =============================================
-// Reviews API
+// Service Packages API
+// =============================================
+
+export const servicePackagesApi = {
+  /**
+   * Récupérer tous les packages
+   */
+  getAll: async (): Promise<any[]> => {
+    const response = await api.get('/service-packages');
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<any> => {
+    const response = await api.get(`/service-packages/${id}`);
+    return response.data;
+  },
+};
+
 // =============================================
 
 export const reviewsApi = {
@@ -600,6 +617,27 @@ export const contractorApi = {
 
   deleteService: async (serviceId: string): Promise<{ success: boolean }> => {
     const response = await api.delete(`/contractors/services/${serviceId}`);
+    return response.data;
+  },
+
+  // Packages
+  addPackage: async (data: { contractor_id: string; package_id: string; price: number; duration: number }): Promise<any> => {
+    const response = await api.post('/contractors/packages', data);
+    return response.data;
+  },
+
+  getPackages: async (contractorId: string): Promise<any[]> => {
+    const response = await api.get(`/contractors/${contractorId}/packages`);
+    return response.data;
+  },
+
+  updatePackage: async (packageId: string, data: { price?: number; duration?: number }): Promise<any> => {
+    const response = await api.put(`/contractors/packages/${packageId}`, data);
+    return response.data;
+  },
+
+  deletePackage: async (packageId: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/contractors/packages/${packageId}`);
     return response.data;
   },
 
