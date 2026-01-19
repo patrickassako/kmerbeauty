@@ -79,18 +79,30 @@ export class StoriesService {
 
         if (error) throw error;
 
-        // Get viewed status if userId provided
+        // Get viewed/liked status if userId provided
         let viewedStoryIds: string[] = [];
+        let likedStoryIds: string[] = [];
+
         if (userId) {
             const { data: views } = await this.supabase
                 .from('story_views')
                 .select('storyId')
                 .eq('userId', userId);
             viewedStoryIds = views?.map((v: any) => v.storyId) || [];
+
+            const { data: likes } = await this.supabase
+                .from('story_likes')
+                .select('storyId')
+                .eq('userId', userId);
+            likedStoryIds = likes?.map((l: any) => l.storyId) || [];
         }
 
         return stories.map((story: any) =>
-            this.formatStoryResponse(story, viewedStoryIds.includes(story.id))
+            this.formatStoryResponse(
+                story,
+                viewedStoryIds.includes(story.id),
+                likedStoryIds.includes(story.id)
+            )
         );
     }
 
@@ -111,6 +123,7 @@ export class StoriesService {
         if (error || !story) throw new NotFoundException('Story not found');
 
         let isViewed = false;
+        let isLiked = false;
         if (userId) {
             const { data: view } = await this.supabase
                 .from('story_views')
@@ -119,9 +132,17 @@ export class StoriesService {
                 .eq('userId', userId)
                 .single();
             isViewed = !!view;
+
+            const { data: like } = await this.supabase
+                .from('story_likes')
+                .select('id')
+                .eq('storyId', id)
+                .eq('userId', userId)
+                .single();
+            isLiked = !!like;
         }
 
-        return this.formatStoryResponse(story, isViewed);
+        return this.formatStoryResponse(story, isViewed, isLiked);
     }
 
     /**
@@ -147,6 +168,81 @@ export class StoriesService {
 
         // Increment view count
         await this.supabase.rpc('increment_story_view_count', { story_id: storyId });
+    }
+
+    /**
+     * Like a story
+     */
+    async like(storyId: string, userId: string): Promise<{ success: boolean; likeCount: number }> {
+        // Check story exists
+        const { data: story } = await this.supabase
+            .from('stories')
+            .select('id, likeCount')
+            .eq('id', storyId)
+            .single();
+
+        if (!story) throw new NotFoundException('Story not found');
+
+        // Check if already liked
+        const { data: existingLike } = await this.supabase
+            .from('story_likes')
+            .select('id')
+            .eq('storyId', storyId)
+            .eq('userId', userId)
+            .single();
+
+        if (existingLike) {
+            return { success: true, likeCount: story.likeCount };
+        }
+
+        // Create like
+        await this.supabase
+            .from('story_likes')
+            .insert({ storyId, userId });
+
+        // Increment like count manually since we might not have RPC
+        const newCount = (story.likeCount || 0) + 1;
+        await this.supabase
+            .from('stories')
+            .update({ likeCount: newCount })
+            .eq('id', storyId);
+
+        return { success: true, likeCount: newCount };
+    }
+
+    /**
+     * Unlike a story
+     */
+    async unlike(storyId: string, userId: string): Promise<{ success: boolean; likeCount: number }> {
+        // Check story exists
+        const { data: story } = await this.supabase
+            .from('stories')
+            .select('id, likeCount')
+            .eq('id', storyId)
+            .single();
+
+        if (!story) throw new NotFoundException('Story not found');
+
+        // Delete like
+        const { error } = await this.supabase
+            .from('story_likes')
+            .delete()
+            .eq('storyId', storyId)
+            .eq('userId', userId);
+
+        if (error) {
+            // Probably wasn't liked
+            return { success: true, likeCount: story.likeCount };
+        }
+
+        // Decrement like count
+        const newCount = Math.max(0, (story.likeCount || 0) - 1);
+        await this.supabase
+            .from('stories')
+            .update({ likeCount: newCount })
+            .eq('id', storyId);
+
+        return { success: true, likeCount: newCount };
     }
 
     /**
@@ -214,7 +310,7 @@ export class StoriesService {
         const { data: stories, error } = await query;
         if (error) throw error;
 
-        return stories.map((story: any) => this.formatStoryResponse(story));
+        return stories.map((story: any) => this.formatStoryResponse(story, false, false));
     }
 
     /**
@@ -235,7 +331,7 @@ export class StoriesService {
     /**
      * Format story response
      */
-    private formatStoryResponse(story: any, isViewed?: boolean): StoryResponseDto {
+    private formatStoryResponse(story: any, isViewed?: boolean, isLiked?: boolean): StoryResponseDto {
         const provider = story.therapist
             ? {
                 id: story.therapist.id,
@@ -266,8 +362,10 @@ export class StoriesService {
             isActive: story.isActive,
             expiresAt: story.expiresAt,
             viewCount: story.viewCount,
+            likeCount: story.likeCount,
             createdAt: story.createdAt,
             isViewed,
+            isLiked,
             provider,
         };
     }

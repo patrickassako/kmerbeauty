@@ -11,6 +11,7 @@ import {
   ContractorAvailabilityScreen,
   ContractorServicesScreen,
   ContractorPackagesScreen,
+  ContractorStoriesScreen,
   ContractorAppointmentsScreen,
   ContractorEarningsScreen,
   AppointmentDetailsScreen,
@@ -54,6 +55,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ContractorProfileEdit" component={ContractorProfileEditScreen} />
     <HomeStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
     <HomeStack.Screen name="ContractorPackages" component={ContractorPackagesScreen} />
+    <HomeStack.Screen name="ContractorStories" component={ContractorStoriesScreen} />
     <HomeStack.Screen name="ContractorAvailability" component={ContractorAvailabilityScreen} />
     <HomeStack.Screen name="PurchaseCredits" component={PurchaseCreditsScreen} />
     <HomeStack.Screen name="PaymentVerification" component={PaymentVerificationScreen} />
@@ -100,6 +102,7 @@ const MoreStackNavigator = () => (
     <MoreStack.Screen name="ContractorAvailability" component={ContractorAvailabilityScreen} />
     <MoreStack.Screen name="ContractorServices" component={ContractorServicesScreen} />
     <MoreStack.Screen name="ContractorPackages" component={ContractorPackagesScreen} />
+    <MoreStack.Screen name="ContractorStories" component={ContractorStoriesScreen} />
     <MoreStack.Screen name="ContractorProfile" component={ContractorProfileEditScreen} />
     <MoreStack.Screen name="ContractorSettings" component={ContractorSettingsScreen} />
     <MoreStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />

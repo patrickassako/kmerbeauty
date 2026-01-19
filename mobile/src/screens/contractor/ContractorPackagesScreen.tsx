@@ -19,7 +19,6 @@ import {
     contractorApi,
     servicePackagesApi,
     categoriesApi,
-    type ContractorService,
     type CategoryTranslation as Category,
 } from '../../services/api';
 
@@ -207,13 +206,10 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
     const getFilteredPackages = (): ServicePackage[] => {
         let filtered = allPackages;
 
-        // Filter by category (if packages imply category, though they usually span multiple services)
-        // For now, let's assume packages might have a primary category or we skip this if not applicable
         if (selectedCategory !== 'ALL') {
             filtered = filtered.filter((pkg) => pkg.category === selectedCategory);
         }
 
-        // Filter by search query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter((pkg) => {
@@ -250,174 +246,184 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
     }
 
     const filteredPackages = getFilteredPackages();
+    const stickyHeaderIndex = !hideHeader ? 1 : 0;
 
     return (
         <View style={styles.container}>
-            {/* Header */}
+            {/* Fixed Header */}
             {!hideHeader && (
-                <>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Text style={styles.backIcon}>←</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>
-                            {language === 'fr' ? 'Mes Packages' : 'My Packages'}
-                        </Text>
-                        <View style={{ width: 40 }} />
-                    </View>
-
-                    {/* Description */}
-                    <View style={styles.descriptionContainer}>
-                        <Text style={styles.descriptionText}>
-                            {language === 'fr'
-                                ? 'Gérer vos offres de packages'
-                                : 'Manage your package offers'}
-                        </Text>
-                    </View>
-                </>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Text style={styles.backIcon}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>
+                        {language === 'fr' ? 'Mes Packages' : 'My Packages'}
+                    </Text>
+                    <View style={{ width: 40 }} />
+                </View>
             )}
 
-            {/* Explanatory Title - Always visible */}
-            <View style={styles.titleSection}>
-                <Text style={styles.titleText}>
-                    {language === 'fr'
-                        ? '📦 Sélectionnez les packages que vous proposez'
-                        : '📦 Select the packages you offer'}
-                </Text>
-                <Text style={styles.subtitleText}>
-                    {language === 'fr'
-                        ? 'Appuyez pour ajouter ou personnaliser'
-                        : 'Tap to add or customize'}
-                </Text>
-            </View>
-
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder={language === 'fr' ? 'Rechercher un package...' : 'Search for a package...'}
-                    placeholderTextColor="#999"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <Text style={styles.clearIcon}>✕</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            {/* Category Filters */}
             <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.categoriesScroll}
-                contentContainerStyle={styles.categoriesContent}
+                style={styles.mainScrollView}
+                stickyHeaderIndices={[stickyHeaderIndex]}
+                showsVerticalScrollIndicator={false}
             >
-                <TouchableOpacity
-                    style={[styles.categoryChip, selectedCategory === 'ALL' && styles.categoryChipActive]}
-                    onPress={() => setSelectedCategory('ALL')}
-                >
-                    <Text style={[styles.categoryChipText, selectedCategory === 'ALL' && styles.categoryChipTextActive]}>
-                        {language === 'fr' ? 'Tous' : 'All'}
-                    </Text>
-                </TouchableOpacity>
-                {categories.map((category) => (
-                    <TouchableOpacity
-                        key={category.category}
-                        style={[styles.categoryChip, selectedCategory === category.category && styles.categoryChipActive]}
-                        onPress={() => setSelectedCategory(category.category)}
-                    >
-                        <Text
-                            style={[
-                                styles.categoryChipText,
-                                selectedCategory === category.category && styles.categoryChipTextActive,
-                            ]}
-                        >
-                            {language === 'fr' ? category.name_fr : category.name_en}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+                {/* Top Content (Scrolls away) */}
+                <View>
+                    {!hideHeader && (
+                        <View style={styles.descriptionContainer}>
+                            <Text style={styles.descriptionText}>
+                                {language === 'fr'
+                                    ? 'Gérer vos offres de packages'
+                                    : 'Manage your package offers'}
+                            </Text>
+                        </View>
+                    )}
 
-            {/* Packages Grid */}
-            <ScrollView style={styles.servicesScroll} contentContainerStyle={styles.servicesContent}>
-                {filteredPackages.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>
-                            {language === 'fr' ? 'Aucun package trouvé' : 'No packages found'}
+                    <View style={styles.titleSection}>
+                        <Text style={styles.titleText}>
+                            {language === 'fr'
+                                ? '📦 Sélectionnez les packages que vous proposez'
+                                : '📦 Select the packages you offer'}
+                        </Text>
+                        <Text style={styles.subtitleText}>
+                            {language === 'fr'
+                                ? 'Appuyez pour ajouter ou personnaliser'
+                                : 'Tap to add or customize'}
                         </Text>
                     </View>
-                ) : (
-                    filteredPackages.map((pkg) => {
-                        const isSelected = isPackageSelected(pkg.id);
-                        const contractorPackage = getContractorPackage(pkg.id);
+                </View>
 
-                        return (
-                            <TouchableOpacity
-                                key={pkg.id}
-                                style={styles.serviceCard}
-                                onPress={() => handlePackagePress(pkg)}
-                                activeOpacity={0.7}
-                            >
-                                {/* Package Image */}
-                                <View style={styles.imageContainer}>
-                                    <Image
-                                        source={{ uri: pkg.image_url || 'https://via.placeholder.com/150' }}
-                                        style={styles.serviceImage}
-                                        resizeMode="cover"
-                                    />
-                                    {isSelected && (
-                                        <View style={styles.checkmarkBadge}>
-                                            <Text style={styles.checkmark}>✓</Text>
-                                        </View>
-                                    )}
-                                    {/* Category Badge */}
-                                    <View style={styles.categoryBadge}>
-                                        <Text style={styles.categoryBadgeText}>
-                                            {pkg.category}
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* Package Info */}
-                                <View style={styles.serviceInfo}>
-                                    <Text style={styles.serviceName} numberOfLines={2}>
-                                        {language === 'fr' ? pkg.name_fr : pkg.name_en}
-                                    </Text>
-
-                                    <Text style={styles.serviceDescription} numberOfLines={2}>
-                                        {language === 'fr' ? pkg.description_fr : pkg.description_en}
-                                    </Text>
-
-                                    <View style={styles.serviceDetails}>
-                                        <Text style={styles.servicePrice}>
-                                            {isSelected && contractorPackage
-                                                ? formatCurrency(contractorPackage.price)
-                                                : formatCurrency(pkg.base_price)}
-                                        </Text>
-                                        <View style={styles.serviceMeta}>
-                                            <Text style={styles.serviceMetaText}>
-                                                ⏱ {isSelected && contractorPackage
-                                                    ? formatDuration(contractorPackage.duration)
-                                                    : formatDuration(pkg.duration)}
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    {isSelected && (
-                                        <View style={styles.selectedBadge}>
-                                            <Text style={styles.selectedBadgeText}>
-                                                {language === 'fr' ? 'Activé' : 'Active'}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
+                {/* Search Bar (Sticky) */}
+                <View style={styles.stickySearchContainer}>
+                    <View style={styles.searchContainer}>
+                        <Text style={styles.searchIcon}>🔍</Text>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder={language === 'fr' ? 'Rechercher un package...' : 'Search for a package...'}
+                            placeholderTextColor="#999"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Text style={styles.clearIcon}>✕</Text>
                             </TouchableOpacity>
-                        );
-                    })
-                )}
+                        )}
+                    </View>
+                </View>
+
+                {/* Content below sticky header */}
+                <View style={styles.contentContainer}>
+                    {/* Category Filters */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.categoriesContent}
+                        style={styles.categoriesScroll}
+                    >
+                        <TouchableOpacity
+                            style={[styles.categoryChip, selectedCategory === 'ALL' && styles.categoryChipActive]}
+                            onPress={() => setSelectedCategory('ALL')}
+                        >
+                            <Text style={[styles.categoryChipText, selectedCategory === 'ALL' && styles.categoryChipTextActive]}>
+                                {language === 'fr' ? 'Tous' : 'All'}
+                            </Text>
+                        </TouchableOpacity>
+                        {categories.map((category) => (
+                            <TouchableOpacity
+                                key={category.category}
+                                style={[styles.categoryChip, selectedCategory === category.category && styles.categoryChipActive]}
+                                onPress={() => setSelectedCategory(category.category)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.categoryChipText,
+                                        selectedCategory === category.category && styles.categoryChipTextActive,
+                                    ]}
+                                >
+                                    {language === 'fr' ? category.name_fr : category.name_en}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Packages Grid */}
+                    <View style={styles.servicesContent}>
+                        {filteredPackages.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <Text style={styles.emptyText}>
+                                    {language === 'fr' ? 'Aucun package trouvé' : 'No packages found'}
+                                </Text>
+                            </View>
+                        ) : (
+                            filteredPackages.map((pkg) => {
+                                const isSelected = isPackageSelected(pkg.id);
+                                const contractorPackage = getContractorPackage(pkg.id);
+
+                                return (
+                                    <TouchableOpacity
+                                        key={pkg.id}
+                                        style={styles.serviceCard}
+                                        onPress={() => handlePackagePress(pkg)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.imageContainer}>
+                                            <Image
+                                                source={{ uri: pkg.image_url || 'https://via.placeholder.com/150' }}
+                                                style={styles.serviceImage}
+                                                resizeMode="cover"
+                                            />
+                                            {isSelected && (
+                                                <View style={styles.checkmarkBadge}>
+                                                    <Text style={styles.checkmark}>✓</Text>
+                                                </View>
+                                            )}
+                                            <View style={styles.categoryBadge}>
+                                                <Text style={styles.categoryBadgeText}>
+                                                    {pkg.category}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.serviceInfo}>
+                                            <Text style={styles.serviceName} numberOfLines={2}>
+                                                {language === 'fr' ? pkg.name_fr : pkg.name_en}
+                                            </Text>
+
+                                            <Text style={styles.serviceDescription} numberOfLines={2}>
+                                                {language === 'fr' ? pkg.description_fr : pkg.description_en}
+                                            </Text>
+
+                                            <View style={styles.serviceDetails}>
+                                                <Text style={styles.servicePrice}>
+                                                    {isSelected && contractorPackage
+                                                        ? formatCurrency(contractorPackage.price)
+                                                        : formatCurrency(pkg.base_price)}
+                                                </Text>
+                                                <View style={styles.serviceMeta}>
+                                                    <Text style={styles.serviceMetaText}>
+                                                        ⏱ {isSelected && contractorPackage
+                                                            ? formatDuration(contractorPackage.duration)
+                                                            : formatDuration(pkg.duration)}
+                                                    </Text>
+                                                </View>
+                                            </View>
+
+                                            {isSelected && (
+                                                <View style={styles.selectedBadge}>
+                                                    <Text style={styles.selectedBadgeText}>
+                                                        {language === 'fr' ? 'Activé' : 'Active'}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })
+                        )}
+                    </View>
+                </View>
             </ScrollView>
 
             {/* Customization Modal */}
@@ -442,7 +448,6 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
                         >
                             {selectedPackageForCustomization && (
                                 <>
-                                    {/* Package Preview */}
                                     <View style={styles.servicePreview}>
                                         <Image
                                             source={{
@@ -468,7 +473,6 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
                                         </View>
                                     </View>
 
-                                    {/* Customization Form */}
                                     <View style={styles.formGroup}>
                                         <Text style={styles.label}>
                                             {language === 'fr' ? 'Votre prix (FCFA)' : 'Your Price (FCFA)'} *
@@ -498,7 +502,6 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
                             )}
                         </ScrollView>
 
-                        {/* Modal Actions */}
                         <View style={styles.modalActions}>
                             {existingContractorPackage && (
                                 <TouchableOpacity style={styles.removeButton} onPress={handleRemovePackage}>
@@ -527,6 +530,10 @@ export const ContractorPackagesScreen: React.FC<ContractorPackagesScreenProps> =
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    mainScrollView: {
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
@@ -586,12 +593,19 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
+    stickySearchContainer: {
+        backgroundColor: '#FFFFFF',
+        zIndex: 10,
+        paddingTop: 10,
+        paddingBottom: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9F9F9',
         marginHorizontal: 20,
-        marginBottom: 15,
         paddingHorizontal: 15,
         paddingVertical: 12,
         borderRadius: 12,
@@ -612,12 +626,14 @@ const styles = StyleSheet.create({
         color: '#999',
         padding: 5,
     },
+    contentContainer: {
+        paddingBottom: 40,
+    },
     categoriesScroll: {
-        maxHeight: 50,
+        paddingVertical: 10,
     },
     categoriesContent: {
         paddingHorizontal: 20,
-        paddingBottom: 15,
     },
     categoryChip: {
         paddingHorizontal: 24,
@@ -639,9 +655,6 @@ const styles = StyleSheet.create({
     },
     categoryChipTextActive: {
         color: '#FFFFFF',
-    },
-    servicesScroll: {
-        flex: 1,
     },
     servicesContent: {
         padding: 20,

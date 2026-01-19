@@ -268,8 +268,12 @@ export const ContractorMenuScreen = () => {
                     />
                     <MenuItem
                         icon="🛠️"
-                        title="Services"
                         onPress={() => navigation.navigate('ContractorServices')}
+                    />
+                    <MenuItem
+                        icon="📸"
+                        title="Mes Stories"
+                        onPress={() => navigation.navigate('ContractorStories')}
                     />
                     <MenuItem
                         icon="🛍️"

@@ -74,6 +74,9 @@ import {
   IdCardUrls,
   DashboardStats,
   Proposal,
+  CreateStoryDto,
+  Story,
+  StoryMediaType,
 } from '../types/models';
 
 // =============================================
@@ -458,6 +461,54 @@ export const chatApi = {
    */
   getChatOffers: async (chatId: string): Promise<ChatOffer[]> => {
     const response = await api.get(`/chat/${chatId}/offers`);
+    return response.data;
+  },
+};
+
+// =============================================
+// Stories API
+// =============================================
+
+export const storiesApi = {
+  getAll: async (): Promise<Story[]> => {
+    const response = await api.get('/stories');
+    return response.data;
+  },
+
+  getMine: async (): Promise<Story[]> => {
+    const response = await api.get('/stories/my');
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<Story> => {
+    const response = await api.get(`/stories/${id}`);
+    return response.data;
+  },
+
+  create: async (dto: CreateStoryDto, providerType: 'therapist' | 'salon' = 'therapist'): Promise<Story> => {
+    const response = await api.post('/stories', dto, {
+      params: { providerType }
+    });
+    return response.data;
+  },
+
+  markViewed: async (id: string): Promise<{ success: boolean }> => {
+    const response = await api.post(`/stories/${id}/view`);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/stories/${id}`);
+    return response.data;
+  },
+
+  like: async (id: string): Promise<{ success: boolean; likeCount: number }> => {
+    const response = await api.post(`/stories/${id}/like`);
+    return response.data;
+  },
+
+  unlike: async (id: string): Promise<{ success: boolean; likeCount: number }> => {
+    const response = await api.delete(`/stories/${id}/like`);
     return response.data;
   },
 };

@@ -15,7 +15,7 @@ import {
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { Story } from '../services/storiesApi';
+import { type Story, storiesApi } from '../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STORY_DURATION = 5000; // 5 seconds for images
@@ -149,6 +149,42 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         };
     }, []);
 
+    // Local state for likes to update UI immediately
+    const [isLiked, setIsLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(0);
+
+    // Update local state when story changes
+    useEffect(() => {
+        if (currentStory) {
+            setIsLiked(!!currentStory.isLiked);
+            setLikeCount(currentStory.likeCount || 0);
+        }
+    }, [currentStory]);
+
+    const handleLike = async () => {
+        if (!currentStory) return;
+
+        const newIsLiked = !isLiked;
+        const newCount = newIsLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
+
+        // Optimistic update
+        setIsLiked(newIsLiked);
+        setLikeCount(newCount);
+
+        try {
+            if (newIsLiked) {
+                await storiesApi.like(currentStory.id);
+            } else {
+                await storiesApi.unlike(currentStory.id);
+            }
+        } catch (error) {
+            // Revert on error
+            setIsLiked(!newIsLiked);
+            setLikeCount(likeCount);
+            console.error('Error toggling like:', error);
+        }
+    };
+
     if (!currentStory) return null;
 
     return (
@@ -268,6 +304,25 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                     </View>
                 </SafeAreaView>
 
+                {/* Right Side Stats (Likes & Views) */}
+                <SafeAreaView style={styles.statsContainer}>
+                    {/* Views */}
+                    <View style={styles.statItem}>
+                        <Ionicons name="eye" size={28} color="#FFF" />
+                        <Text style={styles.statText}>{currentStory.viewCount || 0}</Text>
+                    </View>
+
+                    {/* Like Button */}
+                    <TouchableOpacity onPress={handleLike} style={styles.statItem}>
+                        <Ionicons
+                            name={isLiked ? "heart" : "heart-outline"}
+                            size={28}
+                            color={isLiked ? "#FF4444" : "#FFF"}
+                        />
+                        <Text style={styles.statText}>{likeCount}</Text>
+                    </TouchableOpacity>
+                </SafeAreaView>
+
                 {/* Caption */}
                 {currentStory.caption && (
                     <View style={styles.captionContainer}>
@@ -358,7 +413,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingTop: 8,
-        paddingHorizontal: 12,
+        paddingHorizontal: 20,
     },
     progressContainer: {
         flexDirection: 'row',
@@ -445,6 +500,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: '#FFF',
+    },
+    statsContainer: {
+        position: 'absolute',
+        bottom: 40,
+        right: 16,
+        alignItems: 'center',
+        gap: 20,
+    },
+    statItem: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    statText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '600',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
     },
 });
 

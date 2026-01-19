@@ -476,3 +476,46 @@ export interface Proposal {
     client?: any;
     contractor?: ContractorProfile;
 }
+
+// Stories
+export enum StoryMediaType {
+    IMAGE = 'IMAGE',
+    VIDEO = 'VIDEO',
+    TEXT = 'TEXT',
+}
+
+export interface CreateStoryDto {
+    mediaType: StoryMediaType;
+    mediaUrl?: string;
+    thumbnailUrl?: string;
+    caption?: string;
+    textContent?: string;
+    backgroundColor?: string;
+    textColor?: string;
+}
+
+export interface Story {
+    id: string;
+    therapistId?: string;
+    salonId?: string;
+    mediaType: StoryMediaType;
+    mediaUrl?: string;
+    thumbnailUrl?: string;
+    caption?: string;
+    textContent?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    isActive: boolean;
+    expiresAt: string;
+    viewCount: number;
+    likeCount?: number;
+    isLiked?: boolean;
+    createdAt: string;
+    isViewed?: boolean;
+    provider?: {
+        id: string;
+        name: string;
+        image: string;
+        type: 'therapist' | 'salon';
+    };
+}

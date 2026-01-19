@@ -49,8 +49,10 @@ export class StoryResponseDto {
     isActive: boolean;
     expiresAt: Date;
     viewCount: number;
+    likeCount?: number;
     createdAt: Date;
     isViewed?: boolean;
+    isLiked?: boolean;
     provider?: {
         id: string;
         name: string;

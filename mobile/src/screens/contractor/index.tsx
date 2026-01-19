@@ -5,6 +5,7 @@ export { ContractorProfileEditScreen } from './ContractorProfileEditScreen';
 export { ContractorAvailabilityScreen } from './ContractorAvailabilityScreen';
 export { ContractorServicesScreen } from './ContractorServicesScreen';
 export { ContractorPackagesScreen } from './ContractorPackagesScreen';
+export { ContractorStoriesScreen } from './ContractorStoriesScreen';
 export { ContractorAppointmentsScreen } from './ContractorAppointmentsScreen';
 export { ContractorEarningsScreen } from './ContractorEarningsScreen';
 
