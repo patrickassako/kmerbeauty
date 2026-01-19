@@ -23,6 +23,7 @@ export const PackageDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
     const { package: pkg, providerId, providerType } = route.params;
     const { language } = useI18n();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
     const name = language === 'fr' ? pkg.nameFr : pkg.nameEn;
     const description = language === 'fr' ? pkg.descriptionFr : pkg.descriptionEn;
@@ -143,7 +144,32 @@ export const PackageDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                             <Text style={styles.sectionTitle}>
                                 {language === 'fr' ? 'Description' : 'Description'}
                             </Text>
-                            <Text style={styles.descriptionText}>{description}</Text>
+                            <Text style={styles.descriptionText}>
+                                {isDescriptionExpanded
+                                    ? description
+                                    : description.length > 200
+                                        ? `${description.substring(0, 200)}...`
+                                        : description
+                                }
+                            </Text>
+                            {description.length > 200 && (
+                                <TouchableOpacity
+                                    onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                    style={styles.seeMoreButton}
+                                >
+                                    <Text style={styles.seeMoreText}>
+                                        {isDescriptionExpanded
+                                            ? (language === 'fr' ? 'Voir moins' : 'See less')
+                                            : (language === 'fr' ? 'Voir plus' : 'See more')
+                                        }
+                                    </Text>
+                                    <Ionicons
+                                        name={isDescriptionExpanded ? 'chevron-up' : 'chevron-down'}
+                                        size={16}
+                                        color="#FF6B6B"
+                                    />
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
 
@@ -321,6 +347,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 24,
         color: '#666',
+    },
+    seeMoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 8,
+    },
+    seeMoreText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#FF6B6B',
     },
     serviceItem: {
         flexDirection: 'row',
