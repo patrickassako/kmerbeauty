@@ -10,7 +10,8 @@ import { BookingScreen } from '../screens/main/BookingScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import ReviewScreen from '../screens/main/ReviewScreen';
-import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
+import type { Service, Therapist, Salon } from '../types/database.types';
+import type { ServicePackage } from '../services/servicePackagesApi';
 import type { Booking } from '../services/api';
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 

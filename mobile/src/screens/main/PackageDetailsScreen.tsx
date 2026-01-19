@@ -24,8 +24,8 @@ export const PackageDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
     const { language } = useI18n();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    const name = language === 'fr' ? pkg.name_fr : pkg.name_en;
-    const description = language === 'fr' ? pkg.description_fr : pkg.description_en;
+    const name = language === 'fr' ? pkg.nameFr : pkg.nameEn;
+    const description = language === 'fr' ? pkg.descriptionFr : pkg.descriptionEn;
     const images = pkg.images || [];
 
     const formatPrice = (price: number): string => {
@@ -127,12 +127,12 @@ export const PackageDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
                             <Ionicons name="pricetag" size={20} color="#FF6B6B" />
-                            <Text style={styles.priceText}>{formatPrice(pkg.base_price)}</Text>
+                            <Text style={styles.priceText}>{formatPrice(pkg.basePrice)}</Text>
                         </View>
                         <View style={styles.metaItem}>
                             <Ionicons name="time-outline" size={20} color="#666" />
                             <Text style={styles.durationText}>
-                                {formatDuration(pkg.base_duration)}
+                                {formatDuration(pkg.baseDuration)}
                             </Text>
                         </View>
                     </View>
@@ -160,7 +160,7 @@ export const PackageDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                                     </View>
                                     <View style={styles.serviceInfo}>
                                         <Text style={styles.serviceName}>
-                                            {language === 'fr' ? service.name_fr : service.name_en}
+                                            {language === 'fr' ? service.nameFr : service.nameEn}
                                         </Text>
                                         {service.images && service.images.length > 0 && (
                                             <Image
