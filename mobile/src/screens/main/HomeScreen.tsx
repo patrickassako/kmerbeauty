@@ -372,6 +372,49 @@ const HomeScreenContent: React.FC = () => {
     }
   };
 
+  // Group stories by provider for the UI (bubbles) and viewer (sequence)
+  const { groupedStories, sortedStories } = useMemo(() => {
+    if (!stories.length) return { groupedStories: [], sortedStories: [] };
+
+    const groups: Record<string, typeof stories> = {};
+
+    // 1. Group by provider
+    stories.forEach(s => {
+      const pid = s.provider?.id || 'unknown';
+      if (!groups[pid]) groups[pid] = [];
+      groups[pid].push(s);
+    });
+
+    // 2. Sort providers by the timestamp of their latest story (Newest first)
+    const sortedProviderIds = Object.keys(groups).sort((a, b) => {
+      const getLatestDate = (items: typeof stories) =>
+        Math.max(...items.map(s => new Date(s.createdAt).getTime()));
+      return getLatestDate(groups[b]) - getLatestDate(groups[a]);
+    });
+
+    const flatList: typeof stories = [];
+    const bubbles: { id: string; name: string; image: string; viewed: boolean }[] = [];
+
+    sortedProviderIds.forEach(pid => {
+      const providerStories = groups[pid];
+      flatList.push(...providerStories);
+
+      const allViewed = providerStories.every(s => s.isViewed);
+      const representativeStory = allViewed
+        ? providerStories[0]
+        : (providerStories.find(s => !s.isViewed) || providerStories[0]);
+
+      bubbles.push({
+        id: representativeStory.id,
+        name: representativeStory.provider?.name || 'Provider',
+        image: representativeStory.provider?.image || representativeStory.mediaUrl || '',
+        viewed: allViewed,
+      });
+    });
+
+    return { groupedStories: bubbles, sortedStories: flatList };
+  }, [stories]);
+
   return (
     <View style={styles.container}>
       {/* Header with new design */}
@@ -413,14 +456,9 @@ const HomeScreenContent: React.FC = () => {
       >
         {/* Stories Section */}
         <StoriesSection
-          stories={stories.map(s => ({
-            id: s.id,
-            name: s.provider?.name || 'Provider',
-            image: s.provider?.image || s.mediaUrl || '',
-            viewed: s.isViewed || false,
-          }))}
+          stories={groupedStories}
           onStoryPress={(story) => {
-            const index = stories.findIndex(s => s.id === story.id);
+            const index = sortedStories.findIndex(s => s.id === story.id);
             if (index >= 0) {
               setSelectedStoryIndex(index);
               setStoryViewerVisible(true);
@@ -1249,7 +1287,7 @@ const HomeScreenContent: React.FC = () => {
 
       {/* Story Viewer Modal */}
       <StoryViewer
-        stories={stories}
+        stories={sortedStories}
         initialIndex={selectedStoryIndex}
         visible={storyViewerVisible}
         onClose={() => setStoryViewerVisible(false)}

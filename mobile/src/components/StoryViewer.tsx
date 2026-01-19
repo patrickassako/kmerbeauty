@@ -305,7 +305,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 </SafeAreaView>
 
                 {/* Right Side Stats (Likes & Views) */}
-                <SafeAreaView style={styles.statsContainer}>
+                <SafeAreaView style={[
+                    styles.statsContainer,
+                    onBookPress ? { bottom: 110 } : undefined
+                ]}>
                     {/* Views */}
                     <View style={styles.statItem}>
                         <Ionicons name="eye" size={28} color="#FFF" />
