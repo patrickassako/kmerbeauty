@@ -92,13 +92,12 @@ export type HomeStackParamList = {
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-// Placeholder screens (à créer)
-const PackageProvidersScreen = () => null;
-const PackageDetailsScreenPlaceholder = () => null;
-const BookingManagementScreen = () => null;
-
 import { CategoryServicesScreen } from '../screens/main/CategoryServicesScreen';
 import { PackageDetailsScreen } from '../screens/main/PackageDetailsScreen';
+import { PackageProvidersScreen } from '../screens/main/PackageProvidersScreen';
+
+// Placeholder screens (à créer)
+const BookingManagementScreen = () => null;
 
 export const HomeStackNavigator: React.FC = () => {
   return (

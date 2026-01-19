@@ -150,6 +150,54 @@ export class ServicePackagesService {
     }
 
     /**
+     * Get all providers (salons) offering a specific package
+     */
+    async getProvidersByPackage(packageId: string): Promise<any[]> {
+        const { data: salonPackages, error } = await this.supabase
+            .from('salon_packages')
+            .select(`
+        price,
+        duration,
+        is_active,
+        salon:salons(
+          id,
+          name_fr,
+          name_en,
+          address,
+          city,
+          region,
+          latitude,
+          longitude,
+          rating,
+          review_count,
+          images
+        )
+      `)
+            .eq('package_id', packageId)
+            .eq('is_active', true);
+
+        if (error) throw error;
+
+        return salonPackages
+            .filter((sp: any) => sp.salon)
+            .map((sp: any) => ({
+                id: sp.salon.id,
+                nameFr: sp.salon.name_fr,
+                nameEn: sp.salon.name_en,
+                address: sp.salon.address,
+                city: sp.salon.city,
+                region: sp.salon.region,
+                latitude: sp.salon.latitude,
+                longitude: sp.salon.longitude,
+                rating: sp.salon.rating || 0,
+                reviewCount: sp.salon.review_count || 0,
+                images: sp.salon.images || [],
+                packagePrice: sp.price,
+                packageDuration: sp.duration,
+            }));
+    }
+
+    /**
      * Format package response
      */
     private formatPackageResponse(pkg: any): PackageResponseDto {

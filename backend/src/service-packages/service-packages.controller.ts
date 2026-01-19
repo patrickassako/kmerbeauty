@@ -25,6 +25,11 @@ export class ServicePackagesController {
         return this.servicePackagesService.getById(id);
     }
 
+    @Get(':id/providers')
+    async getProvidersByPackage(@Param('id') id: string) {
+        return this.servicePackagesService.getProvidersByPackage(id);
+    }
+
     @Get('salon/:salonId')
     async getBySalon(@Param('salonId') salonId: string) {
         return this.servicePackagesService.getBySalon(salonId);
