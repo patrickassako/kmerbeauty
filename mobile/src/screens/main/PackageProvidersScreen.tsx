@@ -19,9 +19,12 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'PackageProviders'>;
 
 interface ProviderWithPackage {
     id: string;
+    type: 'salon' | 'therapist';
     nameFr: string;
     nameEn: string;
-    address: string;
+    quarter: string;
+    street?: string;
+    landmark: string;
     city: string;
     region: string;
     latitude: number;
@@ -78,7 +81,7 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
         navigation.navigate('Booking', {
             service: pkg as any,
             providerId: provider.id,
-            providerType: 'salon',
+            providerType: provider.type,
             providerName: language === 'fr' ? provider.nameFr : provider.nameEn,
             providerPrice: provider.packagePrice,
         });
@@ -112,7 +115,7 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
                     <View style={styles.locationRow}>
                         <Ionicons name="location-outline" size={14} color="#666" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {item.city}, {item.region}
+                            {item.quarter}, {item.city}
                         </Text>
                     </View>
 
