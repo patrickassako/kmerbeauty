@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Linking, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -65,7 +65,7 @@ export const SupportScreen: React.FC = () => {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             {/* Contact Info Section */}
             <View style={styles.contactSection}>
                 <Text style={styles.sectionTitle}>Contactez-nous</Text>
@@ -107,7 +107,7 @@ export const SupportScreen: React.FC = () => {
                     />
                 )}
             </View>
-        </View>
+        </SafeAreaView>
     );
 };
 
