@@ -65,56 +65,61 @@ export const SupportScreen: React.FC = () => {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Contact Info Section */}
-            <View style={styles.contactSection}>
-                <Text style={styles.sectionTitle}>Contactez-nous</Text>
-                <TouchableOpacity style={styles.contactRow} onPress={handleEmail}>
-                    <Ionicons name="mail-outline" size={24} color={colors.black} />
-                    <Text style={styles.contactText}>suport@kmrbeauty.com</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.contactRow} onPress={handleCall}>
-                    <Ionicons name="call-outline" size={24} color={colors.black} />
-                    <Text style={styles.contactText}>+237 681 02 23 88</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Tickets Section */}
-            <View style={styles.ticketsSection}>
-                <View style={styles.ticketsHeader}>
-                    <Text style={styles.sectionTitle}>Mes Tickets</Text>
-                    <TouchableOpacity
-                        style={styles.newTicketButton}
-                        onPress={() => navigation.navigate('NewTicket')}
-                    >
-                        <Ionicons name="add" size={20} color={colors.white} />
-                        <Text style={styles.newTicketText}>Nouveau</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                {/* Contact Info Section */}
+                <View style={styles.contactSection}>
+                    <Text style={styles.sectionTitle}>Contactez-nous</Text>
+                    <TouchableOpacity style={styles.contactRow} onPress={handleEmail}>
+                        <Ionicons name="mail-outline" size={24} color={colors.black} />
+                        <Text style={styles.contactText}>suport@kmrbeauty.com</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.contactRow} onPress={handleCall}>
+                        <Ionicons name="call-outline" size={24} color={colors.black} />
+                        <Text style={styles.contactText}>+237 681 02 23 88</Text>
                     </TouchableOpacity>
                 </View>
 
-                {loading ? (
-                    <ActivityIndicator size="large" color={colors.black} />
-                ) : tickets.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Aucun ticket de support.</Text>
+                {/* Tickets Section */}
+                <View style={styles.ticketsSection}>
+                    <View style={styles.ticketsHeader}>
+                        <Text style={styles.sectionTitle}>Mes Tickets</Text>
+                        <TouchableOpacity
+                            style={styles.newTicketButton}
+                            onPress={() => navigation.navigate('NewTicket')}
+                        >
+                            <Ionicons name="add" size={20} color={colors.white} />
+                            <Text style={styles.newTicketText}>Nouveau</Text>
+                        </TouchableOpacity>
                     </View>
-                ) : (
-                    <FlatList
-                        data={tickets}
-                        renderItem={renderTicketItem}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.ticketsList}
-                    />
-                )}
+
+                    {loading ? (
+                        <ActivityIndicator size="large" color={colors.black} />
+                    ) : tickets.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>Aucun ticket de support.</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={tickets}
+                            renderItem={renderTicketItem}
+                            keyExtractor={(item) => item.id}
+                            contentContainerStyle={styles.ticketsList}
+                        />
+                    )}
+                </View>
             </View>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
         backgroundColor: colors.background,
+    },
+    container: {
+        flex: 1,
         padding: spacing.lg,
     },
     contactSection: {
