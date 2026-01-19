@@ -19,6 +19,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'PackageProviders'>;
 
 interface ProviderWithPackage {
     id: string;
+    type: 'salon' | 'therapist';
     nameFr: string;
     nameEn: string;
     quarter: string;
@@ -80,7 +81,7 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
         navigation.navigate('Booking', {
             service: pkg as any,
             providerId: provider.id,
-            providerType: 'salon',
+            providerType: provider.type,
             providerName: language === 'fr' ? provider.nameFr : provider.nameEn,
             providerPrice: provider.packagePrice,
         });

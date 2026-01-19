@@ -150,10 +150,11 @@ export class ServicePackagesService {
     }
 
     /**
-     * Get all providers (salons) offering a specific package
+     * Get all providers (salons and therapists) offering a specific package
      */
     async getProvidersByPackage(packageId: string): Promise<any[]> {
-        const { data: salonPackages, error } = await this.supabase
+        // Fetch salons offering this package
+        const { data: salonPackages, error: salonError } = await this.supabase
             .from('salon_packages')
             .select(`
         price,
@@ -177,12 +178,35 @@ export class ServicePackagesService {
             .eq('package_id', packageId)
             .eq('is_active', true);
 
-        if (error) throw error;
+        if (salonError) throw salonError;
 
-        return salonPackages
+        // Fetch therapists offering this package
+        const { data: therapistPackages, error: therapistError } = await this.supabase
+            .from('therapist_packages')
+            .select(`
+        price,
+        duration,
+        is_active,
+        therapist:therapists(
+          id,
+          firstName,
+          lastName,
+          serviceZones,
+          profilePicture,
+          portfolioImages
+        )
+      `)
+            .eq('package_id', packageId)
+            .eq('is_active', true);
+
+        if (therapistError) throw therapistError;
+
+        // Format salon providers
+        const salonProviders = (salonPackages || [])
             .filter((sp: any) => sp.salon)
             .map((sp: any) => ({
                 id: sp.salon.id,
+                type: 'salon',
                 nameFr: sp.salon.name,
                 nameEn: sp.salon.name,
                 quarter: sp.salon.quarter,
@@ -198,6 +222,36 @@ export class ServicePackagesService {
                 packagePrice: sp.price,
                 packageDuration: sp.duration,
             }));
+
+        // Format therapist providers
+        const therapistProviders = (therapistPackages || [])
+            .filter((tp: any) => tp.therapist)
+            .map((tp: any) => {
+                const serviceZones = tp.therapist.serviceZones || [];
+                const primaryZone = serviceZones[0] || {};
+
+                return {
+                    id: tp.therapist.id,
+                    type: 'therapist',
+                    nameFr: `${tp.therapist.firstName} ${tp.therapist.lastName}`,
+                    nameEn: `${tp.therapist.firstName} ${tp.therapist.lastName}`,
+                    quarter: primaryZone.district || '',
+                    street: '',
+                    landmark: '',
+                    city: primaryZone.city || '',
+                    region: '', // Therapists don't have region in service_zones
+                    latitude: primaryZone.latitude || 0,
+                    longitude: primaryZone.longitude || 0,
+                    rating: 0, // TODO: Calculate from reviews
+                    reviewCount: 0, // TODO: Count reviews
+                    images: [tp.therapist.profilePicture, ...(tp.therapist.portfolioImages || [])].filter(Boolean),
+                    packagePrice: tp.price,
+                    packageDuration: tp.duration,
+                };
+            });
+
+        // Combine and return both
+        return [...salonProviders, ...therapistProviders];
     }
 
     /**
