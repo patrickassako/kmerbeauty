@@ -115,7 +115,12 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
                     <View style={styles.locationRow}>
                         <Ionicons name="location-outline" size={14} color="#666" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {item.quarter}, {item.city}
+                            {item.quarter && item.city
+                                ? `${item.quarter}, ${item.city}`
+                                : item.city
+                                    ? item.city
+                                    : (language === 'fr' ? 'Localisation non spécifiée' : 'Location not specified')
+                            }
                         </Text>
                     </View>
 
