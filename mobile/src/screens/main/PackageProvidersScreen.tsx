@@ -13,6 +13,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { useI18n } from '../../i18n/I18nContext';
+import { useGeolocation } from '../../hooks/useGeolocation';
 import api from '../../services/api';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'PackageProviders'>;
@@ -39,6 +40,7 @@ interface ProviderWithPackage {
 export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) => {
     const { package: pkg, sortBy = 'distance' } = route.params;
     const { language } = useI18n();
+    const { city, district } = useGeolocation();
     const [providers, setProviders] = useState<ProviderWithPackage[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -47,13 +49,22 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
 
     useEffect(() => {
         fetchProviders();
-    }, [pkg.id]);
+    }, [pkg.id, city, district]);
 
     const fetchProviders = async () => {
         try {
             setLoading(true);
             setError(null);
-            const { data } = await api.get(`/service-packages/${pkg.id}/providers`);
+
+            // Build query params
+            const params = new URLSearchParams();
+            if (city) params.append('city', city);
+            if (district) params.append('quarter', district);
+
+            const queryString = params.toString();
+            const url = `/service-packages/${pkg.id}/providers${queryString ? `?${queryString}` : ''}`;
+
+            const { data } = await api.get(url);
             setProviders(data);
         } catch (err: any) {
             console.error('Error fetching providers:', err);
@@ -109,13 +120,18 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
 
                 <View style={styles.providerInfo}>
                     <Text style={styles.providerName} numberOfLines={1}>
-                        {name}
+                        {name || (language === 'fr' ? 'Prestataire' : 'Provider')}
                     </Text>
 
                     <View style={styles.locationRow}>
                         <Ionicons name="location-outline" size={14} color="#666" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {item.quarter}, {item.city}
+                            {item.quarter && item.city
+                                ? `${item.quarter}, ${item.city}`
+                                : item.city
+                                    ? item.city
+                                    : (language === 'fr' ? 'Localisation non spécifiée' : 'Location not specified')
+                            }
                         </Text>
                     </View>
 
