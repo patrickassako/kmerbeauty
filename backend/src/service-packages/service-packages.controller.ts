@@ -20,14 +20,14 @@ export class ServicePackagesController {
         return this.servicePackagesService.getFeatured(limit ? parseInt(limit) : 5);
     }
 
-    @Get(':id')
-    async getById(@Param('id') id: string) {
-        return this.servicePackagesService.getById(id);
-    }
-
     @Get(':id/providers')
     async getProvidersByPackage(@Param('id') id: string) {
         return this.servicePackagesService.getProvidersByPackage(id);
+    }
+
+    @Get(':id')
+    async getById(@Param('id') id: string) {
+        return this.servicePackagesService.getById(id);
     }
 
     @Get('salon/:salonId')
