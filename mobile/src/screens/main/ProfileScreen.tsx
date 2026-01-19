@@ -28,7 +28,7 @@ export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, signOut, switchRole, userMode } = useAuth();
   const { normalizeFontSize } = useResponsive();
-  const { language, toggleLanguage } = useI18n();
+  const { language, setLanguage } = useI18n();
   const [showBetaModal, setShowBetaModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
@@ -230,7 +230,7 @@ export const ProfileScreen: React.FC = () => {
                 language === 'fr' && styles.languageOptionActive
               ]}
               onPress={() => {
-                if (language !== 'fr') toggleLanguage();
+                if (language !== 'fr') setLanguage('fr');
                 setShowLanguageModal(false);
               }}
             >
@@ -250,7 +250,7 @@ export const ProfileScreen: React.FC = () => {
                 language === 'en' && styles.languageOptionActive
               ]}
               onPress={() => {
-                if (language !== 'en') toggleLanguage();
+                if (language !== 'en') setLanguage('en');
                 setShowLanguageModal(false);
               }}
             >
