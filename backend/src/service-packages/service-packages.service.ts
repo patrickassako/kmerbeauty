@@ -162,7 +162,8 @@ export class ServicePackagesService {
         is_active,
         salon:salons(
           id,
-          name,
+          name_fr,
+          name_en,
           quarter,
           street,
           landmark,
@@ -171,8 +172,10 @@ export class ServicePackagesService {
           latitude,
           longitude,
           logo,
-          coverImage,
-          ambianceImages
+          cover_image,
+          ambiance_images,
+          rating,
+          review_count
         )
       `)
             .eq('package_id', packageId)
@@ -207,8 +210,8 @@ export class ServicePackagesService {
             .map((sp: any) => ({
                 id: sp.salon.id,
                 type: 'salon',
-                nameFr: sp.salon.name,
-                nameEn: sp.salon.name,
+                nameFr: sp.salon.name_fr,
+                nameEn: sp.salon.name_en,
                 quarter: sp.salon.quarter,
                 street: sp.salon.street,
                 landmark: sp.salon.landmark,
@@ -216,9 +219,9 @@ export class ServicePackagesService {
                 region: sp.salon.region,
                 latitude: sp.salon.latitude,
                 longitude: sp.salon.longitude,
-                rating: 0, // TODO: Calculate from reviews
-                reviewCount: 0, // TODO: Count reviews
-                images: [sp.salon.logo, sp.salon.coverImage, ...(sp.salon.ambianceImages || [])].filter(Boolean),
+                rating: sp.salon.rating || 0,
+                reviewCount: sp.salon.review_count || 0,
+                images: [sp.salon.logo, sp.salon.cover_image, ...(sp.salon.ambiance_images || [])].filter(Boolean),
                 packagePrice: sp.price,
                 packageDuration: sp.duration,
             }));
