@@ -109,7 +109,7 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
 
                 <View style={styles.providerInfo}>
                     <Text style={styles.providerName} numberOfLines={1}>
-                        {name}
+                        {name || (language === 'fr' ? 'Prestataire' : 'Provider')}
                     </Text>
 
                     <View style={styles.locationRow}>
