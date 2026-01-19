@@ -413,6 +413,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 20,
+        paddingBottom: 90, // Extra padding to avoid tab bar
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
         backgroundColor: '#fff',
