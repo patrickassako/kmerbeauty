@@ -194,7 +194,6 @@ export class ServicePackagesService {
           id,
           business_name,
           service_zones,
-          profile_picture,
           portfolio_images
         )
       `)
@@ -246,7 +245,7 @@ export class ServicePackagesService {
                     longitude: primaryZone.longitude || 0,
                     rating: 0, // TODO: Calculate from reviews
                     reviewCount: 0, // TODO: Count reviews
-                    images: [tp.therapist.profile_picture, ...(tp.therapist.portfolio_images || [])].filter(Boolean),
+                    images: tp.therapist.portfolio_images || [],
                     packagePrice: tp.price,
                     packageDuration: tp.duration,
                 };
