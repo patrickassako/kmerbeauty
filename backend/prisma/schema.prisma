@@ -745,7 +745,6 @@ model StoryView {
   @@unique([storyId, userId])
   @@index([storyId])
   @@index([userId])
-  @@index([userId])
   @@map("story_views")
 }
 
