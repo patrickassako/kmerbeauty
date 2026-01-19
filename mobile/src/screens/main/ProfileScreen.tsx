@@ -201,15 +201,6 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Floating Beta Tester Button */}
-      <TouchableOpacity
-        style={styles.betaButton}
-        onPress={() => setShowBetaModal(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.betaButtonText}>🧪</Text>
-      </TouchableOpacity>
-
       {/* Beta Tester Modal */}
       <BetaTesterModal
         visible={showBetaModal}
@@ -415,21 +406,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
     marginTop: spacing.sm,
-  },
-  betaButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#6B4EFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.md,
-  },
-  betaButtonText: {
-    fontSize: 24,
   },
   // Language Modal Styles
   modalOverlay: {
