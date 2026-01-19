@@ -192,11 +192,10 @@ export class ServicePackagesService {
         is_active,
         therapist:therapists(
           id,
-          firstName,
-          lastName,
-          serviceZones,
-          profilePicture,
-          portfolioImages
+          business_name,
+          service_zones,
+          profile_picture,
+          portfolio_images
         )
       `)
             .eq('package_id', packageId)
@@ -230,14 +229,14 @@ export class ServicePackagesService {
         const therapistProviders = (therapistPackages || [])
             .filter((tp: any) => tp.therapist)
             .map((tp: any) => {
-                const serviceZones = tp.therapist.serviceZones || [];
+                const serviceZones = tp.therapist.service_zones || [];
                 const primaryZone = serviceZones[0] || {};
 
                 return {
                     id: tp.therapist.id,
                     type: 'therapist',
-                    nameFr: `${tp.therapist.firstName} ${tp.therapist.lastName}`,
-                    nameEn: `${tp.therapist.firstName} ${tp.therapist.lastName}`,
+                    nameFr: tp.therapist.business_name,
+                    nameEn: tp.therapist.business_name,
                     quarter: primaryZone.district || '',
                     street: '',
                     landmark: '',
@@ -247,7 +246,7 @@ export class ServicePackagesService {
                     longitude: primaryZone.longitude || 0,
                     rating: 0, // TODO: Calculate from reviews
                     reviewCount: 0, // TODO: Count reviews
-                    images: [tp.therapist.profilePicture, ...(tp.therapist.portfolioImages || [])].filter(Boolean),
+                    images: [tp.therapist.profile_picture, ...(tp.therapist.portfolio_images || [])].filter(Boolean),
                     packagePrice: tp.price,
                     packageDuration: tp.duration,
                 };
