@@ -639,6 +639,89 @@ export class ContractorService implements OnModuleInit {
   }
 
   // =====================================================
+  // CONTRACTOR PACKAGES
+  // =====================================================
+
+  async addPackage(dto: { contractor_id: string; package_id: string; price: number; duration: number }) {
+    const supabase = this.supabaseService.getClient();
+
+    // Verify therapist exists
+    const { data: therapist, error: therapistError } = await supabase
+      .from('therapists')
+      .select('id')
+      .eq('id', dto.contractor_id)
+      .single();
+
+    if (therapistError || !therapist) {
+      throw new Error('Therapist profile not found.');
+    }
+
+    // Insert into therapist_packages
+    const { data, error } = await supabase
+      .from('therapist_packages')
+      .insert({
+        therapist_id: dto.contractor_id,
+        package_id: dto.package_id,
+        price: dto.price,
+        duration: dto.duration,
+        is_active: true,
+      })
+      .select(`
+        *,
+        package:service_packages(*)
+      `)
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async getPackages(contractorId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('therapist_packages')
+      .select(`
+        *,
+        package:service_packages(*)
+      `)
+      .eq('therapist_id', contractorId)
+      .eq('is_active', true);
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  async updatePackage(packageId: string, dto: { price?: number; duration?: number }) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('therapist_packages')
+      .update(dto)
+      .eq('id', packageId)
+      .select(`
+        *,
+        package:service_packages(*)
+      `)
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async deletePackage(packageId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { error } = await supabase
+      .from('therapist_packages')
+      .delete()
+      .eq('id', packageId);
+
+    if (error) throw new Error(error.message);
+    return { success: true };
+  }
+
+  // =====================================================
   // DASHBOARD & STATS
   // =====================================================
 

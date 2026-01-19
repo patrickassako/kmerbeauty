@@ -215,6 +215,33 @@ export class ContractorController {
   }
 
   // =====================================================
+  // PACKAGES ENDPOINTS
+  // =====================================================
+
+  @Post('packages')
+  async addPackage(@Body() createDto: { contractor_id: string; package_id: string; price: number; duration: number }) {
+    return this.contractorService.addPackage(createDto);
+  }
+
+  @Get(':contractorId/packages')
+  async getPackages(@Param('contractorId') contractorId: string) {
+    return this.contractorService.getPackages(contractorId);
+  }
+
+  @Put('packages/:packageId')
+  async updatePackage(
+    @Param('packageId') packageId: string,
+    @Body() updateDto: { price?: number; duration?: number },
+  ) {
+    return this.contractorService.updatePackage(packageId, updateDto);
+  }
+
+  @Delete('packages/:packageId')
+  async deletePackage(@Param('packageId') packageId: string) {
+    return this.contractorService.deletePackage(packageId);
+  }
+
+  // =====================================================
   // DASHBOARD ENDPOINTS
   // =====================================================
 

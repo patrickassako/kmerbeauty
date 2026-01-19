@@ -28,7 +28,7 @@ export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, signOut, switchRole, userMode } = useAuth();
   const { normalizeFontSize } = useResponsive();
-  const { language, toggleLanguage } = useI18n();
+  const { language, setLanguage } = useI18n();
   const [showBetaModal, setShowBetaModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
@@ -119,12 +119,6 @@ export const ProfileScreen: React.FC = () => {
               label={language === 'fr' ? 'Mes Commandes' : 'My Orders'}
               onPress={() => navigation.navigate('Market', { screen: 'ClientOrders' })}
             />
-            <View style={styles.divider} />
-            <MenuOption
-              icon="location-outline"
-              label={language === 'fr' ? 'Mes Adresses' : 'My Addresses'}
-              onPress={() => navigation.navigate('AddressManagement')}
-            />
           </View>
         </View>
 
@@ -201,15 +195,6 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Floating Beta Tester Button */}
-      <TouchableOpacity
-        style={styles.betaButton}
-        onPress={() => setShowBetaModal(true)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.betaButtonText}>🧪</Text>
-      </TouchableOpacity>
-
       {/* Beta Tester Modal */}
       <BetaTesterModal
         visible={showBetaModal}
@@ -239,7 +224,7 @@ export const ProfileScreen: React.FC = () => {
                 language === 'fr' && styles.languageOptionActive
               ]}
               onPress={() => {
-                if (language !== 'fr') toggleLanguage();
+                if (language !== 'fr') setLanguage('fr');
                 setShowLanguageModal(false);
               }}
             >
@@ -259,7 +244,7 @@ export const ProfileScreen: React.FC = () => {
                 language === 'en' && styles.languageOptionActive
               ]}
               onPress={() => {
-                if (language !== 'en') toggleLanguage();
+                if (language !== 'en') setLanguage('en');
                 setShowLanguageModal(false);
               }}
             >
@@ -415,21 +400,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
     marginTop: spacing.sm,
-  },
-  betaButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#6B4EFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.md,
-  },
-  betaButtonText: {
-    fontSize: 24,
   },
   // Language Modal Styles
   modalOverlay: {

@@ -295,6 +295,14 @@ export const ContractorDashboardScreen = () => {
 
           <TouchableOpacity
             style={[styles.actionCard, { padding: spacing(2), marginRight: spacing(1.5) }]}
+            onPress={() => navigation.navigate('ContractorPackages')}
+          >
+            <Text style={{ fontSize: normalizeFontSize(24), marginBottom: spacing(1) }}>📦</Text>
+            <Text style={[styles.actionLabel, { fontSize: normalizeFontSize(13) }]}>Packages</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { padding: spacing(2), marginRight: spacing(1.5) }]}
             onPress={() => navigation.navigate('ContractorAvailability')}
           >
             <Text style={{ fontSize: normalizeFontSize(24), marginBottom: spacing(1) }}>📅</Text>
