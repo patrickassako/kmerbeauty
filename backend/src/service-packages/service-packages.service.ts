@@ -151,8 +151,13 @@ export class ServicePackagesService {
 
     /**
      * Get all providers (salons and therapists) offering a specific package
+     * Filtered by user's location (quarter and city)
      */
-    async getProvidersByPackage(packageId: string): Promise<any[]> {
+    async getProvidersByPackage(
+        packageId: string,
+        userCity?: string,
+        userQuarter?: string
+    ): Promise<any[]> {
         // Fetch salons offering this package
         const { data: salonPackages, error: salonError } = await this.supabase
             .from('salon_packages')
@@ -202,8 +207,8 @@ export class ServicePackagesService {
 
         if (therapistError) throw therapistError;
 
-        // Format salon providers
-        const salonProviders = (salonPackages || [])
+        // Format salon providers with location filtering
+        let salonProviders = (salonPackages || [])
             .filter((sp: any) => sp.salon)
             .map((sp: any) => ({
                 id: sp.salon.id,
@@ -224,8 +229,27 @@ export class ServicePackagesService {
                 packageDuration: sp.duration,
             }));
 
-        // Format therapist providers
-        const therapistProviders = (therapistPackages || [])
+        // Filter salons by location if provided
+        if (userCity || userQuarter) {
+            salonProviders = salonProviders.filter((salon: any) => {
+                // Priority 1: Same quarter (if user quarter is provided)
+                if (userQuarter && salon.quarter) {
+                    if (salon.quarter.toLowerCase() === userQuarter.toLowerCase()) {
+                        return true;
+                    }
+                }
+                // Priority 2: Same city
+                if (userCity && salon.city) {
+                    if (salon.city.toLowerCase() === userCity.toLowerCase()) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        // Format therapist providers with location filtering
+        let therapistProviders = (therapistPackages || [])
             .filter((tp: any) => tp.therapist)
             .map((tp: any) => {
                 const serviceZones = tp.therapist.service_zones || [];
@@ -240,16 +264,33 @@ export class ServicePackagesService {
                     street: '',
                     landmark: '',
                     city: primaryZone.city || '',
-                    region: '', // Therapists don't have region in service_zones
+                    region: '',
                     latitude: primaryZone.latitude || 0,
                     longitude: primaryZone.longitude || 0,
-                    rating: 0, // TODO: Calculate from reviews
-                    reviewCount: 0, // TODO: Count reviews
+                    rating: 0,
+                    reviewCount: 0,
                     images: tp.therapist.portfolio_images || [],
                     packagePrice: tp.price,
                     packageDuration: tp.duration,
+                    serviceZones: serviceZones, // Keep full service zones for filtering
                 };
             });
+
+        // Filter therapists by city in service_zones
+        if (userCity) {
+            therapistProviders = therapistProviders.filter((therapist: any) => {
+                const serviceZones = therapist.serviceZones || [];
+                return serviceZones.some((zone: any) =>
+                    zone.city && zone.city.toLowerCase() === userCity.toLowerCase()
+                );
+            });
+        }
+
+        // Remove serviceZones from final response (was only needed for filtering)
+        therapistProviders = therapistProviders.map((tp: any) => {
+            const { serviceZones, ...rest } = tp;
+            return rest;
+        });
 
         // Combine and return both
         return [...salonProviders, ...therapistProviders];

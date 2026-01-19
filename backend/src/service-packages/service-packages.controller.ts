@@ -21,8 +21,12 @@ export class ServicePackagesController {
     }
 
     @Get(':id/providers')
-    async getProvidersByPackage(@Param('id') id: string) {
-        return this.servicePackagesService.getProvidersByPackage(id);
+    async getProvidersByPackage(
+        @Param('id') id: string,
+        @Query('city') city?: string,
+        @Query('quarter') quarter?: string,
+    ) {
+        return this.servicePackagesService.getProvidersByPackage(id, city, quarter);
     }
 
     @Get(':id')
