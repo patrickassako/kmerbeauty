@@ -119,12 +119,6 @@ export const ProfileScreen: React.FC = () => {
               label={language === 'fr' ? 'Mes Commandes' : 'My Orders'}
               onPress={() => navigation.navigate('Market', { screen: 'ClientOrders' })}
             />
-            <View style={styles.divider} />
-            <MenuOption
-              icon="location-outline"
-              label={language === 'fr' ? 'Mes Adresses' : 'My Addresses'}
-              onPress={() => navigation.navigate('AddressManagement')}
-            />
           </View>
         </View>
 
