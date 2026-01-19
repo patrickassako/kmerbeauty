@@ -97,6 +97,7 @@ const PackageDetailsScreenPlaceholder = () => null;
 const BookingManagementScreen = () => null;
 
 import { CategoryServicesScreen } from '../screens/main/CategoryServicesScreen';
+import { PackageDetailsScreen } from '../screens/main/PackageDetailsScreen';
 
 export const HomeStackNavigator: React.FC = () => {
   return (
@@ -114,7 +115,7 @@ export const HomeStackNavigator: React.FC = () => {
       <Stack.Screen name="ProviderDetails" component={ProviderDetailsScreen} />
       <Stack.Screen name="SalonDetails" component={SalonDetailsScreen} />
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
-      <Stack.Screen name="PackageDetails" component={PackageDetailsScreenPlaceholder} />
+      <Stack.Screen name="PackageDetails" component={PackageDetailsScreen} />
       <Stack.Screen name="Booking" component={BookingScreen} />
       <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
       <Stack.Screen name="ConversationDetails" component={ChatScreen} />

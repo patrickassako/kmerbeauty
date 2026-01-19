@@ -440,10 +440,41 @@ const HomeScreenContent: React.FC = () => {
           })) : MOCK_PROMO_BANNERS}
           onBannerPress={(banner: PromoBanner) => {
             trackClick(banner.id);
-            // Navigate to provider/service based on pack's ctaLink
             const pack = packs.find(p => p.id === banner.id);
+
             if (pack?.ctaLink) {
-              console.log('Navigate to:', pack.ctaLink);
+              // Parse ctaLink to determine navigation
+              // Format examples: 
+              // - "/services/pack-mariage" -> navigate to service
+              // - "/provider/salon-id" -> navigate to salon
+              // - "/provider/therapist-id" -> navigate to therapist
+
+              if (pack.ctaLink.includes('/services/')) {
+                // Navigate to services list or specific service
+                navigation.navigate('Services');
+              } else if (pack.ctaLink.includes('/provider/salon/')) {
+                // Extract salon ID and navigate
+                const salonId = pack.ctaLink.split('/provider/salon/')[1];
+                if (salonId && pack.salon) {
+                  navigation.navigate('SalonDetails', {
+                    salon: { id: salonId, ...pack.salon }
+                  });
+                }
+              } else if (pack.ctaLink.includes('/provider/therapist/')) {
+                // Extract therapist ID and navigate
+                const therapistId = pack.ctaLink.split('/provider/therapist/')[1];
+                if (therapistId && pack.therapist) {
+                  navigation.navigate('TherapistDetails', {
+                    therapist: { id: therapistId, ...pack.therapist }
+                  });
+                }
+              } else if (pack.serviceId) {
+                // If pack has a serviceId, navigate to booking with that service
+                navigation.navigate('Services');
+              } else {
+                // Default: show pack details in a modal or navigate to services
+                navigation.navigate('Services');
+              }
             }
           }}
         />
@@ -453,8 +484,10 @@ const HomeScreenContent: React.FC = () => {
           packages={featuredPackages}
           loading={packagesLoading}
           onPackagePress={(pkg) => {
-            console.log('Package pressed:', pkg.id);
-            // TODO: Navigate to package details or booking
+            // Navigate to package details screen
+            navigation.navigate('PackageDetails', {
+              package: pkg as any,
+            });
           }}
         />
 
