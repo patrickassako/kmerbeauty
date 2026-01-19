@@ -58,6 +58,24 @@ export class StoriesController {
         return { success: true };
     }
 
+    @Post(':id/like')
+    @UseGuards(AuthGuard)
+    async like(
+        @Param('id') id: string,
+        @Request() req,
+    ): Promise<{ success: boolean; likeCount: number }> {
+        return this.storiesService.like(id, req.user.id);
+    }
+
+    @Delete(':id/like')
+    @UseGuards(AuthGuard)
+    async unlike(
+        @Param('id') id: string,
+        @Request() req,
+    ): Promise<{ success: boolean; likeCount: number }> {
+        return this.storiesService.unlike(id, req.user.id);
+    }
+
     @Delete(':id')
     @UseGuards(AuthGuard)
     async delete(

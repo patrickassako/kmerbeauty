@@ -38,18 +38,37 @@ interface ProviderWithPackage {
 }
 
 export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) => {
-    const { package: pkg, sortBy = 'distance' } = route.params;
+    const { package: initialPackage, sortBy = 'distance' } = route.params;
     const { language } = useI18n();
     const { city, district } = useGeolocation();
+
+    // State
+    const [selectedPackage, setSelectedPackage] = useState(initialPackage);
+    const [allPackages, setAllPackages] = useState<any[]>([]);
     const [providers, setProviders] = useState<ProviderWithPackage[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const packageName = language === 'fr' ? pkg.nameFr : pkg.nameEn;
+    const packageName = language === 'fr' ? selectedPackage.nameFr : selectedPackage.nameEn;
 
+    // Load available packages on mount
+    useEffect(() => {
+        loadPackages();
+    }, []);
+
+    // Fetch providers when selected package or location changes
     useEffect(() => {
         fetchProviders();
-    }, [pkg.id, city, district]);
+    }, [selectedPackage.id, city, district]);
+
+    const loadPackages = async () => {
+        try {
+            const packages = await api.get('/service-packages').then(res => res.data);
+            setAllPackages(packages);
+        } catch (err) {
+            console.error('Error loading packages:', err);
+        }
+    };
 
     const fetchProviders = async () => {
         try {
@@ -62,7 +81,7 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
             if (district) params.append('quarter', district);
 
             const queryString = params.toString();
-            const url = `/service-packages/${pkg.id}/providers${queryString ? `?${queryString}` : ''}`;
+            const url = `/service-packages/${selectedPackage.id}/providers${queryString ? `?${queryString}` : ''}`;
 
             const { data } = await api.get(url);
             setProviders(data);
@@ -90,12 +109,35 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
     const handleProviderPress = (provider: ProviderWithPackage) => {
         // Navigate to booking with package and provider info
         navigation.navigate('Booking', {
-            service: pkg as any,
+            service: selectedPackage as any,
             providerId: provider.id,
             providerType: provider.type,
             providerName: language === 'fr' ? provider.nameFr : provider.nameEn,
             providerPrice: provider.packagePrice,
         });
+    };
+
+    const renderPackageItem = ({ item }: { item: any }) => {
+        const isSelected = item.id === selectedPackage.id;
+        // Defensive coding: try both camelCase (API DTO) and snake_case (Raw DB)
+        const nameFr = item.nameFr || item.name_fr;
+        const nameEn = item.nameEn || item.name_en;
+        const name = language === 'fr' ? nameFr : nameEn;
+
+        return (
+            <TouchableOpacity
+                style={[styles.packageChip, isSelected && styles.packageChipSelected]}
+                onPress={() => setSelectedPackage({
+                    ...item,
+                    nameFr: nameFr,
+                    nameEn: nameEn,
+                })}
+            >
+                <Text style={[styles.packageChipText, isSelected && styles.packageChipTextSelected]}>
+                    {name || 'Package'}
+                </Text>
+            </TouchableOpacity>
+        );
     };
 
     const renderProvider = ({ item }: { item: ProviderWithPackage }) => {
@@ -187,13 +229,25 @@ export const PackageProvidersScreen: React.FC<Props> = ({ navigation, route }) =
                 </TouchableOpacity>
                 <View style={styles.headerTextContainer}>
                     <Text style={styles.headerTitle} numberOfLines={1}>
-                        {packageName}
+                        {language === 'fr' ? 'Prestataires' : 'Providers'}
                     </Text>
                     <Text style={styles.headerSubtitle}>
-                        {language === 'fr' ? 'Choisir un prestataire' : 'Choose a provider'}
+                        {packageName}
                     </Text>
                 </View>
                 <View style={styles.headerRight} />
+            </View>
+
+            {/* Packages Selector */}
+            <View style={styles.packagesSelectorContainer}>
+                <FlatList
+                    data={allPackages}
+                    renderItem={renderPackageItem}
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.packagesSelectorContent}
+                />
             </View>
 
             {/* Content */}
@@ -413,6 +467,37 @@ const styles = StyleSheet.create({
     bookButtonText: {
         color: '#fff',
         fontSize: 14,
+        fontWeight: '600',
+    },
+    packagesSelectorContainer: {
+        backgroundColor: '#fff',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    packagesSelectorContent: {
+        paddingHorizontal: 16,
+    },
+    packageChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F5F5F5',
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+    },
+    packageChipSelected: {
+        backgroundColor: '#2D2D2D',
+        borderColor: '#2D2D2D',
+    },
+    packageChipText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#666',
+    },
+    packageChipTextSelected: {
+        color: '#fff',
         fontWeight: '600',
     },
 });

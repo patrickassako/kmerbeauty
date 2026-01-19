@@ -711,11 +711,13 @@ model Story {
   
   // Stats
   viewCount     Int       @default(0)
+  likeCount     Int       @default(0)
   
   createdAt     DateTime  @default(now())
   
   // Relations
   views         StoryView[]
+  likes         StoryLike[]
   
   @@index([therapistId])
   @@index([salonId])
@@ -743,7 +745,24 @@ model StoryView {
   @@unique([storyId, userId])
   @@index([storyId])
   @@index([userId])
+  @@index([userId])
   @@map("story_views")
+}
+
+model StoryLike {
+  id        String   @id @default(uuid())
+  
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  
+  userId    String   // User who liked the story
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([storyId, userId])
+  @@index([storyId])
+  @@index([userId])
+  @@map("story_likes")
 }
 
 // ============ PROMOTIONAL PACKS ============
