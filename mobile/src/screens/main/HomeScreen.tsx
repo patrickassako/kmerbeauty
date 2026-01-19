@@ -32,7 +32,7 @@ import { BetaTesterModal } from '../../components/modals/BetaTesterModal';
 import { CopilotStep, walkthroughable, useCopilot, CopilotProvider } from 'react-native-copilot';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HomeHeader, HomeSearchBar, StoriesSection, PromoBanners, ServicesGrid, ProviderCard, NearbyProviders, SpecialPackagesSection, type PromoBanner, type ServiceItem, type Provider } from '../../components/home';
-import { MOCK_PROMO_BANNERS, SERVICE_ICON_MAP } from '../../components/home/mockData';
+import { SERVICE_ICON_MAP } from '../../components/home/mockData';
 import { useStories } from '../../hooks/useStories';
 import { usePacks } from '../../hooks/usePacks';
 import { useServicePackages } from '../../hooks/useServicePackages';
@@ -429,32 +429,67 @@ const HomeScreenContent: React.FC = () => {
           onAddStoryPress={user?.role === 'provider' ? () => console.log('Add story pressed') : undefined}
         />
 
-        {/* Promo Banners - Use API data or fallback to mock */}
-        <PromoBanners
-          banners={packs.length > 0 ? packs.map(p => ({
-            id: p.id,
-            title: p.title,
-            subtitle: p.subtitle,
-            image: p.imageUrl,
-            badge: p.badge,
-          })) : MOCK_PROMO_BANNERS}
-          onBannerPress={(banner: PromoBanner) => {
-            trackClick(banner.id);
-            // Navigate to provider/service based on pack's ctaLink
-            const pack = packs.find(p => p.id === banner.id);
-            if (pack?.ctaLink) {
-              console.log('Navigate to:', pack.ctaLink);
-            }
-          }}
-        />
+        {/* Promo Banners - Only show if there are active promotional packs */}
+        {packs.length > 0 && (
+          <PromoBanners
+            banners={packs.map(p => ({
+              id: p.id,
+              title: p.title,
+              subtitle: p.subtitle,
+              image: p.imageUrl,
+              badge: p.badge,
+            }))}
+            onBannerPress={(banner: PromoBanner) => {
+              trackClick(banner.id);
+              const pack = packs.find(p => p.id === banner.id);
+
+              if (pack?.ctaLink) {
+                // Parse ctaLink to determine navigation
+                // Format examples: 
+                // - "/services/pack-mariage" -> navigate to service
+                // - "/provider/salon-id" -> navigate to salon
+                // - "/provider/therapist-id" -> navigate to therapist
+
+                if (pack.ctaLink.includes('/services/')) {
+                  // Navigate to services list or specific service
+                  navigation.navigate('Services');
+                } else if (pack.ctaLink.includes('/provider/salon/')) {
+                  // Extract salon ID and navigate
+                  const salonId = pack.ctaLink.split('/provider/salon/')[1];
+                  if (salonId && pack.salon) {
+                    navigation.navigate('SalonDetails', {
+                      salon: { id: salonId, ...pack.salon }
+                    });
+                  }
+                } else if (pack.ctaLink.includes('/provider/therapist/')) {
+                  // Extract therapist ID and navigate
+                  const therapistId = pack.ctaLink.split('/provider/therapist/')[1];
+                  if (therapistId && pack.therapist) {
+                    navigation.navigate('TherapistDetails', {
+                      therapist: { id: therapistId, ...pack.therapist }
+                    });
+                  }
+                } else if (pack.serviceId) {
+                  // If pack has a serviceId, navigate to booking with that service
+                  navigation.navigate('Services');
+                } else {
+                  // Default: show pack details in a modal or navigate to services
+                  navigation.navigate('Services');
+                }
+              }
+            }}
+          />
+        )}
 
         {/* Special Packages / Offres Spéciales */}
         <SpecialPackagesSection
           packages={featuredPackages}
           loading={packagesLoading}
           onPackagePress={(pkg) => {
-            console.log('Package pressed:', pkg.id);
-            // TODO: Navigate to package details or booking
+            // Navigate to package details screen
+            navigation.navigate('PackageDetails', {
+              package: pkg as any,
+            });
           }}
         />
 

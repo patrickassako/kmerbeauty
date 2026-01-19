@@ -10,7 +10,8 @@ import { BookingScreen } from '../screens/main/BookingScreen';
 import { BookingDetailsScreen } from '../screens/main/BookingDetailsScreen';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import ReviewScreen from '../screens/main/ReviewScreen';
-import type { Service, ServicePackage, Therapist, Salon } from '../types/database.types';
+import type { Service, Therapist, Salon } from '../types/database.types';
+import type { ServicePackage } from '../services/servicePackagesApi';
 import type { Booking } from '../services/api';
 import type { SearchFilters } from '../components/AdvancedSearchModal';
 
@@ -91,12 +92,12 @@ export type HomeStackParamList = {
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-// Placeholder screens (à créer)
-const PackageProvidersScreen = () => null;
-const PackageDetailsScreenPlaceholder = () => null;
-const BookingManagementScreen = () => null;
-
 import { CategoryServicesScreen } from '../screens/main/CategoryServicesScreen';
+import { PackageDetailsScreen } from '../screens/main/PackageDetailsScreen';
+import { PackageProvidersScreen } from '../screens/main/PackageProvidersScreen';
+
+// Placeholder screens (à créer)
+const BookingManagementScreen = () => null;
 
 export const HomeStackNavigator: React.FC = () => {
   return (
@@ -114,7 +115,7 @@ export const HomeStackNavigator: React.FC = () => {
       <Stack.Screen name="ProviderDetails" component={ProviderDetailsScreen} />
       <Stack.Screen name="SalonDetails" component={SalonDetailsScreen} />
       <Stack.Screen name="ServiceDetails" component={ServiceDetailsScreen} />
-      <Stack.Screen name="PackageDetails" component={PackageDetailsScreenPlaceholder} />
+      <Stack.Screen name="PackageDetails" component={PackageDetailsScreen} />
       <Stack.Screen name="Booking" component={BookingScreen} />
       <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
       <Stack.Screen name="ConversationDetails" component={ChatScreen} />
