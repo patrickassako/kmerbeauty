@@ -132,6 +132,10 @@ export function Navbar() {
                         {t('becomePartner')}
                     </Link>
 
+                    <Link href="/contact" className="hidden md:block text-sm font-medium text-muted-foreground hover:text-primary transition-colors mr-4">
+                        Contact
+                    </Link>
+
                     <Button variant="ghost" size="icon" className="hidden md:flex">
                         <Heart className="h-5 w-5" />
                     </Button>
@@ -199,6 +203,9 @@ export function Navbar() {
                         </Link>
                         <Link href="/pro" className="flex items-center gap-2 py-2 text-sm font-medium text-primary">
                             Devenir Partenaire
+                        </Link>
+                        <Link href="/contact" className="flex items-center gap-2 py-2 text-sm font-medium">
+                            Contact
                         </Link>
                     </nav>
                     <div className="pt-4 border-t">

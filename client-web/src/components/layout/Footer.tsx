@@ -36,6 +36,7 @@ export function Footer() {
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li><Link href="/pro" className="hover:text-primary">Devenir Partenaire</Link></li>
                             <li><Link href="/search" className="hover:text-primary">Nos Services</Link></li>
+                            <li><Link href="/contact" className="hover:text-primary">Nous contacter</Link></li>
                         </ul>
                     </div>
 

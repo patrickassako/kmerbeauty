@@ -20,6 +20,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ios: {
             supportsTablet: true,
             bundleIdentifier: 'com.kmerservice.beauty',
+            buildNumber: '1',
+            infoPlist: {
+                NSLocationWhenInUseUsageDescription: "L'application utilise votre position pour trouver les prestataires de beauté près de vous.",
+                NSLocationAlwaysAndWhenInUseUsageDescription: "L'application utilise votre position pour trouver les prestataires de beauté près de vous.",
+            },
         },
         android: {
             adaptiveIcon: {
@@ -27,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 backgroundColor: '#ffffff',
             },
             package: 'com.kmerservice.beauty',
-            versionCode: 6,
+            versionCode: 7,
             intentFilters: [
                 {
                     action: 'VIEW',

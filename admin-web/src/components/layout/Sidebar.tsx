@@ -15,7 +15,8 @@ import {
     ChevronLeft,
     ChevronRight,
     ShoppingBag,
-    FlaskConical
+    FlaskConical,
+    Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,11 @@ const menuItems = [
         title: "Support",
         href: "/support",
         icon: MessageSquare,
+    },
+    {
+        title: "Contacts",
+        href: "/contacts",
+        icon: Mail,
     },
     {
         title: "Modération",
