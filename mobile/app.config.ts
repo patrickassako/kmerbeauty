@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ios: {
             supportsTablet: true,
             bundleIdentifier: 'com.kmerservice.beauty',
-            buildNumber: '1',
+            buildNumber: '2',
             infoPlist: {
                 NSLocationWhenInUseUsageDescription: "L'application utilise votre position pour trouver les prestataires de beauté près de vous.",
                 NSLocationAlwaysAndWhenInUseUsageDescription: "L'application utilise votre position pour trouver les prestataires de beauté près de vous.",
