@@ -56,6 +56,7 @@ export function Footer() {
                 <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
                     <p>© 2025 KMR-BEAUTY. Tous droits réservés.</p>
                     <div className="flex items-center gap-6">
+                        <Link href="/privacy" className="hover:text-primary transition-colors">Politique de confidentialité</Link>
                         <span>Cameroun 🇨🇲</span>
                     </div>
                 </div>
